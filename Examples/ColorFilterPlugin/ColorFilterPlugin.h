@@ -40,6 +40,7 @@ public:
   // FilterParameters fParams{};
   FilterSwitcher filterSwitcher;
   iplug::LogParamSmooth<double> mGainSmooth{10};
+  int ovrsmpFactor{};
 
   iplug::LogParamSmooth<double> mShaperDriveSmooth{10};
   iplug::LogParamSmooth<double> mShaperShapeSmooth{10};

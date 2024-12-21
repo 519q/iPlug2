@@ -91,7 +91,10 @@ void DF1_2P::Process(double& input, FilterParameters& params)
     pole = (1 - m_alpha) * input + m_alpha * pole;
     double shaped = pole;
     params.m_drive /= 2;
-    sigmoidalShaper.Process(shaped, params);
+    if (params.m_drive > 0)
+    {
+      sigmoidalShaper.Process(shaped, params);
+    }
     // input = std::clamp(shaped, -1.0, 1.0);
     input = shaped;
   }
@@ -115,7 +118,10 @@ void DF1_3P::Process(double& input, FilterParameters& params)
     pole = (1 - m_alpha) * input + m_alpha * pole;
     double shaped = pole;
     params.m_drive /= 1.3;
-    sigmoidalShaper.Process(shaped, params);
+    if (params.m_drive > 0)
+    {
+      sigmoidalShaper.Process(shaped, params);
+    }
     input = shaped;
   }
   input = tanh(input * mapRange((1. - params.m_resonance), 0.5, 1));
@@ -137,7 +143,10 @@ void DF1_4P::Process(double& input, FilterParameters& params)
   {
     pole = (1 - m_alpha) * input + m_alpha * pole;
     double shaped = pole;
-    sigmoidalShaper.Process(shaped, params);
+    if (params.m_drive > 0)
+    {
+      sigmoidalShaper.Process(shaped, params);
+    }
     input = shaped;
   }
   input = tanh(input * mapRange((1. - params.m_resonance), 0.5, 1));
@@ -159,7 +168,10 @@ void DF1_6P::Process(double& input, FilterParameters& params)
   {
     pole = (1 - m_alpha) * input + m_alpha * pole;
     double shaped = pole;
-    sigmoidalShaper.Process(shaped, params);
+    if (params.m_drive > 0)
+    {
+      sigmoidalShaper.Process(shaped, params);
+    }
     input = shaped;
   }
   input = tanh(input * mapRange((1. - params.m_resonance), 0.5, 1));
@@ -191,13 +203,18 @@ void DF2_2P::Process(double& input, FilterParameters& params)
   const double antiDenormal = 1e-20;
 
   // Direct Form II processing
-  sigmoidalShaper.Process(input, params);
-
+  if (params.m_drive > 0)
+  {
+    sigmoidalShaper.Process(input, params);
+  }
   double w = input - a1 * m_state[0] - a2 * m_state[1] + antiDenormal;
   // Apply gain compensation and soft clipping
   input = (b0 * w + b1 * m_state[0] + b2 * m_state[1]) * mapRange((1. - params.m_resonance), 0.5, 1);
   // input = tanh(b0 * w + b1 * m_state[0] + b2 * m_state[1]);
-  sigmoidalShaper.Process(input, params);
+  if (params.m_drive > 0)
+  {
+    sigmoidalShaper.Process(input, params);
+  }
   input = tanh(input);
   // Update states
   m_state[1] = m_state[0];
@@ -229,16 +246,20 @@ void DF2_4P::Process(double& input, FilterParameters& params)
 
   // Prevent denormals
   const double antiDenormal = 1e-20;
-  sigmoidalShaper.Process(input, params);
-
+  if (params.m_drive > 0)
+  {
+    sigmoidalShaper.Process(input, params);
+  }
   // Process first 2-pole stage
   double w1 = input - a1 * m_state[0] - a2 * m_state[1] + antiDenormal;
   // double stage1_output = b0 * w1 + b1 * m_state[0] + b2 * m_state[1] * std::max(0.1, (1. - params.m_resonance));
   double stage1_output = (b0 * w1 + b1 * m_state[0] + b2 * m_state[1]) * mapRange((1. - params.m_resonance), 0.5, 1);
   const double feedback_amount = 0.4 * (1.0 - (cutoffFreq / 20000.0));
   stage1_output += input * feedback_amount * params.m_resonance;
-  sigmoidalShaper.Process(stage1_output, params);
-
+  if (params.m_drive > 0)
+  {
+    sigmoidalShaper.Process(stage1_output, params);
+  }
   // Update states for first stage
   m_state[1] = m_state[0];
   m_state[0] = w1;
@@ -246,7 +267,10 @@ void DF2_4P::Process(double& input, FilterParameters& params)
   // Process second 2-pole stage
   double w2 = stage1_output - a1 * m_state[2] - a2 * m_state[3] + antiDenormal;
   input = (b0 * w2 + b1 * m_state[2] + b2 * m_state[3]) * mapRange((1. - params.m_resonance), 0.5, 1);
-  sigmoidalShaper.Process(input, params);
+  if (params.m_drive > 0)
+  {
+    sigmoidalShaper.Process(input, params);
+  }
   input = tanh(input);
 
   // Update states for second stage
@@ -261,10 +285,16 @@ void SVF1_4P::Process(double& input, FilterParameters& params)
   m_sampleRate = params.m_sampleRate;
   double originalInput = input;
   const double cutoffOffset{0.25};
-  // Store input for feedback
-  double m_cutoff_scaled = cutoffOffset + (((1.0 - cutoffOffset) - 0.07) * m_cutoff);
-  const double normalizedCutoff = std::pow(m_cutoff_scaled, 4.0) * 0.25;
-  double f = std::clamp(1.4 * sin(iplug::PI * normalizedCutoff), 0.0, 1.);
+  // Convert normalized cutoff (0-1) to Hz
+  double m_cutoff_scaled = cutoffOffset + (((1.0 - cutoffOffset) /*- 0.07*/) * m_cutoff);
+  // Get cutoff freq in hz from parameter of double range 0...1
+  const double cutoffFreq = 2.5 * std::pow(8000.0, m_cutoff_scaled);
+  double frequencyHz = m_cutoff * 20000.0; // assuming max freq is 20kHz
+
+  // Calculate coefficient using sample rate
+  double w0 = 2.0 * iplug::PI * cutoffFreq / m_sampleRate;
+  double f = 2.0 * sin(w0 / 2.0); // bilinear transform coefficient
+  f = std::clamp(f, 0.0, 1.0);    // for stability
   // Resonance
   double bandpass = m_state[1] - m_state[3];
   double resonance = bandpass * m_resonance * resoScaling * std::max(1., (2. * params.m_drive));
@@ -277,7 +307,11 @@ void SVF1_4P::Process(double& input, FilterParameters& params)
   for (double& pole : m_state)
   {
     pole = pole + f * (originalInput - pole);
-    sigmoidalShaper.Process(pole, params);
+    if (params.m_drive > 0)
+    {
+      params.m_drive /= 2;
+      sigmoidalShaper.Process(pole, params);
+    }
     originalInput = pole;
   }
 

@@ -1,6 +1,6 @@
+#include "ColorFilterPlugin.h"
 #include "IControls.h"
 #include "IPlugConstants.h"
-#include "ColorFilterPlugin.h"
 #include "IPlug_include_in_plug_src.h"
 
 ColorFilterPlugin::ColorFilterPlugin(const InstanceInfo& info)
@@ -62,7 +62,7 @@ ColorFilterPlugin::ColorFilterPlugin(const InstanceInfo& info)
 //*****************************
 
 //*****************************
-
+// double
 #if IPLUG_DSP
 void ColorFilterPlugin::ProcessBlock(sample** inputs, sample** outputs, int nFrames)
 {
@@ -72,6 +72,8 @@ void ColorFilterPlugin::ProcessBlock(sample** inputs, sample** outputs, int nFra
   mOverSampler.ProcessBlock(inputs, outputs, nFrames, nChans, nChans, [&](sample** inputs, sample** outputs, int nFrames) {
     for (int s = 0; s < nFrames; s++)
     {
+
+
       // gain
       const double gain = GetParam(kGain)->Value() / 100.;
       // Filter
@@ -85,6 +87,7 @@ void ColorFilterPlugin::ProcessBlock(sample** inputs, sample** outputs, int nFra
       const double shaperAsym = GetParam(kShaperBias)->Value() / 100.;
       const double shaperBypassMix = GetParam(kShaperBypass)->Value();
       const int oversamplingFactor = GetParam(kOverSampling)->Value();
+      ovrsmpFactor = oversamplingFactor;
       // gain
       const double smoothedGain = mGainSmooth.Process(gain);
       // filter
@@ -97,22 +100,14 @@ void ColorFilterPlugin::ProcessBlock(sample** inputs, sample** outputs, int nFra
       const double smoothedShaperShape = mShaperShapeSmooth.Process(shaperShape);
       const double smoothedShaperBias = mShaperBiasSmooth.Process(shaperAsym);
       const double smoothedShaperBypass = mShaperBypassSmooth.Process(shaperBypassMix);
-      if (mFactorChanged)
-      {
-        if (mOverSampler.RateToFactor(mOverSampler.GetRate()) != oversamplingFactor)
-        {
-          mOverSampler.SetOverSampling((iplug::EFactor)oversamplingFactor);
-        }
-        mFactorChanged = false;
-      }
+      FilterParameters fParams{};
+      fParams.setFilterParameters(smoothedFilterCutoff, smoothedFilterResonance, smoothedShaperDrive, smoothedShaperShape, smoothedShaperBias, oversamplingFactor, sampleRate);
+
 
       for (int c = 0; c < nChans; c++)
       {
-
         const double x = inputs[c][s];
         double input = x;
-        FilterParameters fParams{};
-        fParams.setFilterParameters(smoothedFilterCutoff, smoothedFilterResonance, smoothedShaperDrive, smoothedShaperShape, smoothedShaperBias, oversamplingFactor, sampleRate);
         std::function<void(double&)> processorLambda = [filterSelector, this, &fParams](double& input) -> void { return filterSwitcher.Process(input, filterSelector, fParams); };
         SmoothBypass::processSmoothBypass(processorLambda, input, smoothedFilterBypass);
         // filterSwitcher.Process(input, filterSelector, fParams); // Unified interface for switching filters
@@ -121,6 +116,15 @@ void ColorFilterPlugin::ProcessBlock(sample** inputs, sample** outputs, int nFra
       }
     }
   });
+  if (mFactorChanged)
+  {
+    if (mOverSampler.RateToFactor(mOverSampler.GetRate()) != ovrsmpFactor)
+    {
+      mOverSampler.SetOverSampling((iplug::EFactor)ovrsmpFactor);
+      mOverSampler.Reset(GetBlockSize());
+    }
+    mFactorChanged = false;
+  }
 }
 
 void ColorFilterPlugin::OnReset() { mOverSampler.Reset(GetBlockSize()); }

@@ -1,4 +1,4 @@
-<REAPER_PROJECT 0.1 "7.23/win64" 1734795483
+<REAPER_PROJECT 0.1 "7.23/win64" 1734816452
   RIPPLE 0
   GROUPOVERRIDE 0 0 0
   AUTOXFADE 129
@@ -120,7 +120,7 @@
       DOCKED 0
       BYPASS 0 0 0
       <JS synthesis/tonegenerator ""
-        -12 -6 55 0 0 0 2 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        -20 -6 55 0 0 0 2 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
       >
       FLOATPOS 0 0 0 0
       FXID {E9DBF72E-6FD7-4D1C-B53A-06F7F240704B}
@@ -129,7 +129,7 @@
       <CLAP "CLAP: ColorFilterPlugin (519q)" com.519q.ColorFilterPlugin ""
         CFG 0 900 900 ""
         <STATE
-          KkmSJEScV0Di//9/pao0QAAAAAAAAAAAAAAAAAAA8D8AAAAAAABZQAAAAAAAAFlAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABBAAAAAAAAA8D8=
+          AAAAAAAAaUALAADAqipOQDJJkqTkuVVAAAAAAAAA8D8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACBAAAAAAAAACEA=
         >
       >
       FLOATPOS 0 0 0 0
@@ -139,7 +139,7 @@
       <VST "VST: ReaLimit (Cockos)" realimit.dll 0 "" 1919708532<565354726C6D747265616C696D697400> ""
         dG1scu5e7f4CAAAAAQAAAAAAAAACAAAAAAAAAAIAAAABAAAAAAAAAAIAAAAAAAAAMAAAAAEAAAAAABAA
         AwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAD+fduMQw8Y/
-        AAAQAAAA
+        AFByb2dyYW0gMQAQAAAA
       >
       FLOATPOS 0 0 0 0
       FXID {C2EBBDC5-C8C7-4BE1-AF85-CAD6681F9201}

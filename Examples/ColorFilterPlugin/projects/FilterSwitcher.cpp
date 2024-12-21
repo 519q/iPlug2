@@ -30,3 +30,4 @@ void FilterSwitcher::Process(double& input, int filterSelector, FilterParameters
     m_currentFilter = m_targetFilter;
   }
 }
+

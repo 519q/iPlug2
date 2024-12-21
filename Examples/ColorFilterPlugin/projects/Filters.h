@@ -212,11 +212,10 @@ public:
   }
 
 private:
-  double resoScaling{1.55};
+  double resoScaling{1.5};
   Sigmoidal sigmoidalShaper{};
   double m_state[4]{};
   double m_resonance{0.0};
-  double m_feedback{0.0};
 
 public:
   void Process(double& input, FilterParameters& params) override;
