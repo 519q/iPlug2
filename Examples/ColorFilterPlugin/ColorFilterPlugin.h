@@ -4,6 +4,7 @@
 #include "Smoothers.h"
 #include "projects/FilterSwitcher.h"
 #include "projects/Filters.h"
+//#include "projects/HighPassFilters.h"
 #include "projects/Shapers.h"
 #include "projects/SmoothTools.h"
 const int kNumPresets = 1;
@@ -20,6 +21,7 @@ enum EParams
   kShaperBias,
   kShaperBypass,
   kFilterSelector,
+  kHighpass,
   kOverSampling,
   kNumParams
 };
@@ -38,10 +40,11 @@ private:
 public:
   ColorFilterPlugin(const InstanceInfo& info);
   // FilterParameters fParams{};
-  FilterSwitcher filterSwitcher;
+  FilterSwitcher filterSwitcher{};
+  FilterSwitcher filterSwitcherL{};
+  FilterSwitcher filterSwitcherR{};
   iplug::LogParamSmooth<double> mGainSmooth{10};
   int ovrsmpFactor{};
-
   iplug::LogParamSmooth<double> mShaperDriveSmooth{10};
   iplug::LogParamSmooth<double> mShaperShapeSmooth{10};
   iplug::LogParamSmooth<double> mShaperBiasSmooth{10};

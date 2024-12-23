@@ -1,6 +1,23 @@
 #pragma once
 #include "FilterParameters.h"
 #include "projects/SmoothTools.h"
+#include "IPlugConstants.h"
+
+class DCStop
+{
+private:
+  double m_alpha{};
+  double m_state{};
+
+public:
+  void process(double& input, FilterParameters& params)
+  {
+    const double cutoffFreq = 2.5 * std::pow(8000.0, 0.05 /*params.m_cutoff*/);
+    m_alpha = std::exp(-2.0 * iplug::PI * cutoffFreq / params.m_sampleRate);
+    m_state = (1 - m_alpha) * input + m_alpha * m_state; 
+    input -= m_state;
+  }
+};
 
 enum class ShaperParams
 {
@@ -68,6 +85,7 @@ class Sigmoidal : public Shapers
 {
 private:
   AsymShape asym{};
+  DCStop dcstop{};
 
 public:
   Sigmoidal()
@@ -84,6 +102,7 @@ public:
     const double z = 0.7 - ((0.7 - 0.24) * m_shape);
     double shaped = (input / (t + std::abs(input))) * z;
     asym.Process(shaped, params);
+    dcstop.process(shaped, params);
     input = interpolateLin(input, shaped, m_drive);
   }
 };

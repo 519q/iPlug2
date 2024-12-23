@@ -16,6 +16,7 @@ ColorFilterPlugin::ColorFilterPlugin(const InstanceInfo& info)
   GetParam(kShaperBypass)->InitBool("ShaperBypass", false, "", IParam::kFlagStepped, "", "Off", "On");
   GetParam(kFilterBypass)->InitBool("FilterBypass", false, "", IParam::kFlagStepped, "", "Off", "On");
   GetParam(kFilterSelector)->InitInt("FilterSelector", 0, 0, 8, "FilterSelector", IParam::kFlagStepped, "");
+  // GetParam(kHighpass)->InitBool("Highpass", 0, "Highpass", IParam::kFlagStepped, "", "", "");
   GetParam(kOverSampling)->InitInt("FilterOversampler", 0, 0, 4, "OverSampler", IParam::kFlagStepped, "");
   // https: // coolors.co/palette/000814-001d3d-003566-ffc300-ffd60a
 
@@ -47,9 +48,10 @@ ColorFilterPlugin::ColorFilterPlugin(const InstanceInfo& info)
     pGraphics->AttachControl(new IVKnobControl(ShaperPanel.GetGridCell(1, 2, rows, columns).GetFromTop(75).GetMidHPadded(padding), kShaperShape));
     pGraphics->AttachControl(new IVKnobControl(ShaperPanel.GetGridCell(1, 3, rows, columns).GetFromTop(75).GetMidHPadded(padding), kShaperBias));
 
-    pGraphics->AttachControl(new IVRadioButtonControl(ButtonsPanel.GetGridCell(1, 1, rows, columns).GetFromTop(75).GetMidHPadded(padding), kFilterSelector,
+    pGraphics->AttachControl(new IVRadioButtonControl(ButtonsPanel.GetGridCell(1, 1, rows, columns).GetFromTop(100).GetMidHPadded(padding), kFilterSelector,
                                                       {"DF1_1P", "DF1_1P_sVintage", "DF1_2P", "DF1_3P", "DF1_4P", "DF1_6P", "DF2_2P", "DF2_4P", "SVF1_4P"}, "FilterSelector", DEFAULT_STYLE,
                                                       EVShape::Ellipse, EDirection::Vertical, 5.f));
+    // pGraphics->AttachControl(new IVSwitchControl(ButtonsPanel.GetGridCell(1, 4, rows, columns).GetFromTop(75).GetMidHPadded(padding), kHighpass, "Highpass"));
     pGraphics->AttachControl(new IVRadioButtonControl(ButtonsPanel.GetGridCell(1, 3, rows, columns).GetFromTop(75).GetMidHPadded(padding), kOverSampling, {"None", "2x", "4x", "8x", "16x"},
                                                       "FilterOversampling", DEFAULT_STYLE, EVShape::Ellipse, EDirection::Vertical, 5.f));
     // pGraphics->AttachControl(
@@ -66,7 +68,6 @@ ColorFilterPlugin::ColorFilterPlugin(const InstanceInfo& info)
 #if IPLUG_DSP
 void ColorFilterPlugin::ProcessBlock(sample** inputs, sample** outputs, int nFrames)
 {
-
   const int nChans = NOutChansConnected();
   const double sampleRate = GetSampleRate();
   mOverSampler.ProcessBlock(inputs, outputs, nFrames, nChans, nChans, [&](sample** inputs, sample** outputs, int nFrames) {
@@ -101,18 +102,30 @@ void ColorFilterPlugin::ProcessBlock(sample** inputs, sample** outputs, int nFra
       const double smoothedShaperBias = mShaperBiasSmooth.Process(shaperAsym);
       const double smoothedShaperBypass = mShaperBypassSmooth.Process(shaperBypassMix);
       FilterParameters fParams{};
+
       fParams.setFilterParameters(smoothedFilterCutoff, smoothedFilterResonance, smoothedShaperDrive, smoothedShaperShape, smoothedShaperBias, oversamplingFactor, sampleRate);
 
+      //for (int c = 0; c < nChans; c++)
+      //{
+      //  const double x = inputs[c][s];
+      //  double input = x;
+      //  std::function<void(double&)> processorLambda = [filterSelector, this, &fParams](double& input) -> void { return filterSwitcher.Process(input, filterSelector, fParams); };
+      //  filterSwitcher.Process(input, filterSelector, fParams); // Unified interface for switching filters
+      //  outputs[c][s] = input * smoothedGain;
+      //}
 
       for (int c = 0; c < nChans; c++)
       {
-        const double x = inputs[c][s];
-        double input = x;
+        const double L = inputs[0][s];
+        const double R = inputs[1][s];
+          double inputL = L;
+          double inputR = R;
         std::function<void(double&)> processorLambda = [filterSelector, this, &fParams](double& input) -> void { return filterSwitcher.Process(input, filterSelector, fParams); };
-        SmoothBypass::processSmoothBypass(processorLambda, input, smoothedFilterBypass);
-        // filterSwitcher.Process(input, filterSelector, fParams); // Unified interface for switching filters
-        double stage1Out = input;
-        outputs[c][s] = stage1Out * smoothedGain;
+         filterSwitcherR.Process(inputL, filterSelector, fParams); // Unified interface for switching filters
+         filterSwitcherL.Process(inputR, filterSelector, fParams); // Unified interface for switching filters
+
+         outputs[0][s] = inputL * smoothedGain;
+         outputs[1][s] = inputR * smoothedGain;
       }
     }
   });

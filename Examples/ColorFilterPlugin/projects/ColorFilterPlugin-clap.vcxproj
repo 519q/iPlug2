@@ -302,6 +302,7 @@
     <ClInclude Include="FilterParameters.h" />
     <ClInclude Include="Filters.h" />
     <ClInclude Include="FilterSwitcher.h" />
+    <ClInclude Include="HighPassFilters.h" />
     <ClInclude Include="Shapers.h" />
     <ClInclude Include="SmoothTools.h" />
   </ItemGroup>
@@ -339,6 +340,7 @@
     <ClCompile Include="..\ColorFilterPlugin.cpp" />
     <ClCompile Include="Filters.cpp" />
     <ClCompile Include="FilterSwitcher.cpp" />
+    <ClCompile Include="HighPassFilters.cpp" />
     <ClCompile Include="Shapers.cpp" />
   </ItemGroup>
   <ItemGroup>

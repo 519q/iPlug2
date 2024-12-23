@@ -1,17 +1,18 @@
 #include "FilterSwitcher.h"
+#include "HighPassFilters.h"
 
 FilterSwitcher::FilterSwitcher()
 
 {
-  m_filters[static_cast<size_t>(FilterTypes::DF1_1P)] = std::make_unique<DF1_1P>();
-  m_filters[static_cast<size_t>(FilterTypes::DF1_1P_Vintage)] = std::make_unique<DF1_1P_Vintage>();
-  m_filters[static_cast<size_t>(FilterTypes::DF1_2P)] = std::make_unique<DF1_2P>();
-  m_filters[static_cast<size_t>(FilterTypes::DF1_3P)] = std::make_unique<DF1_3P>();
-  m_filters[static_cast<size_t>(FilterTypes::DF1_4P)] = std::make_unique<DF1_4P>();
-  m_filters[static_cast<size_t>(FilterTypes::DF1_6P)] = std::make_unique<DF1_6P>();
-  m_filters[static_cast<size_t>(FilterTypes::DF2_2P)] = std::make_unique<DF2_2P>();
-  m_filters[static_cast<size_t>(FilterTypes::DF2_4P)] = std::make_unique<DF2_4P>();
-  m_filters[static_cast<size_t>(FilterTypes::SVF1_4P)] = std::make_unique<SVF1_4P>();
+  m_filters[static_cast<size_t>(FilterTypes::DF1_1P_LP)] = std::make_unique<DF1_1P_HP>();
+  m_filters[static_cast<size_t>(FilterTypes::DF1_1P_LP_Vintage)] = std::make_unique<DF1_2P_HP>();
+  m_filters[static_cast<size_t>(FilterTypes::DF1_2P_LP)] = std::make_unique<DF1_2P_LP>();
+  m_filters[static_cast<size_t>(FilterTypes::DF1_3P_LP)] = std::make_unique<DF1_3P_LP>();
+  m_filters[static_cast<size_t>(FilterTypes::DF1_4P_LP)] = std::make_unique<DF1_4P_LP>();
+  m_filters[static_cast<size_t>(FilterTypes::DF1_6P_LP)] = std::make_unique<DF1_6P_LP>();
+  m_filters[static_cast<size_t>(FilterTypes::DF2_2P_LP)] = std::make_unique<DF2_2P_LP>();
+  m_filters[static_cast<size_t>(FilterTypes::DF2_4P_LP)] = std::make_unique<DF2_4P_LP>();
+  m_filters[static_cast<size_t>(FilterTypes::SVF1_4P_LP)] = std::make_unique<SVF1_4P_LP>();
   // Add more filters
 }
 

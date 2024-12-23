@@ -1,7 +1,6 @@
 #include "Filters.h"
 #include "projects/Shapers.h"
-
-/*
+  /*
 1. Direct Form I: y[n] = b0*x[n] + b1*x[n-1] - a1*y[n-1]
                        b0 = (1-a1)
 IIR
@@ -13,9 +12,9 @@ exponential average moving filter
 - y[n-1] is the previous output sample
 - b0 and b1 are feedforward coefficients
 - a1 is the feedback coefficient.
-*/
+*/ 
 
-void DF1_1P::Process(double& input, FilterParameters& params)
+  void DF1_1P_LP::Process(double& input, FilterParameters& params)
 {
   const double cutoffFreq = 2.5 * std::pow(8000.0, params.m_cutoff);
   m_alpha = std::exp(-2.0 * iplug::PI * cutoffFreq / params.m_sampleRate);
@@ -23,25 +22,25 @@ void DF1_1P::Process(double& input, FilterParameters& params)
   input = m_state;
 }
 
-void DF1_1P_Vintage::MapLUTCutoff(double knobValue)
+void DF1_1P_LP_Vintage::MapLUTCutoff(FilterParameters& params)
 {
   // Ensure normalization to the range [0.0, 1.0]
-  knobValue = std::clamp(knobValue, 0.0, 1.0);
+  params.m_cutoff = std::clamp(params.m_cutoff, 0.0, 1.0);
 
   // Safely map knobValue to LUT index
-  m_cutoffIndex = static_cast<int>(knobValue * (LUT_SIZE - 1) + 0.5); // Add 0.5 for rounding
+  m_cutoffIndex = static_cast<int>(params.m_cutoff * (LUT_SIZE - 1) + 0.5); // Add 0.5 for rounding
 }
 
-void DF1_1P_Vintage::SetSampleRate(double sampleRate)
+void DF1_1P_LP_Vintage::SetSampleRate(FilterParameters& params)
 {
-  if (m_sampleRate != sampleRate)
+  if (m_sampleRate != params.m_sampleRate)
   {
-    m_sampleRate = sampleRate;
+    m_sampleRate = params.m_sampleRate;
     InitLUT();
   }
 }
 
-void DF1_1P_Vintage::InitLUT()
+void DF1_1P_LP_Vintage::InitLUT()
 {
   double nyquist = m_sampleRate / 2.0;
   for (int i = 0; i < LUT_SIZE; i++)
@@ -53,39 +52,37 @@ void DF1_1P_Vintage::InitLUT()
   }
 }
 
-void DF1_1P_Vintage::Process(double& input, FilterParameters& params)
+void DF1_1P_LP_Vintage::Process(double& input, FilterParameters& params)
 {
-  SetSampleRate(params.m_sampleRate);
-  if (m_cutoff < 0)
+  SetSampleRate(params);
+  if (params.m_cutoff < 0)
   {
-    m_cutoff = 0;
+    params.m_cutoff = 0;
   }
-  else if (m_cutoff > 1)
+  else if (params.m_cutoff > 1)
   {
-    m_cutoff = 1;
+    params.m_cutoff = 1;
   }
-  m_cutoff = params.m_cutoff;
-  MapLUTCutoff(m_cutoff);
-  int m_cutoffIndex = static_cast<int>(m_cutoff * (LUT_SIZE - 1) + 0.5);
+  MapLUTCutoff(params);
+  int m_cutoffIndex = static_cast<int>(params.m_cutoff * (LUT_SIZE - 1) + 0.5);
   double m_alpha = static_cast<double>(m_LUT[m_cutoffIndex]) / m_scale;
   double fixedPointInput = (double)input * m_scale;
   m_state = (1 - m_alpha) * fixedPointInput + m_alpha * m_state;
   input = (double)m_state / m_scale;
 }
 
-void DF1_2P::Process(double& input, FilterParameters& params)
+void DF1_2P_LP::Process(double& input, FilterParameters& params)
 {
-  m_cutoff = params.m_cutoff;
-  m_resonance = params.m_resonance;
-  m_sampleRate = params.m_sampleRate;
+  double resoScaling{2.};
   const double cutoffOffset{0.25};
-  double m_cutoff_scaled = cutoffOffset + (((1.0 - cutoffOffset) - 0.07) * m_cutoff);
-  const double cutoffFreq = 2.2 * std::pow(8000.0, m_cutoff_scaled);
-  m_alpha = std::exp(-2.0 * iplug::PI * cutoffFreq / m_sampleRate);
+  double m_cutoff_scaled = cutoffOffset + (((1.0 - cutoffOffset) - 0.07) * params.m_cutoff);
+  const double cutoffFreq = 2.5 * std::pow(8000.0, m_cutoff_scaled);
+  m_alpha = std::exp(-2.0 * iplug::PI * cutoffFreq / params.m_sampleRate);
   double bandpass = (m_state[0] - m_state[1]);
-  double feedback = bandpass * m_resonance * resoScaling * std::max(1., (2. * params.m_drive));
-  input += std::clamp(feedback, -clampValue, clampValue);
+  double feedback = bandpass * params.m_resonance * resoScaling * std::max(1., (2. * params.m_drive));
   // input += feedback;
+  //input += std::clamp(feedback, -clampValue, clampValue);
+  input += feedback;
   for (double& pole : m_state)
   {
     pole = (1 - m_alpha) * input + m_alpha * pole;
@@ -101,17 +98,15 @@ void DF1_2P::Process(double& input, FilterParameters& params)
   input = tanh(input * mapRange((1. - params.m_resonance), 0.5, 1));
 }
 
-void DF1_3P::Process(double& input, FilterParameters& params)
+void DF1_3P_LP::Process(double& input, FilterParameters& params)
 {
-  m_cutoff = params.m_cutoff;
-  m_resonance = params.m_resonance;
-  m_sampleRate = params.m_sampleRate;
+  double resoScaling{1.2};
   const double cutoffOffset{0.25};
-  double m_cutoff_scaled = cutoffOffset + (((1.0 - cutoffOffset) - 0.07) * m_cutoff);
+  double m_cutoff_scaled = cutoffOffset + (((1.0 - cutoffOffset) - 0.07) * params.m_cutoff);
   const double cutoffFreq = 2.5 * std::pow(8000.0, m_cutoff_scaled);
-  m_alpha = std::exp(-2.0 * iplug::PI * cutoffFreq / m_sampleRate);
+  m_alpha = std::exp(-2.0 * iplug::PI * cutoffFreq / params.m_sampleRate);
   double bandpass = (m_state[0] - m_state[2]);
-  double feedback = bandpass * m_resonance * resoScaling * std::max(1., (2. * params.m_drive));
+  double feedback = bandpass * params.m_resonance * resoScaling * std::max(1., (2. * params.m_drive));
   input += std::clamp(feedback, -clampValue, clampValue);
   for (double& pole : m_state)
   {
@@ -127,17 +122,15 @@ void DF1_3P::Process(double& input, FilterParameters& params)
   input = tanh(input * mapRange((1. - params.m_resonance), 0.5, 1));
 }
 
-void DF1_4P::Process(double& input, FilterParameters& params)
+void DF1_4P_LP::Process(double& input, FilterParameters& params)
 {
-  m_cutoff = params.m_cutoff;
-  m_resonance = params.m_resonance;
-  m_sampleRate = params.m_sampleRate;
+  double resoScaling{1.44};
   const double cutoffOffset{0.25};
-  double m_cutoff_scaled = cutoffOffset + (((1.0 - cutoffOffset) - 0.07) * m_cutoff);
+  double m_cutoff_scaled = cutoffOffset + (((1.0 - cutoffOffset) - 0.07) * params.m_cutoff);
   const double cutoffFreq = 2.5 * std::pow(8000.0, m_cutoff_scaled);
-  m_alpha = std::exp(-2.0 * iplug::PI * cutoffFreq / m_sampleRate);
+  m_alpha = std::exp(-2.0 * iplug::PI * cutoffFreq / params.m_sampleRate);
   double bandpass = (m_state[1] - m_state[3]);
-  double resonance = bandpass * m_resonance * resoScaling * std::max(1., (2. * params.m_drive));
+  double resonance = bandpass * params.m_resonance * resoScaling * std::max(1., (2. * params.m_drive));
   input += std::clamp(resonance, -clampValue, clampValue);
   for (double& pole : m_state)
   {
@@ -152,17 +145,15 @@ void DF1_4P::Process(double& input, FilterParameters& params)
   input = tanh(input * mapRange((1. - params.m_resonance), 0.5, 1));
 }
 
-void DF1_6P::Process(double& input, FilterParameters& params)
+void DF1_6P_LP::Process(double& input, FilterParameters& params)
 {
-  m_cutoff = params.m_cutoff;
-  m_resonance = params.m_resonance;
-  m_sampleRate = params.m_sampleRate;
+  double resoScaling{0.85};
   const double cutoffOffset{0.25};
-  double m_cutoff_scaled = cutoffOffset + (((1.0 - cutoffOffset) - 0.07) * m_cutoff);
+  double m_cutoff_scaled = cutoffOffset + (((1.0 - cutoffOffset) - 0.07) * params.m_cutoff);
   const double cutoffFreq = 2.5 * std::pow(8000.0, m_cutoff_scaled);
-  m_alpha = std::exp(-2.0 * iplug::PI * cutoffFreq / m_sampleRate);
+  m_alpha = std::exp(-2.0 * iplug::PI * cutoffFreq / params.m_sampleRate);
   double bandpass = (m_state[1] - m_state[5]);
-  double resonance = bandpass * m_resonance * resoScaling * std::max(1., (2. * params.m_drive));
+  double resonance = bandpass * params.m_resonance * resoScaling * std::max(1., (2. * params.m_drive));
   input += std::clamp(resonance, -clampValue, clampValue);
   for (double& pole : m_state)
   {
@@ -177,10 +168,11 @@ void DF1_6P::Process(double& input, FilterParameters& params)
   input = tanh(input * mapRange((1. - params.m_resonance), 0.5, 1));
 }
 
-void DF2_2P::Process(double& input, FilterParameters& params)
+void DF2_2P_LP::Process(double& input, FilterParameters& params)
 {
+  double resoScaling{12};
   const double cutoffOffset{0.25};
-  double m_cutoff_scaled = cutoffOffset + (((1.0 - cutoffOffset) /*- 0.07*/) * params.m_cutoff);
+  double m_cutoff_scaled = cutoffOffset + (((1.0 - cutoffOffset) - 0.07) * params.m_cutoff);
   // Get cutoff freq in hz from parameter of double range 0...1
   const double cutoffFreq = 2.5 * std::pow(8000.0, m_cutoff_scaled);
   // Normalize frequency
@@ -194,13 +186,12 @@ void DF2_2P::Process(double& input, FilterParameters& params)
   const double a0 = 1.0 + alpha;
 
   // Calculate coefficients
-  b0 = ((1.0 - cosw) / 2.0) / a0;
-  b1 = (1.0 - cosw) / a0;
-  b2 = ((1.0 - cosw) / 2.0) / a0;
-  a1 = (-2.0 * cosw) / a0;
-  a2 = (1.0 - alpha) / a0;
+  double b0 = ((1.0 - cosw) / 2.0) / a0;
+  double b1 = (1.0 - cosw) / a0;
+  double b2 = ((1.0 - cosw) / 2.0) / a0;
+  double a1 = (-2.0 * cosw) / a0;
+  double a2 = (1.0 - alpha) / a0;
   // Prevent denormals
-  const double antiDenormal = 1e-20;
 
   // Direct Form II processing
   if (params.m_drive > 0)
@@ -221,10 +212,11 @@ void DF2_2P::Process(double& input, FilterParameters& params)
   m_state[0] = w;
 }
 
-void DF2_4P::Process(double& input, FilterParameters& params)
+void DF2_4P_LP::Process(double& input, FilterParameters& params)
 {
+  double resoScaling{6};
   const double cutoffOffset{0.25};
-  double m_cutoff_scaled = cutoffOffset + (((1.0 - cutoffOffset) /*- 0.07*/) * params.m_cutoff);
+  double m_cutoff_scaled = cutoffOffset + (((1.0 - cutoffOffset) - 0.07) * params.m_cutoff);
   // Get cutoff freq in hz from parameter of double range 0...1
   const double cutoffFreq = 2.5 * std::pow(8000.0, m_cutoff_scaled);
   // Normalize frequency
@@ -238,14 +230,13 @@ void DF2_4P::Process(double& input, FilterParameters& params)
   const double a0 = 1.0 + alpha;
 
   // Calculate coefficients for 2-pole section
-  b0 = ((1.0 - cosw) / 2.0) / a0;
-  b1 = (1.0 - cosw) / a0;
-  b2 = ((1.0 - cosw) / 2.0) / a0;
-  a1 = (-2.0 * cosw) / a0;
-  a2 = (1.0 - alpha) / a0;
+  double b0 = ((1.0 - cosw) / 2.0) / a0;
+  double b1 = (1.0 - cosw) / a0;
+  double b2 = ((1.0 - cosw) / 2.0) / a0;
+  double a1 = (-2.0 * cosw) / a0;
+  double a2 = (1.0 - alpha) / a0;
 
   // Prevent denormals
-  const double antiDenormal = 1e-20;
   if (params.m_drive > 0)
   {
     sigmoidalShaper.Process(input, params);
@@ -278,42 +269,38 @@ void DF2_4P::Process(double& input, FilterParameters& params)
   m_state[2] = w2;
 }
 
-void SVF1_4P::Process(double& input, FilterParameters& params)
+void SVF1_4P_LP::Process(double& input, FilterParameters& params)
 {
-  m_cutoff = params.m_cutoff;
-  m_resonance = params.m_resonance;
-  m_sampleRate = params.m_sampleRate;
-  double originalInput = input;
+  double resoScaling{1.6};
   const double cutoffOffset{0.25};
   // Convert normalized cutoff (0-1) to Hz
-  double m_cutoff_scaled = cutoffOffset + (((1.0 - cutoffOffset) /*- 0.07*/) * m_cutoff);
+  double m_cutoff_scaled = cutoffOffset + ((1.0 - cutoffOffset) * params.m_cutoff) * (1 + 0.005 * params.m_oversample);
   // Get cutoff freq in hz from parameter of double range 0...1
   const double cutoffFreq = 2.5 * std::pow(8000.0, m_cutoff_scaled);
-  double frequencyHz = m_cutoff * 20000.0; // assuming max freq is 20kHz
-
   // Calculate coefficient using sample rate
-  double w0 = 2.0 * iplug::PI * cutoffFreq / m_sampleRate;
+  double w0 = 2.0 * iplug::PI * cutoffFreq / params.m_sampleRate;
   double f = 2.0 * sin(w0 / 2.0); // bilinear transform coefficient
   f = std::clamp(f, 0.0, 1.0);    // for stability
   // Resonance
   double bandpass = m_state[1] - m_state[3];
-  double resonance = bandpass * m_resonance * resoScaling * std::max(1., (2. * params.m_drive));
-  double resonated = input + std::clamp(resonance, -clampValue, clampValue);
-  originalInput = resonated;
-
+  double scaledDrive = params.m_drive;
+  //double resoCompensation = 1.0 / sqrt(params.m_oversample + 1);
+  double resoCompensation = 1.0 / (1.0 + 0.015 * (params.m_oversample));
+  double resonance = bandpass * params.m_resonance * resoScaling * resoCompensation;
+  input += std::clamp(resonance, -clampValue, clampValue);
   /*
     y[n] = y[n - 1] + f * (x[n] - y[n - 1])
    */
   for (double& pole : m_state)
   {
-    pole = pole + f * (originalInput - pole);
     if (params.m_drive > 0)
     {
-      params.m_drive /= 2;
+      double driveCompensation = 1.0 / (1.0 + 2.8 * (params.m_oversample));
+      params.m_drive *= driveCompensation;
       sigmoidalShaper.Process(pole, params);
     }
-    originalInput = pole;
+    pole = pole + f * (input - pole);
+    input = pole;
   }
-
-  input = tanh(originalInput * mapRange((1. - params.m_resonance), 0.5, 1));
+  input = tanh(input);
 };

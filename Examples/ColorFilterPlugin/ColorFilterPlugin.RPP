@@ -1,4 +1,4 @@
-<REAPER_PROJECT 0.1 "7.23/win64" 1734816452
+<REAPER_PROJECT 0.1 "7.23/win64" 1734957790
   RIPPLE 0
   GROUPOVERRIDE 0 0 0
   AUTOXFADE 129
@@ -72,6 +72,33 @@
   MASTER_VOLUME 1 0 -1 -1 1
   MASTER_FX 1
   MASTER_SEL 0
+  <MASTERFXLIST
+    WNDRECT 115 305 1073 569
+    SHOW 3
+    LASTSEL 2
+    DOCKED 0
+    BYPASS 0 0 0
+    <JS analysis/gfxscope ""
+      100 0 0 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    >
+    FLOATPOS 0 0 0 0
+    FXID {AE0577E5-9C8E-4D01-8BCB-32714E394183}
+    WAK 0 0
+    BYPASS 0 0 0
+    <JS analysis/gfxspectrograph ""
+      6 2 -180 0 0 1 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    >
+    FLOATPOS 0 0 0 0
+    FXID {D9330C2B-3357-4E5D-89D7-18475E523AE3}
+    WAK 0 0
+    BYPASS 0 0 0
+    <JS analysis/gfxanalyzer ""
+      10 -175 0 2 0 0 1000 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    >
+    FLOATPOS 0 0 0 0
+    FXID {719BA233-6078-4937-99A9-7D2D293BFD91}
+    WAK 0 0
+  >
   <MASTERPLAYSPEEDENV
     EGUID {B0601963-8A13-4605-823F-67AE0C104B17}
     ACT 0 -1
@@ -114,7 +141,7 @@
     MIDIOUT -1
     MAINSEND 1 0
     <FXCHAIN
-      WNDRECT 534 246 1239 1068
+      WNDRECT 1231 192 1239 1068
       SHOW 2
       LASTSEL 1
       DOCKED 0
@@ -129,7 +156,7 @@
       <CLAP "CLAP: ColorFilterPlugin (519q)" com.519q.ColorFilterPlugin ""
         CFG 0 900 900 ""
         <STATE
-          AAAAAAAAaUALAADAqipOQDJJkqTkuVVAAAAAAAAA8D8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACBAAAAAAAAACEA=
+          zDAMQ6cyWUA4////o/8HQAAAAAAAAFlAAAAAAAAA8D8AAAAAAAAAAEkYhmE9bjVAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPA/AAAAAAAA8D8AAAAAAAAAAA==
         >
       >
       FLOATPOS 0 0 0 0

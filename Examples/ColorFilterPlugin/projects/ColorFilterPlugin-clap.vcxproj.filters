@@ -53,6 +53,7 @@
     <ClCompile Include="Filters.cpp" />
     <ClCompile Include="Shapers.cpp" />
     <ClCompile Include="FilterSwitcher.cpp" />
+    <ClCompile Include="HighPassFilters.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="../config.h" />
@@ -194,6 +195,7 @@
     <ClInclude Include="Filters.h" />
     <ClInclude Include="Shapers.h" />
     <ClInclude Include="FilterSwitcher.h" />
+    <ClInclude Include="HighPassFilters.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="IPlug">
