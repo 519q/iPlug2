@@ -299,6 +299,7 @@
     <ClInclude Include="..\..\..\IPlug\IPlug_include_in_plug_src.h" />
     <ClInclude Include="..\ColorFilterPlugin.h" />
     <ClInclude Include="..\resources\resource.h" />
+    <ClInclude Include="BandPassFilters.h" />
     <ClInclude Include="FilterParameters.h" />
     <ClInclude Include="Filters.h" />
     <ClInclude Include="FilterSwitcher.h" />
@@ -338,6 +339,7 @@
     <ClCompile Include="..\..\..\IPlug\IPlugProcessor.cpp" />
     <ClCompile Include="..\..\..\IPlug\IPlugTimer.cpp" />
     <ClCompile Include="..\ColorFilterPlugin.cpp" />
+    <ClCompile Include="BandPassFilters.cpp" />
     <ClCompile Include="Filters.cpp" />
     <ClCompile Include="FilterSwitcher.cpp" />
     <ClCompile Include="HighPassFilters.cpp" />

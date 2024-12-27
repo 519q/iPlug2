@@ -15,13 +15,14 @@ enum EParams
   kGain,
   kFilterCutoff,
   kFilterResonance,
+  kFilterBandwidth,
   kFilterBypass,
   kShaperDrive,
   kShaperShape,
   kShaperBias,
   kShaperBypass,
   kFilterSelector,
-  kHighpass,
+  kFilterType,
   kOverSampling,
   kNumParams
 };
@@ -38,22 +39,30 @@ private:
   OverSampler<sample> mOverSampler{kNone, true, 2, 2};
 
 public:
+  int ovrsmpFactor{};
   ColorFilterPlugin(const InstanceInfo& info);
   // FilterParameters fParams{};
-  FilterSwitcher filterSwitcher{};
-  FilterSwitcher filterSwitcherL{};
-  FilterSwitcher filterSwitcherR{};
+  //FilterSwitcher filterSwitcher{};
+  FilterSwitcher filterSwitcherLP_L{FilterPresets::getLPFilters()};
+  FilterSwitcher filterSwitcherLP_R{FilterPresets::getLPFilters()};
+
+  FilterSwitcher filterSwitcherBP_L{FilterPresets::getBPFilters()};
+  FilterSwitcher filterSwitcherBP_R{FilterPresets::getBPFilters()};
+
+  FilterSwitcher filterSwitcherHP_L{FilterPresets::getHPFilters()};
+  FilterSwitcher filterSwitcherHP_R{FilterPresets::getHPFilters()};
+
   iplug::LogParamSmooth<double> mGainSmooth{10};
-  int ovrsmpFactor{};
   iplug::LogParamSmooth<double> mShaperDriveSmooth{10};
   iplug::LogParamSmooth<double> mShaperShapeSmooth{10};
   iplug::LogParamSmooth<double> mShaperBiasSmooth{10};
   iplug::LogParamSmooth<double> mShaperBypassSmooth{30};
 
-  iplug::LogParamSmooth<double> mFilterSelectorSmooth{30};
+  //iplug::LogParamSmooth<double> mFilterSelectorSmooth{30};
 
   iplug::LogParamSmooth<double> mFilterCutoffSmooth{10};
   iplug::LogParamSmooth<double> mFilterResonanceSmooth{10};
+  iplug::LogParamSmooth<double> mFilterBandwidthSmooth{10};
   iplug::LogParamSmooth<double> mFilterBypassSmooth{30};
 
 #if IPLUG_DSP // http://bit.ly/2S64BDd

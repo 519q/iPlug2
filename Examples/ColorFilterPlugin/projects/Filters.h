@@ -15,17 +15,15 @@ constexpr int VINTAGE_BIT_RATE{15};
 
 enum class FilterTypes
 {
-  DF1_1P_LP,
-  DF1_1P_LP_Vintage,
-  //DF1_1P_HP,
-  DF1_2P_LP,
-  //DF1_2P_HP,
-  DF1_3P_LP,
-  DF1_4P_LP,
-  DF1_6P_LP,
-  DF2_2P_LP,
-  DF2_4P_LP,
-  SVF1_4P_LP,
+  DF1_1P,
+  DF1_2P,
+  DF1_3P,
+  DF1_4P,
+  DF1_6P,
+  DF2_2P,
+  DF2_4P,
+  SVF1_2P,
+  SVF1_4P,
   MAX_FILTER_TYPES
 };
 
@@ -174,6 +172,23 @@ public:
   void Process(double& input, FilterParameters& params) override;
 };
 
+class SVF1_2P_LP : public Filters
+{
+public:
+  SVF1_2P_LP()
+    : Filters{}
+  {
+  }
+
+private:
+  Sigmoidal sigmoidalShaper{};
+  double m_state[2]{};
+  DCStop dcstop{};
+
+public:
+  void Process(double& input, FilterParameters& params) override;
+};
+
 class SVF1_4P_LP : public Filters
 {
 public:
@@ -185,6 +200,8 @@ public:
 private:
   Sigmoidal sigmoidalShaper{};
   double m_state[4]{};
+  DCStop dcstop{};
+
 public:
   void Process(double& input, FilterParameters& params) override;
 };

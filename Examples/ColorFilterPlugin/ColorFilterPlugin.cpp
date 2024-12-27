@@ -9,6 +9,7 @@ ColorFilterPlugin::ColorFilterPlugin(const InstanceInfo& info)
   GetParam(kGain)->InitDouble("PostGain", 0., 0., 200.0, 0.01, "%");
   GetParam(kFilterCutoff)->InitDouble("FilterCutoff", 0., 0., 100.0, 0.01, "%");
   GetParam(kFilterResonance)->InitDouble("FilterResonance", 0., 0., 100.0, 0.01, "%");
+  GetParam(kFilterBandwidth)->InitDouble("FilterBandwidth", 0., 0., 100.0, 0.01, "%");
   GetParam(kFilterBypass)->InitBool("FilterBypass", false, "", IParam::kFlagStepped, "", "Off", "On");
   GetParam(kShaperDrive)->InitDouble("ShaperDrive", 0., 0., 100.0, 0.01, "%");
   GetParam(kShaperShape)->InitDouble("ShaperShape", 0., 0., 100.0, 0.01, "%");
@@ -16,7 +17,7 @@ ColorFilterPlugin::ColorFilterPlugin(const InstanceInfo& info)
   GetParam(kShaperBypass)->InitBool("ShaperBypass", false, "", IParam::kFlagStepped, "", "Off", "On");
   GetParam(kFilterBypass)->InitBool("FilterBypass", false, "", IParam::kFlagStepped, "", "Off", "On");
   GetParam(kFilterSelector)->InitInt("FilterSelector", 0, 0, 8, "FilterSelector", IParam::kFlagStepped, "");
-  // GetParam(kHighpass)->InitBool("Highpass", 0, "Highpass", IParam::kFlagStepped, "", "", "");
+  GetParam(kFilterType)->InitInt("FilterType", 0, 0, 2, "", IParam::kFlagStepped, "");
   GetParam(kOverSampling)->InitInt("FilterOversampler", 0, 0, 4, "OverSampler", IParam::kFlagStepped, "");
   // https: // coolors.co/palette/000814-001d3d-003566-ffc300-ffd60a
 
@@ -41,6 +42,7 @@ ColorFilterPlugin::ColorFilterPlugin(const InstanceInfo& info)
     // filter
     pGraphics->AttachControl(new IVKnobControl(FilterPanel.GetGridCell(1, 2, rows, columns).GetFromTop(150).GetFromLeft(40).GetMidHPadded(padding), kFilterCutoff));
     pGraphics->AttachControl(new IVKnobControl(FilterPanel.GetGridCell(1, 3, rows, columns).GetFromTop(75).GetMidHPadded(padding), kFilterResonance));
+    pGraphics->AttachControl(new IVKnobControl(FilterPanel.GetGridCell(1, 4, rows, columns).GetFromTop(75).GetMidHPadded(padding), kFilterBandwidth));
     pGraphics->AttachControl(
       new IVToggleControl(FilterPanel.GetGridCell(1, 5, rows, columns).GetFromTop(75).GetMidHPadded(padding), kFilterBypass, "FilterBypass", DEFAULT_STYLE.WithColor(kFG, COLOR_WHITE), "Off", "On"));
     // shaper
@@ -49,9 +51,10 @@ ColorFilterPlugin::ColorFilterPlugin(const InstanceInfo& info)
     pGraphics->AttachControl(new IVKnobControl(ShaperPanel.GetGridCell(1, 3, rows, columns).GetFromTop(75).GetMidHPadded(padding), kShaperBias));
 
     pGraphics->AttachControl(new IVRadioButtonControl(ButtonsPanel.GetGridCell(1, 1, rows, columns).GetFromTop(100).GetMidHPadded(padding), kFilterSelector,
-                                                      {"DF1_1P", "DF1_1P_sVintage", "DF1_2P", "DF1_3P", "DF1_4P", "DF1_6P", "DF2_2P", "DF2_4P", "SVF1_4P"}, "FilterSelector", DEFAULT_STYLE,
-                                                      EVShape::Ellipse, EDirection::Vertical, 5.f));
-    // pGraphics->AttachControl(new IVSwitchControl(ButtonsPanel.GetGridCell(1, 4, rows, columns).GetFromTop(75).GetMidHPadded(padding), kHighpass, "Highpass"));
+                                                      {"DF1_1P", "DF1_2P", "DF1_3P", "DF1_4P", "DF1_6P", "DF2_2P", "DF2_4P", "SVF1_2P", "SVF1_4P"}, "FilterSelector", DEFAULT_STYLE, EVShape::Ellipse,
+                                                      EDirection::Vertical, 5.f));
+    pGraphics->AttachControl(new IVRadioButtonControl(
+      ButtonsPanel.GetGridCell(1, 5, rows, columns).GetFromTop(75).GetMidHPadded(padding), kFilterType, {"LP", "BP", "HP"}, "FilterType", DEFAULT_STYLE, EVShape::Ellipse, EDirection::Vertical));
     pGraphics->AttachControl(new IVRadioButtonControl(ButtonsPanel.GetGridCell(1, 3, rows, columns).GetFromTop(75).GetMidHPadded(padding), kOverSampling, {"None", "2x", "4x", "8x", "16x"},
                                                       "FilterOversampling", DEFAULT_STYLE, EVShape::Ellipse, EDirection::Vertical, 5.f));
     // pGraphics->AttachControl(
@@ -80,8 +83,10 @@ void ColorFilterPlugin::ProcessBlock(sample** inputs, sample** outputs, int nFra
       // Filter
       const double filterCutoff = GetParam(kFilterCutoff)->Value() / 100.0;
       const double filterReso = GetParam(kFilterResonance)->Value() / 100.0;
+      const double filterBadwidth = GetParam(kFilterBandwidth)->Value() / 100.0;
       const double filterBypass = GetParam(kFilterBypass)->Value();
       const int filterSelector = GetParam(kFilterSelector)->Value();
+      const int filterType = GetParam(kFilterType)->Value();
       // shaper
       const double shaperDrive = GetParam(kShaperDrive)->Value() / 100.;
       const double shaperShape = GetParam(kShaperShape)->Value() / 100.;
@@ -95,6 +100,7 @@ void ColorFilterPlugin::ProcessBlock(sample** inputs, sample** outputs, int nFra
       const double smoothedFilterCutoff = mFilterCutoffSmooth.Process(filterCutoff);
       const double smoothedFilterResonance = mFilterResonanceSmooth.Process(filterReso);
       const double smoothedFilterBypass = mFilterBypassSmooth.Process(filterBypass);
+      const double smoothedFilterBandwidth = mFilterBandwidthSmooth.Process(filterBadwidth);
       // const double smoothedFilterSelector = mFilterSelectorSmooth.Process(filterSelector);
       //  shaper
       const double smoothedShaperDrive = mShaperDriveSmooth.Process(shaperDrive);
@@ -102,31 +108,42 @@ void ColorFilterPlugin::ProcessBlock(sample** inputs, sample** outputs, int nFra
       const double smoothedShaperBias = mShaperBiasSmooth.Process(shaperAsym);
       const double smoothedShaperBypass = mShaperBypassSmooth.Process(shaperBypassMix);
       FilterParameters fParams{};
+      fParams.setFilterParameters(smoothedFilterCutoff, smoothedFilterResonance, smoothedFilterBandwidth, smoothedShaperDrive, smoothedShaperShape, smoothedShaperBias, oversamplingFactor, sampleRate);
 
-      fParams.setFilterParameters(smoothedFilterCutoff, smoothedFilterResonance, smoothedShaperDrive, smoothedShaperShape, smoothedShaperBias, oversamplingFactor, sampleRate);
+      /*   for (int c = 0; c < nChans; c++)
+         {*/
+      const double L = inputs[0][s];
+      const double R = inputs[1][s];
+      double inputL = L;
+      double inputR = R;
 
-      //for (int c = 0; c < nChans; c++)
-      //{
-      //  const double x = inputs[c][s];
-      //  double input = x;
-      //  std::function<void(double&)> processorLambda = [filterSelector, this, &fParams](double& input) -> void { return filterSwitcher.Process(input, filterSelector, fParams); };
-      //  filterSwitcher.Process(input, filterSelector, fParams); // Unified interface for switching filters
-      //  outputs[c][s] = input * smoothedGain;
-      //}
-
-      for (int c = 0; c < nChans; c++)
+      if (filterType == 0)
       {
-        const double L = inputs[0][s];
-        const double R = inputs[1][s];
-          double inputL = L;
-          double inputR = R;
-        std::function<void(double&)> processorLambda = [filterSelector, this, &fParams](double& input) -> void { return filterSwitcher.Process(input, filterSelector, fParams); };
-         filterSwitcherR.Process(inputL, filterSelector, fParams); // Unified interface for switching filters
-         filterSwitcherL.Process(inputR, filterSelector, fParams); // Unified interface for switching filters
-
-         outputs[0][s] = inputL * smoothedGain;
-         outputs[1][s] = inputR * smoothedGain;
+        SmoothBypass::processSmoothBypass(
+          std::function<void(double&)>([filterSelector, this, &fParams](double& input) -> void { return filterSwitcherLP_L.Process(input, filterSelector, fParams); }), inputL, smoothedFilterBypass);
+        SmoothBypass::processSmoothBypass(
+          std::function<void(double&)>([filterSelector, this, &fParams](double& input) -> void { return filterSwitcherLP_R.Process(input, filterSelector, fParams); }), inputR, smoothedFilterBypass);
       }
+      
+      if (filterType == 1)
+      {
+        SmoothBypass::processSmoothBypass(
+          std::function<void(double&)>([filterSelector, this, &fParams](double& input) -> void { return filterSwitcherBP_L.Process(input, filterSelector, fParams); }), inputL, smoothedFilterBypass);
+        SmoothBypass::processSmoothBypass(
+          std::function<void(double&)>([filterSelector, this, &fParams](double& input) -> void { return filterSwitcherBP_R.Process(input, filterSelector, fParams); }), inputR, smoothedFilterBypass);
+      }
+
+      if (filterType == 2)
+      {
+        SmoothBypass::processSmoothBypass(
+          std::function<void(double&)>([filterSelector, this, &fParams](double& input) -> void { return filterSwitcherHP_L.Process(input, filterSelector, fParams); }), inputL, smoothedFilterBypass);
+        SmoothBypass::processSmoothBypass(
+          std::function<void(double&)>([filterSelector, this, &fParams](double& input) -> void { return filterSwitcherHP_R.Process(input, filterSelector, fParams); }), inputR, smoothedFilterBypass);
+      }
+
+      outputs[0][s] = inputL * smoothedGain;
+      outputs[1][s] = inputR * smoothedGain;
+      //}
     }
   });
   if (mFactorChanged)

@@ -10,9 +10,9 @@ private:
   double m_state{};
 
 public:
-  void process(double& input, FilterParameters& params)
+  void process(double& input, FilterParameters& params, double cutoff = 0.05)
   {
-    const double cutoffFreq = 2.5 * std::pow(8000.0, 0.05 /*params.m_cutoff*/);
+    const double cutoffFreq = 2.5 * std::pow(8000.0, cutoff /*params.m_cutoff*/);
     m_alpha = std::exp(-2.0 * iplug::PI * cutoffFreq / params.m_sampleRate);
     m_state = (1 - m_alpha) * input + m_alpha * m_state; 
     input -= m_state;
