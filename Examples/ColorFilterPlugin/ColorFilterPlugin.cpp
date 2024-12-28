@@ -17,7 +17,7 @@ ColorFilterPlugin::ColorFilterPlugin(const InstanceInfo& info)
   GetParam(kShaperBypass)->InitBool("ShaperBypass", false, "", IParam::kFlagStepped, "", "Off", "On");
   GetParam(kFilterBypass)->InitBool("FilterBypass", false, "", IParam::kFlagStepped, "", "Off", "On");
   GetParam(kFilterSelector)->InitInt("FilterSelector", 0, 0, 8, "FilterSelector", IParam::kFlagStepped, "");
-  GetParam(kFilterType)->InitInt("FilterType", 0, 0, 2, "", IParam::kFlagStepped, "");
+  GetParam(kFilterType)->InitInt("FilterType", 0, 0, 3, "", IParam::kFlagStepped, "");
   GetParam(kOverSampling)->InitInt("FilterOversampler", 0, 0, 4, "OverSampler", IParam::kFlagStepped, "");
   // https: // coolors.co/palette/000814-001d3d-003566-ffc300-ffd60a
 
@@ -54,7 +54,7 @@ ColorFilterPlugin::ColorFilterPlugin(const InstanceInfo& info)
                                                       {"DF1_1P", "DF1_2P", "DF1_3P", "DF1_4P", "DF1_6P", "DF2_2P", "DF2_4P", "SVF1_2P", "SVF1_4P"}, "FilterSelector", DEFAULT_STYLE, EVShape::Ellipse,
                                                       EDirection::Vertical, 5.f));
     pGraphics->AttachControl(new IVRadioButtonControl(
-      ButtonsPanel.GetGridCell(1, 5, rows, columns).GetFromTop(75).GetMidHPadded(padding), kFilterType, {"LP", "BP", "HP"}, "FilterType", DEFAULT_STYLE, EVShape::Ellipse, EDirection::Vertical));
+      ButtonsPanel.GetGridCell(1, 5, rows, columns).GetFromTop(75).GetMidHPadded(padding), kFilterType, {"LP", "BP", "BS", "HP"}, "FilterType", DEFAULT_STYLE, EVShape::Ellipse, EDirection::Vertical));
     pGraphics->AttachControl(new IVRadioButtonControl(ButtonsPanel.GetGridCell(1, 3, rows, columns).GetFromTop(75).GetMidHPadded(padding), kOverSampling, {"None", "2x", "4x", "8x", "16x"},
                                                       "FilterOversampling", DEFAULT_STYLE, EVShape::Ellipse, EDirection::Vertical, 5.f));
     // pGraphics->AttachControl(
@@ -134,6 +134,14 @@ void ColorFilterPlugin::ProcessBlock(sample** inputs, sample** outputs, int nFra
       }
 
       if (filterType == 2)
+      {
+        SmoothBypass::processSmoothBypass(
+          std::function<void(double&)>([filterSelector, this, &fParams](double& input) -> void { return filterSwitcherBS_L.Process(input, filterSelector, fParams); }), inputL, smoothedFilterBypass);
+        SmoothBypass::processSmoothBypass(
+          std::function<void(double&)>([filterSelector, this, &fParams](double& input) -> void { return filterSwitcherBS_R.Process(input, filterSelector, fParams); }), inputR, smoothedFilterBypass);
+      }
+      
+      if (filterType == 3)
       {
         SmoothBypass::processSmoothBypass(
           std::function<void(double&)>([filterSelector, this, &fParams](double& input) -> void { return filterSwitcherHP_L.Process(input, filterSelector, fParams); }), inputL, smoothedFilterBypass);

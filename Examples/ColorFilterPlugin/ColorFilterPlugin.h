@@ -48,6 +48,9 @@ public:
 
   FilterSwitcher filterSwitcherBP_L{FilterPresets::getBPFilters()};
   FilterSwitcher filterSwitcherBP_R{FilterPresets::getBPFilters()};
+  
+  FilterSwitcher filterSwitcherBS_L{FilterPresets::getBSFilters()};
+  FilterSwitcher filterSwitcherBS_R{FilterPresets::getBSFilters()};
 
   FilterSwitcher filterSwitcherHP_L{FilterPresets::getHPFilters()};
   FilterSwitcher filterSwitcherHP_R{FilterPresets::getHPFilters()};

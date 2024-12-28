@@ -55,6 +55,7 @@
     <ClCompile Include="FilterSwitcher.cpp" />
     <ClCompile Include="HighPassFilters.cpp" />
     <ClCompile Include="BandPassFilters.cpp" />
+    <ClCompile Include="BandStopFilters.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="../config.h" />
@@ -198,6 +199,7 @@
     <ClInclude Include="FilterSwitcher.h" />
     <ClInclude Include="HighPassFilters.h" />
     <ClInclude Include="BandPassFilters.h" />
+    <ClInclude Include="BandStopFilters.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="IPlug">
