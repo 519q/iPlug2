@@ -4,7 +4,7 @@
 #include "Smoothers.h"
 #include "projects/FilterSwitcher.h"
 #include "projects/Filters.h"
-//#include "projects/HighPassFilters.h"
+// #include "projects/HighPassFilters.h"
 #include "projects/Shapers.h"
 #include "projects/SmoothTools.h"
 const int kNumPresets = 1;
@@ -23,6 +23,7 @@ enum EParams
   kShaperBypass,
   kFilterSelector,
   kFilterType,
+  kFilterVintage,
   kOverSampling,
   kNumParams
 };
@@ -37,23 +38,35 @@ class ColorFilterPlugin final : public Plugin
 private:
   bool mFactorChanged = true;
   OverSampler<sample> mOverSampler{kNone, true, 2, 2};
+  int ovrsmpFactor{};
 
 public:
-  int ovrsmpFactor{};
   ColorFilterPlugin(const InstanceInfo& info);
-  // FilterParameters fParams{};
-  //FilterSwitcher filterSwitcher{};
+  // Direct Processing
   FilterSwitcher filterSwitcherLP_L{FilterPresets::getLPFilters()};
   FilterSwitcher filterSwitcherLP_R{FilterPresets::getLPFilters()};
 
   FilterSwitcher filterSwitcherBP_L{FilterPresets::getBPFilters()};
   FilterSwitcher filterSwitcherBP_R{FilterPresets::getBPFilters()};
-  
+
   FilterSwitcher filterSwitcherBS_L{FilterPresets::getBSFilters()};
   FilterSwitcher filterSwitcherBS_R{FilterPresets::getBSFilters()};
 
   FilterSwitcher filterSwitcherHP_L{FilterPresets::getHPFilters()};
   FilterSwitcher filterSwitcherHP_R{FilterPresets::getHPFilters()};
+
+  // Vintage Processing
+  FilterSwitcher filterSwitcherLP_Vintage_L{FilterPresets::getVintage_LPFilters()};
+  FilterSwitcher filterSwitcherLP_Vintage_R{FilterPresets::getVintage_LPFilters()};
+
+  FilterSwitcher filterSwitcherBP_Vintage_L{FilterPresets::getBPFilters()};
+  FilterSwitcher filterSwitcherBP_Vintage_R{FilterPresets::getBPFilters()};
+
+  FilterSwitcher filterSwitcherBS_Vintage_L{FilterPresets::getBSFilters()};
+  FilterSwitcher filterSwitcherBS_Vintage_R{FilterPresets::getBSFilters()};
+
+  FilterSwitcher filterSwitcherHP_Vintage_L{FilterPresets::getHPFilters()};
+  FilterSwitcher filterSwitcherHP_Vintage_R{FilterPresets::getHPFilters()};
 
   iplug::LogParamSmooth<double> mGainSmooth{10};
   iplug::LogParamSmooth<double> mShaperDriveSmooth{10};
@@ -61,7 +74,7 @@ public:
   iplug::LogParamSmooth<double> mShaperBiasSmooth{10};
   iplug::LogParamSmooth<double> mShaperBypassSmooth{30};
 
-  //iplug::LogParamSmooth<double> mFilterSelectorSmooth{30};
+  // iplug::LogParamSmooth<double> mFilterSelectorSmooth{30};
 
   iplug::LogParamSmooth<double> mFilterCutoffSmooth{10};
   iplug::LogParamSmooth<double> mFilterResonanceSmooth{10};

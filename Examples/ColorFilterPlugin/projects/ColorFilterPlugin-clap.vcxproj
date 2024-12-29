@@ -307,6 +307,7 @@
     <ClInclude Include="HighPassFilters.h" />
     <ClInclude Include="Shapers.h" />
     <ClInclude Include="SmoothTools.h" />
+    <ClInclude Include="VintageFilters.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\IGraphics\Controls\IControls.cpp" />
@@ -346,6 +347,7 @@
     <ClCompile Include="FilterSwitcher.cpp" />
     <ClCompile Include="HighPassFilters.cpp" />
     <ClCompile Include="Shapers.cpp" />
+    <ClCompile Include="VintageFilters.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\resources\main.rc" />

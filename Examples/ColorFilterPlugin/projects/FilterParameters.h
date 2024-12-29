@@ -1,5 +1,8 @@
 #pragma once
 #include <cmath>
+constexpr int LUT_BITS{11};
+constexpr int LUT_SIZE{1 << LUT_BITS};
+constexpr int VINTAGE_BIT_RATE{15};
 
 class FilterParameters
 {
@@ -22,9 +25,8 @@ public:
     m_shape = shape;
     m_bias = bias;
     m_oversample = overSampling;
-    m_sampleRate = sampleRate;
-    m_sampleRate = m_sampleRate * std::pow(2, m_oversample);
+    m_sampleRate = sampleRate * std::pow(2, m_oversample);
   }
-  //static void setSampleRate(FilterParameters& params, double sampleRate) { params.m_sampleRate = sampleRate; }
-  //static void setOverSampleRate(FilterParameters& params) { params.m_sampleRate = params.m_sampleRate * std::pow(2, params.m_oversample);}
-}; 
+  // static void setSampleRate(FilterParameters& params, double sampleRate) { params.m_sampleRate = sampleRate; }
+  // static void setOverSampleRate(FilterParameters& params) { params.m_sampleRate = params.m_sampleRate * std::pow(2, params.m_oversample);}
+};

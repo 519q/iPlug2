@@ -8,10 +8,7 @@
 #include <memory>
 // #include "Oversampler.h"
 const double antiDenormal = 1e-20;
-
 constexpr double clampValue{5};
-constexpr int LUT_SIZE{1 << 7};
-constexpr int VINTAGE_BIT_RATE{15};
 
 enum class FilterTypes
 {
@@ -45,32 +42,6 @@ public:
     : Filters{}
   {
   }
-  void Process(double& input, FilterParameters& params) override;
-};
-
-class DF1_1P_LP_Vintage : public Filters
-{
-private:
-  int m_LUT[LUT_SIZE]{};              // Lookup table for alpha values
-  int m_scale{1 << VINTAGE_BIT_RATE}; // Scaling factor for fixed-point
-  int m_cutoffIndex{};  
-  int m_state{0};
-  double m_sampleRate{};
-
-public:
-  DF1_1P_LP_Vintage()
-    : Filters{}
-  {
-    InitLUT();
-  }
-
-  void MapLUTCutoff(FilterParameters& params);
-
-  void InitLUT();
-
-  void SetSampleRate(FilterParameters& params);
-
-
   void Process(double& input, FilterParameters& params) override;
 };
 
@@ -183,7 +154,6 @@ public:
 private:
   Sigmoidal sigmoidalShaper{};
   double m_state[2]{};
-  DCStop dcstop{};
 
 public:
   void Process(double& input, FilterParameters& params) override;
@@ -200,7 +170,6 @@ public:
 private:
   Sigmoidal sigmoidalShaper{};
   double m_state[4]{};
-  DCStop dcstop{};
 
 public:
   void Process(double& input, FilterParameters& params) override;

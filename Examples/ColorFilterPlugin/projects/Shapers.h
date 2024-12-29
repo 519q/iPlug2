@@ -2,7 +2,7 @@
 #include "FilterParameters.h"
 #include "projects/SmoothTools.h"
 #include "IPlugConstants.h"
-
+static double m_Vintage_scale {1 << VINTAGE_BIT_RATE};
 class DCStop
 {
 private:
@@ -18,23 +18,19 @@ public:
     input -= m_state;
   }
 };
-
-enum class ShaperParams
-{
-  SHAPE,
-  DRIVE,
-  ASYM,
-  MAX_SHAPER_PARAMS
-};
-
+//enum class ShaperParams
+//{
+//  SHAPE,
+//  DRIVE,
+//  ASYM,
+//  MAX_SHAPER_PARAMS
+//};
 class Shapers
 {
 protected:
-  double m_shape{};
-  double m_drive{};
-  double m_asym{};
 
   virtual ~Shapers() {}
+  
   virtual void Process(double& input, FilterParameters& params) = 0; // Pure virtual function
 };
 
@@ -71,12 +67,11 @@ public:
   {
   }
 
-  void Process(double& input, FilterParameters& params)
+  void Process(double& input, FilterParameters& params) override
   {
-    m_drive = params.m_bias;
     if (input > 0)
     {
-      input *= 1 - (0.5 * m_drive);
+      input *= 1 - (0.5 * params.m_bias);
     }
   }
 };
@@ -95,14 +90,14 @@ public:
 
   void Process(double& input, FilterParameters& params) override
   {
-    m_drive = params.m_drive;
-    m_shape = params.m_shape;
-    m_asym = params.m_bias;
-    const double t = 0.4 - ((0.4 - 0.01) * m_shape);
-    const double z = 0.7 - ((0.7 - 0.24) * m_shape);
+    const double t = 0.4 - ((0.4 - 0.01) * params.m_shape);
+    const double z = 0.7 - ((0.7 - 0.24) * params.m_shape);
     double shaped = (input / (t + std::abs(input))) * z;
-    asym.Process(shaped, params);
+    if (params.m_bias > 0)
+    {
+      asym.Process(shaped, params);
+    }
     dcstop.process(shaped, params);
-    input = interpolateLin(input, shaped, m_drive);
+    input = interpolateLin(input, shaped, params.m_drive);
   }
 };
