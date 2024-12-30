@@ -59,14 +59,14 @@ public:
   FilterSwitcher filterSwitcherLP_Vintage_L{FilterPresets::getVintage_LPFilters()};
   FilterSwitcher filterSwitcherLP_Vintage_R{FilterPresets::getVintage_LPFilters()};
 
-  FilterSwitcher filterSwitcherBP_Vintage_L{FilterPresets::getBPFilters()};
-  FilterSwitcher filterSwitcherBP_Vintage_R{FilterPresets::getBPFilters()};
+  FilterSwitcher filterSwitcherBP_Vintage_L{FilterPresets::getVintage_BPFilters()};
+  FilterSwitcher filterSwitcherBP_Vintage_R{FilterPresets::getVintage_BPFilters()};
 
-  FilterSwitcher filterSwitcherBS_Vintage_L{FilterPresets::getBSFilters()};
-  FilterSwitcher filterSwitcherBS_Vintage_R{FilterPresets::getBSFilters()};
+  FilterSwitcher filterSwitcherBS_Vintage_L{FilterPresets::getVintage_BSFilters()};
+  FilterSwitcher filterSwitcherBS_Vintage_R{FilterPresets::getVintage_BSFilters()};
 
-  FilterSwitcher filterSwitcherHP_Vintage_L{FilterPresets::getHPFilters()};
-  FilterSwitcher filterSwitcherHP_Vintage_R{FilterPresets::getHPFilters()};
+  FilterSwitcher filterSwitcherHP_Vintage_L{FilterPresets::getVintage_HPFilters()};
+  FilterSwitcher filterSwitcherHP_Vintage_R{FilterPresets::getVintage_HPFilters()};
 
   iplug::LogParamSmooth<double> mGainSmooth{10};
   iplug::LogParamSmooth<double> mShaperDriveSmooth{10};

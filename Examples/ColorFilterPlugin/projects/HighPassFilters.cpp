@@ -12,7 +12,6 @@ void DF1_1P_HP::Process(double& input, FilterParameters& params)
 
 void DF1_2P_HP::Process(double& input, FilterParameters& params)
 {
-  double resoScaling{2.};
   const double cutoffOffset{0.1};
   double m_cutoff_scaled = cutoffOffset + ((1.0 - cutoffOffset) * params.m_cutoff);
   const double cutoffFreq = 2.2 * std::pow(8000.0, m_cutoff_scaled);
@@ -20,6 +19,7 @@ void DF1_2P_HP::Process(double& input, FilterParameters& params)
   double resonance{};
   if (params.m_resonance > 0)
   {
+    double resoScaling{2.};
     bandpass = (m_state[1] - m_state[0]);
     resonance = (bandpass * params.m_resonance * resoScaling);
   }
@@ -43,7 +43,6 @@ void DF1_2P_HP::Process(double& input, FilterParameters& params)
 
 void DF1_3P_HP::Process(double& input, FilterParameters& params)
 {
-  double resoScaling{1.2};
   const double cutoffOffset{0.25};
   double m_cutoff_scaled = cutoffOffset + (((1.0 - cutoffOffset) - 0.07) * params.m_cutoff);
   const double cutoffFreq = 2.5 * std::pow(8000.0, m_cutoff_scaled);
@@ -51,6 +50,7 @@ void DF1_3P_HP::Process(double& input, FilterParameters& params)
   double resonance{};
   if (params.m_resonance > 0)
   {
+    double resoScaling{1.2};
     double bandpass = (-m_state[0] + m_state[2]);
     resonance = bandpass * params.m_resonance * resoScaling /** std::max(1., (1.2 * params.m_drive))*/;
     // input += std::clamp(feedback, -clampValue, clampValue);
@@ -73,7 +73,6 @@ void DF1_3P_HP::Process(double& input, FilterParameters& params)
 
 void DF1_4P_HP::Process(double& input, FilterParameters& params)
 {
-  double resoScaling{1.55};
   const double cutoffOffset{0.25};
   double m_cutoff_scaled = cutoffOffset + (((1.0 - cutoffOffset) - 0.07) * params.m_cutoff);
   const double cutoffFreq = 2.5 * std::pow(8000.0, m_cutoff_scaled);
@@ -81,6 +80,7 @@ void DF1_4P_HP::Process(double& input, FilterParameters& params)
   double resonance{};
   if (params.m_resonance > 0)
   {
+    double resoScaling{1.55};
     double bandpass = (-m_state[1] + m_state[3]);
     resonance = bandpass * params.m_resonance * resoScaling;
   }
@@ -102,7 +102,6 @@ void DF1_4P_HP::Process(double& input, FilterParameters& params)
 
 void DF1_6P_HP::Process(double& input, FilterParameters& params)
 {
-  double resoScaling{0.93};
   const double cutoffOffset{0.25};
   double m_cutoff_scaled = cutoffOffset + (((1.0 - cutoffOffset) - 0.07) * params.m_cutoff);
   const double cutoffFreq = 2.5 * std::pow(8000.0, m_cutoff_scaled);
@@ -110,6 +109,7 @@ void DF1_6P_HP::Process(double& input, FilterParameters& params)
   double resonance{};
   if (params.m_resonance > 0)
   {
+    double resoScaling{0.93};
     double bandpass = (-m_state[1] + m_state[5]);
     resonance = bandpass * params.m_resonance * resoScaling;
   }
@@ -237,7 +237,6 @@ void DF2_4P_HP::Process(double& input, FilterParameters& params)
 
 void SVF1_2P_HP::Process(double& input, FilterParameters& params)
 {
-  double resoScaling{2.01};
   const double cutoffOffset{0.25};
   // Convert normalized cutoff (0-1) to Hz
   double m_cutoff_scaled = (cutoffOffset + ((1.0 - cutoffOffset - 0.11) * params.m_cutoff) - 0.07) * (1 + 0.005 * params.m_oversample);
@@ -255,12 +254,13 @@ void SVF1_2P_HP::Process(double& input, FilterParameters& params)
   {
     if (params.m_resonance > 0)
     {
+      double resoScaling{2.01};
       double bandpass = -m_state[0] + m_state[1];
       double scaledDrive = params.m_drive;
       // double resoCompensation = 1.0 / sqrt(params.m_oversample + 1);
       double resoCompensation = 1.0 / (1.0 + 0.05 * (params.m_oversample));
       double resonance = bandpass * params.m_resonance * resoScaling * resoCompensation;
-      //dcstop.process(resonance, params);
+      // dcstop.process(resonance, params);
 
       input += std::clamp(resonance, -clampValue, clampValue);
     }
@@ -269,7 +269,7 @@ void SVF1_2P_HP::Process(double& input, FilterParameters& params)
   }
   if (params.m_drive > 0)
   {
-    //dcstop.process(input, params);
+    // dcstop.process(input, params);
 
     // double driveCompensation = 1.0 / (1.0 + 1. * (params.m_oversample));
     // params.m_drive *= driveCompensation;
@@ -280,10 +280,9 @@ void SVF1_2P_HP::Process(double& input, FilterParameters& params)
 
 void SVF1_4P_HP::Process(double& input, FilterParameters& params)
 {
-  double resoScaling{1.55};
   const double cutoffOffset{0.25};
   // Convert normalized cutoff (0-1) to Hz
-  //double m_cutoff_scaled = cutoffOffset + ((1.0 - cutoffOffset) * params.m_cutoff) * (1 + 0.005 * params.m_oversample);
+  // double m_cutoff_scaled = cutoffOffset + ((1.0 - cutoffOffset) * params.m_cutoff) * (1 + 0.005 * params.m_oversample);
   double m_cutoff_scaled = (cutoffOffset + ((1.0 - cutoffOffset - 0.1) * params.m_cutoff) - 0.09) * (1 + 0.005 * params.m_oversample);
 
   // Get cutoff freq in hz from parameter of double range 0...1
@@ -300,6 +299,7 @@ void SVF1_4P_HP::Process(double& input, FilterParameters& params)
   {
     if (params.m_resonance > 0)
     {
+      double resoScaling{1.55};
       double bandpass = -m_state[1] + m_state[3];
       double scaledDrive = params.m_drive;
       // double resoCompensation = 1.0 / sqrt(params.m_oversample + 1);

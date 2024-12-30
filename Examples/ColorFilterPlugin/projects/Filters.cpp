@@ -48,10 +48,10 @@ void DF1_2P_LP::Process(double& input, FilterParameters& params)
     }
     input = shaped;
   }
-  //if (params.m_drive > 0)
+  // if (params.m_drive > 0)
   //{
-  //  sigmoidalShaper.Process(input, params);
-  //}
+  //   sigmoidalShaper.Process(input, params);
+  // }
   input = tanh(input * mapRange((1. - params.m_resonance), 0.5, 1));
 }
 
@@ -86,13 +86,13 @@ void DF1_3P_LP::Process(double& input, FilterParameters& params)
 
 void DF1_4P_LP::Process(double& input, FilterParameters& params)
 {
-  double resoScaling{1.44};
   const double cutoffOffset{0.25};
   double m_cutoff_scaled = cutoffOffset + (((1.0 - cutoffOffset) + 0.05) * params.m_cutoff);
   const double cutoffFreq = 2.5 * std::pow(8000.0, m_cutoff_scaled);
   m_alpha = std::exp(-2.0 * iplug::PI * cutoffFreq / params.m_sampleRate);
   if (params.m_resonance > 0)
   {
+    double resoScaling{1.44};
     double bandpass = (m_state[1] - m_state[3]);
     double resonance = bandpass * params.m_resonance * resoScaling /* * std::max(1., (2. * params.m_drive))*/;
     input += std::clamp(resonance, -clampValue, clampValue);
@@ -113,13 +113,13 @@ void DF1_4P_LP::Process(double& input, FilterParameters& params)
 
 void DF1_6P_LP::Process(double& input, FilterParameters& params)
 {
-  double resoScaling{1.};
   const double cutoffOffset{0.25};
   double m_cutoff_scaled = cutoffOffset + (((1.0 - cutoffOffset) + 0.07) * params.m_cutoff);
   const double cutoffFreq = 2.5 * std::pow(8000.0, m_cutoff_scaled);
   m_alpha = std::exp(-2.0 * iplug::PI * cutoffFreq / params.m_sampleRate);
   if (params.m_resonance > 0)
   {
+    double resoScaling{1.};
     double bandpass = (m_state[1] - m_state[5]);
     double resonance = bandpass * params.m_resonance * resoScaling /* * std::max(1., (2. * params.m_drive))*/;
     input += std::clamp(resonance, -clampValue, clampValue);
@@ -185,7 +185,7 @@ void DF2_4P_LP::Process(double& input, FilterParameters& params)
 {
   double resoScaling{6};
   const double cutoffOffset{0.25};
-  double m_cutoff_scaled = cutoffOffset + (((1.0 - cutoffOffset)/* - 0.07*/) * params.m_cutoff);
+  double m_cutoff_scaled = cutoffOffset + (((1.0 - cutoffOffset) /* - 0.07*/) * params.m_cutoff);
   // Get cutoff freq in hz from parameter of double range 0...1
   const double cutoffFreq = 2.5 * std::pow(8000.0, m_cutoff_scaled);
   // Normalize frequency
@@ -239,7 +239,6 @@ void DF2_4P_LP::Process(double& input, FilterParameters& params)
 
 void SVF1_2P_LP::Process(double& input, FilterParameters& params)
 {
-  double resoScaling{2};
   const double cutoffOffset{0.25};
   // Convert normalized cutoff (0-1) to Hz
   double m_cutoff_scaled = cutoffOffset + (((1.0 - cutoffOffset) * params.m_cutoff) - 0.1078) * (1 + 0.005 * params.m_oversample);
@@ -252,6 +251,7 @@ void SVF1_2P_LP::Process(double& input, FilterParameters& params)
   // Resonance
   if (params.m_resonance > 0)
   {
+    double resoScaling{2};
     double bandpass = m_state[0] - m_state[1];
     double scaledDrive = params.m_drive;
     double resoCompensation = 1.0 / (1.0 + 0.015 * (params.m_oversample));
@@ -278,7 +278,6 @@ void SVF1_2P_LP::Process(double& input, FilterParameters& params)
 
 void SVF1_4P_LP::Process(double& input, FilterParameters& params)
 {
-  double resoScaling{1.55};
   const double cutoffOffset{0.25};
   // Convert normalized cutoff (0-1) to Hz
   double m_cutoff_scaled = cutoffOffset + (((1.0 - cutoffOffset) * params.m_cutoff) - 0.1078) * (1 + 0.005 * params.m_oversample);
@@ -291,6 +290,7 @@ void SVF1_4P_LP::Process(double& input, FilterParameters& params)
   // Resonance
   if (params.m_resonance > 0)
   {
+    double resoScaling{1.55};
     double bandpass = m_state[1] - m_state[3];
     double scaledDrive = params.m_drive;
     double resoCompensation = 1.0 / (1.0 + 0.015 * (params.m_oversample));

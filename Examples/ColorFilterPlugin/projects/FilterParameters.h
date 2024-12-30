@@ -1,8 +1,8 @@
 #pragma once
 #include <cmath>
-constexpr int LUT_BITS{11};
+constexpr int LUT_BITS{12};
 constexpr int LUT_SIZE{1 << LUT_BITS};
-constexpr int VINTAGE_BIT_RATE{15};
+constexpr int VINTAGE_BIT_RATE{16};
 
 class FilterParameters
 {

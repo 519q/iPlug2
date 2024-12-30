@@ -1,4 +1,4 @@
-<REAPER_PROJECT 0.1 "7.23/win64" 1735492468
+<REAPER_PROJECT 0.1 "7.23/win64" 1735556989
   RIPPLE 0
   GROUPOVERRIDE 0 0 0
   AUTOXFADE 129
@@ -81,6 +81,7 @@
     <JS analysis/gfxscope ""
       100 0 2.03 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     >
+    JS_DIMS 734 440
     FLOATPOS 0 0 0 0
     FXID {AE0577E5-9C8E-4D01-8BCB-32714E394183}
     WAK 0 0
@@ -156,7 +157,7 @@
       <CLAP "CLAP: ColorFilterPlugin (519q)" com.519q.ColorFilterPlugin ""
         CFG 0 900 900 ""
         <STATE
-          3zzPc10yWUDAAAAAd4BLQI/neT4BP1NAAAAAAAAAAAAAAAAAAADwPzEMw/CLI1RAkCRJEsr1TUAAAAAAAAAAAAAAAAAAAPA/AAAAAAAAAEAAAAAAAAAAAAAAAAAAAPA/
+          0DzPc7yVWkCx////jOpRQNnzPI9oWlJAYxiGARDEUEAAAAAAAADwP4lhGMZQVFVAYRiG4X2cR0BiGIah6fJSQAAAAAAAAPA/AAAAAAAAIEAAAAAAAADwPwAAAAAAAPA/
           AAAAAAAAAAA=
         >
       >

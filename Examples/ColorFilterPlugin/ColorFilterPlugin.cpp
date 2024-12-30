@@ -172,25 +172,31 @@ void ColorFilterPlugin::ProcessBlock(sample** inputs, sample** outputs, int nFra
         if (filterType == 1)
         {
           SmoothBypass::processSmoothBypass(
-            std::function<void(double&)>([filterSelector, this, &fParams](double& input) -> void { return filterSwitcherBP_L.Process(input, filterSelector, fParams); }), inputL, smoothedFilterBypass);
+            std::function<void(double&)>([filterSelector, this, &fParams](double& input) -> void { return filterSwitcherBP_Vintage_L.Process(input, filterSelector, fParams); }), inputL,
+            smoothedFilterBypass);
           SmoothBypass::processSmoothBypass(
-            std::function<void(double&)>([filterSelector, this, &fParams](double& input) -> void { return filterSwitcherBP_R.Process(input, filterSelector, fParams); }), inputR, smoothedFilterBypass);
+            std::function<void(double&)>([filterSelector, this, &fParams](double& input) -> void { return filterSwitcherBP_Vintage_R.Process(input, filterSelector, fParams); }), inputR,
+            smoothedFilterBypass);
         }
 
         if (filterType == 2)
         {
           SmoothBypass::processSmoothBypass(
-            std::function<void(double&)>([filterSelector, this, &fParams](double& input) -> void { return filterSwitcherBS_L.Process(input, filterSelector, fParams); }), inputL, smoothedFilterBypass);
+            std::function<void(double&)>([filterSelector, this, &fParams](double& input) -> void { return filterSwitcherBS_Vintage_L.Process(input, filterSelector, fParams); }), inputL,
+            smoothedFilterBypass);
           SmoothBypass::processSmoothBypass(
-            std::function<void(double&)>([filterSelector, this, &fParams](double& input) -> void { return filterSwitcherBS_R.Process(input, filterSelector, fParams); }), inputR, smoothedFilterBypass);
+            std::function<void(double&)>([filterSelector, this, &fParams](double& input) -> void { return filterSwitcherBS_Vintage_R.Process(input, filterSelector, fParams); }), inputR,
+            smoothedFilterBypass);
         }
 
         if (filterType == 3)
         {
           SmoothBypass::processSmoothBypass(
-            std::function<void(double&)>([filterSelector, this, &fParams](double& input) -> void { return filterSwitcherHP_L.Process(input, filterSelector, fParams); }), inputL, smoothedFilterBypass);
+            std::function<void(double&)>([filterSelector, this, &fParams](double& input) -> void { return filterSwitcherHP_Vintage_L.Process(input, filterSelector, fParams); }), inputL,
+            smoothedFilterBypass);
           SmoothBypass::processSmoothBypass(
-            std::function<void(double&)>([filterSelector, this, &fParams](double& input) -> void { return filterSwitcherHP_R.Process(input, filterSelector, fParams); }), inputR, smoothedFilterBypass);
+            std::function<void(double&)>([filterSelector, this, &fParams](double& input) -> void { return filterSwitcherHP_Vintage_R.Process(input, filterSelector, fParams); }), inputR,
+            smoothedFilterBypass);
         }
       }
 

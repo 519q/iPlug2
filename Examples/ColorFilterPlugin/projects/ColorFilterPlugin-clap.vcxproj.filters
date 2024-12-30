@@ -57,6 +57,8 @@
     <ClCompile Include="BandPassFilters.cpp" />
     <ClCompile Include="BandStopFilters.cpp" />
     <ClCompile Include="VintageFilters.cpp" />
+    <ClCompile Include="VintageHighpassFilters.cpp" />
+    <ClCompile Include="VintageBandpassFilters.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="../config.h" />
@@ -202,6 +204,8 @@
     <ClInclude Include="BandPassFilters.h" />
     <ClInclude Include="BandStopFilters.h" />
     <ClInclude Include="VintageFilters.h" />
+    <ClInclude Include="VintageHighpassFilters.h" />
+    <ClInclude Include="VintageBandpassFilters.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="IPlug">
