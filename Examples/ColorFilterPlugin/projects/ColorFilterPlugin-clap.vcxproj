@@ -308,6 +308,7 @@
     <ClInclude Include="Shapers.h" />
     <ClInclude Include="SmoothTools.h" />
     <ClInclude Include="VintageBandpassFilters.h" />
+    <ClInclude Include="VintageBandStopFilters.h" />
     <ClInclude Include="VintageFilters.h" />
     <ClInclude Include="VintageHighpassFilters.h" />
   </ItemGroup>
@@ -350,6 +351,7 @@
     <ClCompile Include="HighPassFilters.cpp" />
     <ClCompile Include="Shapers.cpp" />
     <ClCompile Include="VintageBandpassFilters.cpp" />
+    <ClCompile Include="VintageBandStopFilters.cpp" />
     <ClCompile Include="VintageFilters.cpp" />
     <ClCompile Include="VintageHighpassFilters.cpp" />
   </ItemGroup>

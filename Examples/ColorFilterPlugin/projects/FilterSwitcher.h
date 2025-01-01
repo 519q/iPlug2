@@ -5,6 +5,7 @@
 #include "BandStopFilters.h"
 #include "VintageFilters.h"
 #include "VintageBandpassFilters.h"
+#include "VintageBandStopFilters.h"
 #include "VintageHighpassFilters.h"
 
 
@@ -44,7 +45,11 @@ inline auto getVintage_BPFilters()
   return FilterSwitcher{
     DF1_1P_BP_Vintage{}, DF1_2P_BP_Vintage{}, DF1_3P_BP_Vintage{}, DF1_4P_BP_Vintage{}, DF1_6P_BP_Vintage{}, DF2_2P_BP_Vintage{}, DF2_4P_BP_Vintage{}, SVF1_2P_BP_Vintage{}, SVF1_4P_BP_Vintage{}};
 }
-inline auto getVintage_BSFilters() { return FilterSwitcher{DF1_1P_BS{}, DF1_2P_BS{}, DF1_3P_BS{}, DF1_4P_BS{}, DF1_6P_BS{}, DF2_2P_BS{}, DF2_4P_BS{}, SVF1_2P_BS{}, SVF1_4P_BS{}}; }
+inline auto getVintage_BSFilters()
+{
+  return FilterSwitcher{
+    DF1_1P_BS_Vintage{}, DF1_2P_BS_Vintage{}, DF1_3P_BS_Vintage{}, DF1_4P_BS_Vintage{}, DF1_6P_BS_Vintage{}, DF2_2P_BS_Vintage{}, DF2_4P_BS_Vintage{}, SVF1_2P_BS_Vintage{}, SVF1_4P_BS_Vintage{}};
+}
 inline auto getVintage_LPFilters()
 {
   return FilterSwitcher{

@@ -12,6 +12,7 @@ const int kNumPresets = 1;
 
 enum EParams
 {
+  kFilterAlgo,
   kGain,
   kFilterCutoff,
   kFilterResonance,
@@ -28,6 +29,14 @@ enum EParams
   kNumParams
 };
 
+enum class FilterAlgo
+{
+DF1,
+DF2,
+SVF1,
+MAX_ALGO
+};
+
 
 using namespace iplug;
 using namespace igraphics;
@@ -42,6 +51,8 @@ private:
 
 public:
   ColorFilterPlugin(const InstanceInfo& info);
+  int filterAlgo{};
+
   // Direct Processing
   FilterSwitcher filterSwitcherLP_L{FilterPresets::getLPFilters()};
   FilterSwitcher filterSwitcherLP_R{FilterPresets::getLPFilters()};

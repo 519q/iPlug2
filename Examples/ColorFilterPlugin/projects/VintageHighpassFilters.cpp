@@ -325,7 +325,7 @@ void SVF1_2P_HP_Vintage::Process(double& input, FilterParameters& params)
   SetSampleRate_SVF1(params);
   double resoScaling{2.01};
   const double cutoffOffset{0.25};
-  double m_cutoff_scaled = cutoffOffset + (((1.0 - cutoffOffset) * params.m_cutoff) - 0.1078) * (1 + 0.005 * params.m_oversample);
+  double m_cutoff_scaled = cutoffOffset + (((1.0 - cutoffOffset) * params.m_cutoff) - 0.23) * (1 + 0.005 * params.m_oversample);
   int m_cutoffIndex = static_cast<int>(m_cutoff_scaled * (LUT_SIZE - 1) + 0.5);
   double f = static_cast<double>(m_LUT[m_cutoffIndex]) / m_scale;
   int fixedPointInput = (double)input * m_scale;
@@ -338,7 +338,7 @@ void SVF1_2P_HP_Vintage::Process(double& input, FilterParameters& params)
   {
     if (params.m_resonance > 0)
     {
-      int bandpass = m_state[0] - m_state[1];
+      int bandpass = - m_state[0] + m_state[1];
       double scaledDrive = params.m_drive;
       double resoCompensation = 1.0 / (1.0 + 0.015 * (params.m_oversample));
       double resonance = bandpass * params.m_resonance * resoScaling * resoCompensation;
@@ -362,7 +362,7 @@ void SVF1_4P_HP_Vintage::Process(double& input, FilterParameters& params)
   SetSampleRate_SVF1(params);
   double resoScaling{1.55};
   const double cutoffOffset{0.25};
-  double m_cutoff_scaled = cutoffOffset + (((1.0 - cutoffOffset) * params.m_cutoff) - 0.1078) * (1 + 0.005 * params.m_oversample);
+  double m_cutoff_scaled = cutoffOffset + (((1.0 - cutoffOffset) * params.m_cutoff) - 0.2) * (1 + 0.005 * params.m_oversample);
   int m_cutoffIndex = static_cast<int>(m_cutoff_scaled * (LUT_SIZE - 1) + 0.5);
   double f = static_cast<double>(m_LUT[m_cutoffIndex]) / m_scale;
   int fixedPointInput = (double)input * m_scale;
