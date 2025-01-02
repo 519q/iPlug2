@@ -1,5 +1,4 @@
 #include "ColorFilterPlugin.h"
-#include "IControls.h"
 #include "IPlugConstants.h"
 #include "IPlug_include_in_plug_src.h"
 
@@ -7,7 +6,7 @@ ColorFilterPlugin::ColorFilterPlugin(const InstanceInfo& info)
   : iplug::Plugin(info, MakeConfig(kNumParams, kNumPresets))
 {
 
-    GetParam(kFilterAlgo)->InitInt("FilterAlgo", 0, 0, 2, "FilterAlgo", IParam::kFlagStepped, "");
+  GetParam(kFilterAlgo)->InitInt("FilterAlgo", 0, 0, 2, "FilterAlgo", IParam::kFlagStepped, "");
 
 
   GetParam(kGain)->InitDouble("PostGain", 0., 0., 200.0, 0.01, "%");
@@ -21,18 +20,10 @@ ColorFilterPlugin::ColorFilterPlugin(const InstanceInfo& info)
   GetParam(kShaperBypass)->InitBool("ShaperBypass", false, "", IParam::kFlagStepped, "", "Off", "On");
   GetParam(kFilterBypass)->InitBool("FilterBypass", false, "", IParam::kFlagStepped, "", "Off", "On");
   GetParam(kFilterVintage)->InitBool("FilterVintage", false, "", IParam::kFlagStepped, "", "Off", "On");
-  if (filterAlgo == (int)FilterAlgo::DF1)
-  {
-  GetParam(kFilterSelector)->InitInt("FilterSelector", 0, 0, 4, "DF1", IParam::kFlagStepped, "");
-  }
-  else if (filterAlgo == (int)FilterAlgo::DF2)
-  {
-  GetParam(kFilterSelector)->InitInt("FilterSelector", 5, 5, 6, "DF2", IParam::kFlagStepped, "");
-  }
-  else
-  {
-  GetParam(kFilterSelector)->InitInt("FilterSelector", 5, 5, 6, "DF2", IParam::kFlagStepped, "");
-  }
+
+  GetParam(kFilterSelector)->InitInt("FilterSelector", 0, 0, 8, "", IParam::kFlagStepped, "");
+
+
   GetParam(kFilterType)->InitInt("FilterType", 0, 0, 3, "", IParam::kFlagStepped, "");
   GetParam(kOverSampling)->InitInt("FilterOversampler", 0, 0, 4, "OverSampler", IParam::kFlagStepped, "");
   // https: // coolors.co/palette/000814-001d3d-003566-ffc300-ffd60a
@@ -47,16 +38,15 @@ ColorFilterPlugin::ColorFilterPlugin(const InstanceInfo& info)
     const IRECT b = pGraphics->GetBounds();
     const IRECT FilterPanel = b.GetFromLeft(400.f).GetFromTop(100.f);
     const IRECT ShaperPanel = b.GetFromLeft(400.f).GetFromTop(300.f);
-    const IRECT ButtonsPanel = b.GetFromLeft(400.f).GetFromTop(400.f);
-    // const IRECT controls = b.GetGridCell(1, 2, 2);
-    //  gain
-    int columns = 5;
-    int rows = 1;
-    int padding = 50;
+    ButtonsPanel = b.GetFromLeft(400.f).GetFromTop(400.f);
+    // iRectList.Add(FilterPanel);
+    // iRectList.Add(ShaperPanel);
+    // iRectList.Add(ButtonsPanel);
+    //  const IRECT controls = b.GetGridCell(1, 2, 2);
+    //   gain
 
-    /* pGraphics->AttachControl(new IVRadioButtonControl(ButtonsPanel.GetGridCell(1, 1, rows, columns).GetFromTop(100).GetMidHPadded(padding), kFilterSelector,
-                                                   {"DF1_1P", "DF1_2P", "DF1_3P", "DF1_4P", "DF1_6P", "DF2_2P", "DF2_4P", "SVF1_2P", "SVF1_4P"}, "FilterSelector", DEFAULT_STYLE, EVShape::Ellipse,
-                                                   EDirection::Vertical, 5.f));*/
+    pGraphics->AttachControl(new IVRadioButtonControl(ButtonsPanel.GetGridCell(1, 2, rows, columns).GetFromTop(100).GetMidHPadded(padding), kFilterSelector, getInitList(filterAlgo), "FilterSelector",
+                                                      DEFAULT_STYLE, EVShape::Ellipse, EDirection::Vertical, 5.f));
 
     // gain
     pGraphics->AttachControl(new IVKnobControl(ShaperPanel.GetGridCell(1, 5, rows, columns).GetFromTop(75).GetMidHPadded(padding), kGain));
@@ -76,9 +66,12 @@ ColorFilterPlugin::ColorFilterPlugin(const InstanceInfo& info)
 
     pGraphics->AttachControl(new IVRadioButtonControl(ButtonsPanel.GetGridCell(1, 1, rows, columns).GetFromTop(100).GetMidHPadded(padding), kFilterAlgo, {"DF1", "DF2", "SVF1"}, "FilterAlgo",
                                                       DEFAULT_STYLE, EVShape::Ellipse, EDirection::Vertical, 5.f));
-      pGraphics->AttachControl(new IVRadioButtonControl(ButtonsPanel.GetGridCell(1, 2, rows, columns).GetFromTop(100).GetMidHPadded(padding), kFilterSelector,
-                                                        {"DF1_1P", "DF1_2P", "DF1_3P", "DF1_4P", "DF1_6P", "DF2_2P", "DF2_4P", "SVF1_2P", "SVF1_4P"}, "FilterSelector", DEFAULT_STYLE, EVShape::Ellipse,
-                                                        EDirection::Vertical, 5.f));
+
+
+    // pGraphics->AttachControl(new IVRadioButtonControl(ButtonsPanel.GetGridCell(1, 2, rows, columns).GetFromTop(100).GetMidHPadded(padding), // Use the stored bounds
+    //                                                   kFilterSelector, GetFilterSelectorOptions(filterAlgo), "FilterSelector", DEFAULT_STYLE, EVShape::Ellipse, EDirection::Vertical, 5.f));
+
+
     pGraphics->AttachControl(new IVRadioButtonControl(
       ButtonsPanel.GetGridCell(1, 5, rows, columns).GetFromTop(75).GetMidHPadded(padding), kFilterType, {"LP", "BP", "BS", "HP"}, "FilterType", DEFAULT_STYLE, EVShape::Ellipse, EDirection::Vertical));
     pGraphics->AttachControl(new IVRadioButtonControl(ButtonsPanel.GetGridCell(1, 3, rows, columns).GetFromTop(75).GetMidHPadded(padding), kOverSampling, {"None", "2x", "4x", "8x", "16x"},
@@ -139,8 +132,6 @@ void ColorFilterPlugin::ProcessBlock(sample** inputs, sample** outputs, int nFra
       const double smoothedShaperBypass = mShaperBypassSmooth.Process(shaperBypassMix);
       fParams.setFilterParameters(smoothedFilterCutoff, smoothedFilterResonance, smoothedFilterBandwidth, smoothedShaperDrive, smoothedShaperShape, smoothedShaperBias, oversamplingFactor, sampleRate);
 
-      /*   for (int c = 0; c < nChans; c++)
-         {*/
       const double L = inputs[0][s];
       const double R = inputs[1][s];
       double inputL = L;
@@ -225,16 +216,12 @@ void ColorFilterPlugin::ProcessBlock(sample** inputs, sample** outputs, int nFra
 
       outputs[0][s] = inputL * smoothedGain;
       outputs[1][s] = inputR * smoothedGain;
-      //}
     }
   });
   if (mFactorChanged)
   {
-    // if (mOverSampler.RateToFactor(mOverSampler.GetRate()) != ovrsmpFactor)
-    //{
     mOverSampler.SetOverSampling((iplug::EFactor)ovrsmpFactor);
     mOverSampler.Reset(GetBlockSize());
-    //}
     mFactorChanged = false;
   }
 }
@@ -248,8 +235,49 @@ void ColorFilterPlugin::OnParamChange(int paramIdx, EParamSource, int sampleOffs
     mFactorChanged = true;
     break;
   case kFilterAlgo:
+    filterAlgo = GetParam(kFilterAlgo)->Int();
+
+    if (filterAlgo == (int)FilterAlgo::DF1)
+    {
+      GetParam(kFilterSelector)->InitInt("FilterSelector", 0, 0, 4, "", IParam::kFlagStepped, "");
+    }
+    else if (filterAlgo == (int)FilterAlgo::DF2)
+    {
+      GetParam(kFilterSelector)->InitInt("FilterSelector", 5, 5, 6, "", IParam::kFlagStepped, "");
+    }
+    else
+    {
+      GetParam(kFilterSelector)->InitInt("FilterSelector", 7, 7, 8, "", IParam::kFlagStepped, "");
+    }
+
+    IGraphics* pGraphics = GetUI();
+
+
+    // remove control
+    if (pGraphics)
+    {
+      int idx = 0;
+      while (idx < pGraphics->NControls())
+      {
+        IControl* pControl = pGraphics->GetControl(idx);
+        if (pControl && pControl->GetParamIdx() == kFilterSelector)
+        {
+          pGraphics->RemoveControl(idx);
+          // Don't increment idx since RemoveControl shifts everything down
+        }
+        else
+        {
+          idx++;
+        }
+      }
+      pGraphics->SetAllControlsDirty();
+      pGraphics->AttachControl(new IVRadioButtonControl(ButtonsPanel.GetGridCell(1, 2, rows, columns).GetFromTop(100).GetMidHPadded(padding), kFilterSelector, getInitList(filterAlgo),
+                                                        "FilterSelector", DEFAULT_STYLE, EVShape::Ellipse, EDirection::Vertical, 5.f));
+
+      // Attach new control
+    }
     break;
   }
-};
+}
 
 #endif

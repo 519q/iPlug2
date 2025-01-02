@@ -30,3 +30,4 @@ public:
   // static void setSampleRate(FilterParameters& params, double sampleRate) { params.m_sampleRate = sampleRate; }
   // static void setOverSampleRate(FilterParameters& params) { params.m_sampleRate = params.m_sampleRate * std::pow(2, params.m_oversample);}
 };
+

@@ -1,7 +1,9 @@
 #pragma once
+#include "IControls.h"
 #include "IPlug_include_in_plug_hdr.h"
 #include "OverSampler.h"
 #include "Smoothers.h"
+
 #include "projects/FilterSwitcher.h"
 #include "projects/Filters.h"
 // #include "projects/HighPassFilters.h"
@@ -31,12 +33,11 @@ enum EParams
 
 enum class FilterAlgo
 {
-DF1,
-DF2,
-SVF1,
-MAX_ALGO
+  DF1,
+  DF2,
+  SVF1,
+  MAX_ALGO
 };
-
 
 using namespace iplug;
 using namespace igraphics;
@@ -45,14 +46,39 @@ using namespace igraphics;
 class ColorFilterPlugin final : public Plugin
 {
 private:
+  std::initializer_list<const char*> getInitList(int indx)
+  {
+    static const std::initializer_list<const char*> DF1 = {"DF1_1P", "DF1_2P", "DF1_3P", "DF1_4P", "DF1_6P"};
+    static const std::initializer_list<const char*> DF2 = {"DF2_2P", "DF2_4P"};
+    static const std::initializer_list<const char*> SVF1 = {"SVF1_2P", "SVF1_4P"};
+
+    switch (indx)
+    {
+    case (int)FilterAlgo::DF1:
+      return DF1;
+    case (int)FilterAlgo::DF2:
+      return DF2;
+    case (int)FilterAlgo::SVF1:
+      return SVF1;
+    default:
+      return {}; // Empty initializer list for safety
+    }
+  }
   bool mFactorChanged = true;
-  OverSampler<sample> mOverSampler{kNone, true, 2, 2};
+  // bool mFilterAlgoChanged = false;
   int ovrsmpFactor{};
+  // IRECTList iRectList{};
+  OverSampler<sample> mOverSampler{kNone, true, 2, 2};
+  // IVRadioButtonControl* mFilterSelectorControl = nullptr;
+
 
 public:
   ColorFilterPlugin(const InstanceInfo& info);
+  IRECT ButtonsPanel{};
+  int columns = 5;
+  int rows = 1;
+  int padding = 40;
   int filterAlgo{};
-
   // Direct Processing
   FilterSwitcher filterSwitcherLP_L{FilterPresets::getLPFilters()};
   FilterSwitcher filterSwitcherLP_R{FilterPresets::getLPFilters()};
@@ -91,6 +117,7 @@ public:
   iplug::LogParamSmooth<double> mFilterResonanceSmooth{10};
   iplug::LogParamSmooth<double> mFilterBandwidthSmooth{10};
   iplug::LogParamSmooth<double> mFilterBypassSmooth{30};
+
 
 #if IPLUG_DSP // http://bit.ly/2S64BDd
   void ProcessBlock(sample** inputs, sample** outputs, int nFrames) override;
