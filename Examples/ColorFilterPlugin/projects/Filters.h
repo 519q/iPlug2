@@ -21,6 +21,7 @@ enum class FilterTypes
   DF2_4P,
   SVF1_2P,
   SVF1_4P,
+  SVF1_6P,
   MAX_FILTER_TYPES
 };
 
@@ -170,6 +171,22 @@ public:
 private:
   Sigmoidal sigmoidalShaper{};
   double m_state[4]{};
+
+public:
+  void Process(double& input, FilterParameters& params) override;
+};
+
+class SVF1_6P_LP : public Filters
+{
+public:
+  SVF1_6P_LP()
+    : Filters{}
+  {
+  }
+
+private:
+  Sigmoidal sigmoidalShaper{};
+  double m_state[6]{};
 
 public:
   void Process(double& input, FilterParameters& params) override;

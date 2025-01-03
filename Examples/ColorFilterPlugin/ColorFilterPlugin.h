@@ -39,6 +39,14 @@ enum class FilterAlgo
   MAX_ALGO
 };
 
+enum class FilterType
+{
+  LP,
+  BP,
+  BS,
+  HP
+};
+
 using namespace iplug;
 using namespace igraphics;
 
@@ -50,7 +58,7 @@ private:
   {
     static const std::initializer_list<const char*> DF1 = {"DF1_1P", "DF1_2P", "DF1_3P", "DF1_4P", "DF1_6P"};
     static const std::initializer_list<const char*> DF2 = {"DF2_2P", "DF2_4P"};
-    static const std::initializer_list<const char*> SVF1 = {"SVF1_2P", "SVF1_4P"};
+    static const std::initializer_list<const char*> SVF1 = {"SVF1_2P", "SVF1_4P", "SVF1_6P"};
 
     switch (indx)
     {
@@ -65,20 +73,54 @@ private:
     }
   }
   bool mFactorChanged = true;
-  // bool mFilterAlgoChanged = false;
-  int ovrsmpFactor{};
-  // IRECTList iRectList{};
+  int m_ovrsmpFactor{};
   OverSampler<sample> mOverSampler{kNone, true, 2, 2};
-  // IVRadioButtonControl* mFilterSelectorControl = nullptr;
-
-
-public:
-  ColorFilterPlugin(const InstanceInfo& info);
-  IRECT ButtonsPanel{};
+  int m_filterAlgo{};
+  int m_df1retainer{};
+  int m_df2retainer{(int)FilterTypes::DF2_2P};
+  int m_svf1retainer{(int)FilterTypes::SVF1_2P};
   int columns = 5;
   int rows = 1;
   int padding = 40;
-  int filterAlgo{};
+  IRECT m_ButtonsPanel{};
+  double retained_kFilterSelector{};
+
+public:
+  ColorFilterPlugin(const InstanceInfo& info);
+  // Override SerializeParams to save plugin state
+  bool SerializeState(IByteChunk& chunk) const override
+  {
+    // Call the base class implementation to serialize parameters
+    if (!SerializeParams(chunk))
+      return false;
+
+    // Add any additional state you want to save here
+    chunk.Put(&m_df1retainer);
+    chunk.Put(&m_df2retainer);
+    chunk.Put(&m_svf1retainer);
+    chunk.Put(&retained_kFilterSelector);
+
+    return true;
+  }
+  // Override UnserializeParams to restore plugin state
+  int UnserializeState(const IByteChunk& chunk, int startPos) override
+  {
+    // Call the base class implementation to unserialize parameters
+    startPos = UnserializeParams(chunk, startPos);
+
+    // Add any additional state you want to restore here
+    startPos = chunk.Get(&m_df1retainer, startPos);
+    startPos = chunk.Get(&m_df2retainer, startPos);
+    startPos = chunk.Get(&m_svf1retainer, startPos);
+    startPos = chunk.Get(&retained_kFilterSelector, startPos);
+    if (GetUI())
+      SendParameterValueFromDelegate(kFilterSelector, retained_kFilterSelector, 0);
+
+
+    return UnserializeParams(chunk, startPos);
+  }
+
+#if IPLUG_DSP // http://bit.ly/2S64BDd
   // Direct Processing
   FilterSwitcher filterSwitcherLP_L{FilterPresets::getLPFilters()};
   FilterSwitcher filterSwitcherLP_R{FilterPresets::getLPFilters()};
@@ -117,9 +159,7 @@ public:
   iplug::LogParamSmooth<double> mFilterResonanceSmooth{10};
   iplug::LogParamSmooth<double> mFilterBandwidthSmooth{10};
   iplug::LogParamSmooth<double> mFilterBypassSmooth{30};
-
-
-#if IPLUG_DSP // http://bit.ly/2S64BDd
+  void DefineSelector(int& selector) const;
   void ProcessBlock(sample** inputs, sample** outputs, int nFrames) override;
   void OnReset() override;
   void OnParamChange(int paramIdx, EParamSource, int sampleOffset) override;

@@ -120,3 +120,16 @@ private:
 public:
   void Process(double& input, FilterParameters& params);
 };
+
+class SVF1_6P_BS_Vintage : public Filters
+{
+private:
+  SVF1_6P_LP_Vintage lp{};
+  SVF1_6P_HP_Vintage hp{};
+  double m_stateL{};
+  double m_stateH{};
+  double m_bandwidth{0.11};
+
+public:
+  void Process(double& input, FilterParameters& params);
+};

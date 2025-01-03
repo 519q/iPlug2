@@ -471,3 +471,40 @@ void SVF1_4P_LP_Vintage::Process(double& input, FilterParameters& params)
   }
   input = tanh(input);
 };
+
+void SVF1_6P_LP_Vintage::Process(double& input, FilterParameters& params)
+{
+  SetSampleRate_SVF1(params);
+  double resoScaling{0.95};
+  const double cutoffOffset{0.25};
+  double m_cutoff_scaled = cutoffOffset + (((1.0 - cutoffOffset) * params.m_cutoff) - 0.1078) * (1 + 0.005 * params.m_oversample);
+  int m_cutoffIndex = static_cast<int>(m_cutoff_scaled * (LUT_SIZE - 1) + 0.5);
+  double f = static_cast<double>(m_LUT[m_cutoffIndex]) / m_scale;
+  int fixedPointInput = (double)input * m_scale;
+  // Resonance
+  if (params.m_resonance > 0)
+  {
+    int bandpass = m_state[1] - m_state[5];
+    double scaledDrive = params.m_drive;
+    double resoCompensation = 1.0 / (1.0 + 0.015 * (params.m_oversample));
+    double resonance = bandpass * params.m_resonance * resoScaling * resoCompensation;
+    fixedPointInput += resonance;
+  }
+  /*
+    y[n] = y[n - 1] + f * (x[n] - y[n - 1])
+   */
+
+  for (int& pole : m_state)
+  {
+    pole = pole + f * (fixedPointInput - pole);
+    fixedPointInput = pole;
+  }
+  input = (double)fixedPointInput / m_scale;
+  if (params.m_drive > 0)
+  {
+    double driveCompensation = 1.0 / (1.0 + 2.8 * (params.m_oversample));
+    params.m_drive *= driveCompensation * 0.5;
+    sigmoidalShaper.Process(input, params);
+  }
+  input = tanh(input);
+};

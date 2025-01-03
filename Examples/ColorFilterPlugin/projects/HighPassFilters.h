@@ -143,3 +143,20 @@ private:
 public:
   void Process(double& input, FilterParameters& params) override;
 };
+
+class SVF1_6P_HP : public Filters
+{
+public:
+  SVF1_6P_HP()
+    : Filters{}
+  {
+  }
+
+private:
+  Sigmoidal sigmoidalShaper{};
+  double m_state[6]{};
+  DCStop dcstop{};
+
+public:
+  void Process(double& input, FilterParameters& params) override;
+};

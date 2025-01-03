@@ -320,3 +320,46 @@ void SVF1_4P_HP::Process(double& input, FilterParameters& params)
   }
   input = tanh(input);
 };
+
+void SVF1_6P_HP::Process(double& input, FilterParameters& params)
+{
+  const double cutoffOffset{0.25};
+  // Convert normalized cutoff (0-1) to Hz
+  // double m_cutoff_scaled = cutoffOffset + ((1.0 - cutoffOffset) * params.m_cutoff) * (1 + 0.005 * params.m_oversample);
+  double m_cutoff_scaled = (cutoffOffset + ((1.0 - cutoffOffset - 0.1) * params.m_cutoff) - 0.09) * (1 + 0.005 * params.m_oversample);
+
+  // Get cutoff freq in hz from parameter of double range 0...1
+  const double cutoffFreq = 2.5 * std::pow(8000.0, m_cutoff_scaled);
+  // Calculate coefficient using sample rate
+  double w0 = 2.0 * iplug::PI * cutoffFreq / params.m_sampleRate;
+  double f = 2.0 * sin(w0 / 2.0); // bilinear transform coefficient
+  f = std::clamp(f, 0.0, 1.0);    // for stability
+  // Resonance
+  /*
+    y[n] = y[n - 1] + f * (x[n] - y[n - 1])
+   */
+  for (double& pole : m_state)
+  {
+    if (params.m_resonance > 0)
+    {
+      double resoScaling{0.95};
+      double bandpass = -m_state[1] + m_state[5];
+      double scaledDrive = params.m_drive;
+      // double resoCompensation = 1.0 / sqrt(params.m_oversample + 1);
+      double resoCompensation = 1.0 / (1.0 + 0.015 * (params.m_oversample));
+      double resonance = bandpass * params.m_resonance * resoScaling * resoCompensation;
+      // input += std::clamp(resonance, -clampValue, clampValue);
+      input += resonance;
+    }
+    pole = std::clamp(pole + f * (input - pole), -clampValue, clampValue);
+    input -= pole;
+  }
+  if (params.m_drive > 0)
+  {
+    dcstop.process(input, params, 0.1);
+    double driveCompensation = 1.0 / (1.0 + 2.8 * (params.m_oversample));
+    params.m_drive *= driveCompensation;
+    sigmoidalShaper.Process(input, params);
+  }
+  input = tanh(input);
+};

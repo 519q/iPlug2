@@ -144,3 +144,20 @@ private:
 public:
   void Process(double& input, FilterParameters& params) override;
 };
+
+class SVF1_6P_HP_Vintage : public Filters, public VintageProcessor
+{
+public:
+  SVF1_6P_HP_Vintage()
+    : Filters{}
+    , VintageProcessor{}
+  {
+  }
+
+private:
+  Sigmoidal sigmoidalShaper{};
+  int m_state[6]{};
+
+public:
+  void Process(double& input, FilterParameters& params) override;
+};
