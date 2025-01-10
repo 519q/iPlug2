@@ -4,6 +4,42 @@ constexpr int LUT_BITS{12};
 constexpr int LUT_SIZE{1 << LUT_BITS};
 constexpr int VINTAGE_BIT_RATE{16};
 
+enum class FilterTypes
+{
+  DF1_1P,
+  DF1_2P,
+  DF1_3P,
+  DF1_4P,
+  DF1_6P,
+  DF2_2P,
+  DF2_4P,
+  SVF1_2P,
+  SVF1_4P,
+  SVF1_6P,
+  ZDF1_2P,
+  ZDF2_1P,
+  ZDF2_2P,
+  MAX_FILTER_TYPES
+};
+
+enum class FilterAlgo
+{
+  DF1,
+  DF2,
+  SVF1,
+  ZDF1,
+  MAX_ALGO
+};
+
+enum class FilterType
+{
+  LP,
+  BP,
+  BS,
+  HP
+};
+
+
 class FilterParameters
 {
 public:

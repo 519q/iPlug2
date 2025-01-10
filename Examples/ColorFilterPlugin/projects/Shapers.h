@@ -1,8 +1,11 @@
 #pragma once
 #include "FilterParameters.h"
-#include "projects/SmoothTools.h"
 #include "IPlugConstants.h"
-static double m_Vintage_scale {1 << VINTAGE_BIT_RATE};
+#include "projects/SmoothTools.h"
+static double m_Vintage_scale{1 << VINTAGE_BIT_RATE};
+
+static double filnalTanh(double input, FilterParameters params) { return tanh(input /** mapRange((1. - params.m_resonance), 0.5, 1)*/); }
+
 class DCStop
 {
 private:
@@ -14,24 +17,23 @@ public:
   {
     const double cutoffFreq = 2.5 * std::pow(8000.0, cutoff /*params.m_cutoff*/);
     m_alpha = std::exp(-2.0 * iplug::PI * cutoffFreq / params.m_sampleRate);
-    m_state = (1 - m_alpha) * input + m_alpha * m_state; 
+    m_state = (1 - m_alpha) * input + m_alpha * m_state;
     input -= m_state;
   }
 };
-//enum class ShaperParams
+// enum class ShaperParams
 //{
-//  SHAPE,
-//  DRIVE,
-//  ASYM,
-//  MAX_SHAPER_PARAMS
-//};
+//   SHAPE,
+//   DRIVE,
+//   ASYM,
+//   MAX_SHAPER_PARAMS
+// };
 class Shapers
 {
 protected:
-
   virtual ~Shapers() {}
-  
-  virtual void Process(double& input, FilterParameters& params) = 0; // Pure virtual function
+
+  virtual void Process(double& input, FilterParameters& params, double driveDivider) = 0; // Pure virtual function
 };
 
 class Tripler : public Shapers
@@ -50,7 +52,7 @@ public:
   {
   }
 
-  void Process(double& input, FilterParameters& params) override
+  void Process(double& input, FilterParameters& params, double driveDivider = 1) override
   {
     m_drive = params.m_drive;
     const double shaped = (-d * input * (std::tanh(a * std::pow(input, 2) - b) - c)) * 0.3;
@@ -67,7 +69,7 @@ public:
   {
   }
 
-  void Process(double& input, FilterParameters& params) override
+  void Process(double& input, FilterParameters& params, double driveDivider = 1) override
   {
     if (input > 0)
     {
@@ -88,16 +90,20 @@ public:
   {
   }
 
-  void Process(double& input, FilterParameters& params) override
+  void Process(double& input, FilterParameters& params, double driveDivider = 1) override
   {
-    const double t = 0.4 - ((0.4 - 0.01) * params.m_shape);
-    const double z = 0.7 - ((0.7 - 0.24) * params.m_shape);
-    double shaped = (input / (t + std::abs(input))) * z;
-    if (params.m_bias > 0)
+    if (params.m_drive > 0)
     {
-      asym.Process(shaped, params);
+      params.m_drive /= driveDivider;
+      const double t = 0.4 - ((0.4 - 0.01) * params.m_shape);
+      const double z = 0.7 - ((0.7 - 0.24) * params.m_shape);
+      double shaped = (input / (t + std::abs(input))) * z;
+      if (params.m_bias > 0)
+      {
+        asym.Process(shaped, params);
+      }
+      dcstop.process(shaped, params);
+      input = interpolateLin(input, shaped, params.m_drive);
     }
-    dcstop.process(shaped, params);
-    input = interpolateLin(input, shaped, params.m_drive);
   }
 };

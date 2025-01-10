@@ -124,7 +124,7 @@ class SVF1_6P_BP : public Filters
 {
 private:
   SVF1_6P_LP lpl{};
-  SVF1_6P_HP lph{};
+  SVF1_6P_LP lph{};
   double m_stateL{};
   double m_stateH{};
   double m_bandwidth{0.11};

@@ -1,4 +1,4 @@
-<REAPER_PROJECT 0.1 "7.23/win64" 1735929771
+<REAPER_PROJECT 0.1 "7.23/win64" 1736537636
   RIPPLE 0
   GROUPOVERRIDE 0 0 0
   AUTOXFADE 129
@@ -73,9 +73,9 @@
   MASTER_FX 1
   MASTER_SEL 0
   <MASTERFXLIST
-    WNDRECT 261 344 1073 569
-    SHOW 3
-    LASTSEL 2
+    WNDRECT 71 301 1073 569
+    SHOW 1
+    LASTSEL 0
     DOCKED 0
     BYPASS 0 0 0
     <JS analysis/gfxscope ""
@@ -94,7 +94,7 @@
     WAK 0 0
     BYPASS 0 0 0
     <JS analysis/gfxanalyzer ""
-      10 -175 0 2 0 0 1000 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+      10 -175.8 0 2 0 0 1000 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     >
     FLOATPOS 0 0 0 0
     FXID {719BA233-6078-4937-99A9-7D2D293BFD91}
@@ -130,7 +130,7 @@
     ISBUS 0 0
     BUSCOMP 0 0 0 0 0
     SHOWINMIX 1 0.6667 0.5 1 0.5 0 0 0
-    SEL 1
+    SEL 0
     REC 1 5088 1 0 0 0 0 0
     VU 2
     TRACKHEIGHT 252 0 0 0 0 0 0
@@ -142,23 +142,24 @@
     MIDIOUT -1
     MAINSEND 1 0
     <FXCHAIN
-      WNDRECT 1141 171 1239 1068
+      WNDRECT 987 290 1239 918
       SHOW 2
       LASTSEL 1
       DOCKED 0
       BYPASS 0 0 0
       <JS synthesis/tonegenerator ""
-        -11 -6 55 0 0 0 2 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        -11 -6 38 0 0 0 2 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
       >
       FLOATPOS 0 0 0 0
       FXID {E9DBF72E-6FD7-4D1C-B53A-06F7F240704B}
       WAK 0 0
       BYPASS 0 0 0
       <CLAP "CLAP: ColorFilterPlugin (519q)" com.519q.ColorFilterPlugin ""
-        CFG 0 900 900 ""
+        CFG 0 900 750 ""
         <STATE
-          AAAAAAAAAECHAABA66pIQEAAAIAcn0lAd57nuQeDV0C6bdu2bF1BQAAAAAAAAPA/AAAAAAAAAAAAAAAAAABZQCbDMIz5gFJAAAAAAAAA8D8AAAAAAAAgQAAAAAAAAAAA
-          AAAAAAAAAAAAAAAAAAAAAAIAAAAGAAAACAAAAAAAAAAAACBA
+          AAAAAAAAAADLMAzDemdYQAAAAAAAAFlAAAAAAAAAAAA5SZKkgZ5GQAAAAAAAAPA/AAAAAAAAAAB/YRjG4bdWQETP87yLpFNAAAAAAAAA8D8AAAAAAAAAQAAAAAAAAAAA
+          AAAAAAAAAAACAAAABgAAAAcAAAAKAAAAAAAAAAAAAAAAAABAAAAAAAAAAADLMAzDemdYQAAAAAAAAFlAAAAAAAAAAAA5SZKkgZ5GQAAAAAAAAPA/AAAAAAAAAAB/YRjG
+          4bdWQETP87yLpFNAAAAAAAAA8D8AAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAA=
         >
       >
       FLOATPOS 0 0 0 0

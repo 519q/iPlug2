@@ -60,6 +60,10 @@
     <ClCompile Include="VintageHighpassFilters.cpp" />
     <ClCompile Include="VintageBandpassFilters.cpp" />
     <ClCompile Include="VintageBandStopFilters.cpp" />
+    <ClCompile Include="DomeShaper.cpp" />
+    <ClCompile Include="..\..\..\Dependencies\IPlug\kissfft\kiss_fft.c" />
+    <ClCompile Include="..\..\..\Dependencies\IPlug\kissfft\kiss_fftr.c" />
+    <ClCompile Include="RingBuffer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="../config.h" />
@@ -208,6 +212,10 @@
     <ClInclude Include="VintageHighpassFilters.h" />
     <ClInclude Include="VintageBandpassFilters.h" />
     <ClInclude Include="VintageBandStopFilters.h" />
+    <ClInclude Include="DomeShaper.h" />
+    <ClInclude Include="..\..\..\Dependencies\IPlug\kissfft\kiss_fft.h" />
+    <ClInclude Include="..\..\..\Dependencies\IPlug\kissfft\kiss_fftr.h" />
+    <ClInclude Include="RingBuffer.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="IPlug">
