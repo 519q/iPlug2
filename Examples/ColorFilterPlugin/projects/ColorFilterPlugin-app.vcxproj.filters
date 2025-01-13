@@ -315,4 +315,7 @@
       <Filter>resources</Filter>
     </Image>
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="Ideas.txt" />
+  </ItemGroup>
 </Project>

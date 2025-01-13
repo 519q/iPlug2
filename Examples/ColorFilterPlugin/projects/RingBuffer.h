@@ -24,6 +24,8 @@ private:
 public:
   RingBuffer() { initializeHannWindow(); }
 
+  bool getChunkRead() const { return chunkRead; }
+
   std::array<double, chunkSize>& getChunkBuffer() { return mChunkBuffer; }
 
   std::array<double, chunkSize>& getOverlapBuffer() { return mOverlapBuffer; }

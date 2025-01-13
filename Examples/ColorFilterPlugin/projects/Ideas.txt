@@ -1,0 +1,177 @@
+SHAPERS
+
+
+Example: Cubic Shaping
+cpp
+double shapeCubic(double sineValue, double drive)
+{
+    // Cubic soft clipping
+    double shapedValue = sineValue - (1.0 / 3.0) * std::pow(sineValue, 3);
+    return shapedValue * drive;
+}
+
+Example: Polynomial Shaping
+cpp
+double shapePolynomial(double sineValue, double drive)
+{
+    // Polynomial shaping (adjust coefficients for different curves)
+    double shapedValue = sineValue - 0.2 * std::pow(sineValue, 3) + 0.1 * std::pow(sineValue, 5);
+    return shapedValue * drive;
+}
+
+2. Asymmetric Shaping
+Asymmetric shaping introduces even-order harmonics, which can create a warmer, more "inflated" sound.
+
+Example: Asymmetric Tanh
+cpp
+double shapeAsymmetricTanh(double sineValue, double drive)
+{
+    // Asymmetric tanh shaping
+    double shapedValue = std::tanh(drive * sineValue) + 0.5 * std::tanh(0.5 * drive * sineValue);
+    return shapedValue;
+}
+
+Exponential shaping can create a more aggressive, "square-like" sound.
+
+Example: Exponential Shaping
+cpp
+double shapeExponential(double sineValue, double drive)
+{
+    // Exponential shaping
+    double shapedValue = std::exp(drive * sineValue) - 1.0;
+    return shapedValue / (std::exp(drive) - 1.0); // Normalize
+}
+
+Foldback distortion creates a "folded" waveform, which can add complex harmonics.
+
+Example: Foldback Distortion
+cpp
+double shapeFoldback(double sineValue, double threshold)
+{
+    // Foldback distortion
+    if (sineValue > threshold || sineValue < -threshold)
+    {
+        sineValue = std::fmod(sineValue + threshold, 4.0 * threshold) - 2.0 * threshold;
+    }
+    return sineValue;
+}
+
+5. Wavefolding
+Wavefolding is similar to foldback distortion but creates a smoother, more complex waveform.
+
+Example: Wavefolding
+cpp
+double shapeWavefold(double sineValue, double drive)
+{
+    // Wavefolding
+    double shapedValue = std::sin(drive * sineValue);
+    return shapedValue;
+}
+
+6. Chebyshev Polynomials
+Chebyshev polynomials are often used in wave-shaping to create specific harmonic content.
+
+Example: Chebyshev Polynomial
+cpp
+double shapeChebyshev(double sineValue, double drive)
+{
+    // Chebyshev polynomial (3rd order)
+    double shapedValue = 4.0 * std::pow(sineValue, 3) - 3.0 * sineValue;
+    return shapedValue * drive;
+}
+
+8. Dynamic Shaping
+You can dynamically adjust the shaping function based on the input amplitude or other parameters.
+
+Example: Dynamic Shaping
+cpp
+Copy
+double shapeDynamic(double sineValue, double drive, double amplitude)
+{
+    // Adjust drive based on input amplitude
+    double adjustedDrive = drive * (1.0 + 0.5 * amplitude);
+    return std::tanh(adjustedDrive * sineValue);
+}
+
+*******************************************************************************
+
+2. Applying a DC Offset
+To apply a DC offset without clipping, you need to scale the signal so that the maximum value after adding the offset does not exceed the allowable range (e.g., [-1, 1] for normalized audio signals).
+
+Implementation
+cpp
+double DomeShaper::applyDCOffset(double sineValue, double dcOffset)
+{
+  // Scale the sine value to avoid clipping
+  double scaleFactor = 1.0 - std::abs(dcOffset);
+  return dcOffset + scaleFactor * sineValue;
+}
+Usage
+cpp
+double DomeShaper::generateCustomSinusoid(double freq, double time, double phase, double shapeAmount, double dcOffset)
+{
+  double sineValue = std::cos(2.0 * iplug::PI * freq * time + phase);
+  double shapedValue = shapeSine(sineValue, shapeAmount);
+  return applyDCOffset(shapedValue, dcOffset);
+}
+
+3. Introducing a Delay
+To introduce a delay (e.g., up to 5 ms), you can use a ring buffer or delay line to store the signal and retrieve it after the desired delay.
+
+Implementation
+cpp
+class DelayLine
+{
+private:
+  std::vector<double> buffer;
+  size_t writeIndex = 0;
+  size_t delaySamples = 0;
+
+public:
+  DelayLine(size_t maxDelaySamples)
+  {
+    buffer.resize(maxDelaySamples, 0.0);
+  }
+
+  void setDelay(size_t delaySamples)
+  {
+    this->delaySamples = delaySamples;
+  }
+
+  double process(double input)
+  {
+    // Read the delayed sample
+    size_t readIndex = (writeIndex - delaySamples + buffer.size()) % buffer.size();
+    double output = buffer[readIndex];
+
+    // Write the new sample
+    buffer[writeIndex] = input;
+    writeIndex = (writeIndex + 1) % buffer.size();
+
+    return output;
+  }
+};
+Usage
+cpp
+class DomeShaper
+{
+private:
+  DelayLine delayLine;
+
+public:
+  DomeShaper(size_t maxDelaySamples) : delayLine(maxDelaySamples) {}
+
+  void setDelay(double delayMs, double sampleRate)
+  {
+    size_t delaySamples = static_cast<size_t>(delayMs * sampleRate / 1000.0);
+    delayLine.setDelay(delaySamples);
+  }
+
+  double generateCustomSinusoid(double freq, double time, double phase, double shapeAmount, double dcOffset)
+  {
+    double sineValue = std::cos(2.0 * iplug::PI * freq * time + phase);
+    double shapedValue = shapeSine(sineValue, shapeAmount);
+    double offsetValue = applyDCOffset(shapedValue, dcOffset);
+    return delayLine.process(offsetValue);
+  }
+};

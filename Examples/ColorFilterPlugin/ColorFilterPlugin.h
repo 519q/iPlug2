@@ -3,31 +3,38 @@
 #include "IPlug_include_in_plug_hdr.h"
 #include "OverSampler.h"
 #include "Smoothers.h"
-
-#include "projects/DomeShaper.h"
+#include "projects/SpectralShaper.h"
 #include "projects/FilterSwitcher.h"
 #include "projects/Filters.h"
-//#include "projects/RingBuffer.h"
 #include "projects/Shapers.h"
 #include "projects/SmoothTools.h"
+#include "projects/aligned_memory.cpp"
+
 const int kNumPresets = 1;
 
 
 enum EParams
 {
-  kFilterAlgo,
   kGain,
+
   kFilterCutoff,
   kFilterResonance,
   kFilterBandwidth,
   kFilterBypass,
+  kFilterAlgo,
+  kFilterType,
+  kFilterSelector,
+  // kFilterVintage,
+
   kShaperDrive,
   kShaperShape,
   kShaperBias,
-  kShaperBypass,
-  kFilterSelector,
-  kFilterType,
-  // kFilterVintage,
+  //kShaperBypass,
+
+  kSpectralShaperShape,
+  //kSpectralShaperDC,
+  //kSpectralShaperPhase,
+
   kOverSampling,
   kNumParams
 };
@@ -44,7 +51,7 @@ private:
     static const std::initializer_list<const char*> DF1 = {"DF1_1P", "DF1_2P", "DF1_3P", "DF1_4P", "DF1_6P"};
     static const std::initializer_list<const char*> DF2 = {"DF2_2P", "DF2_4P"};
     static const std::initializer_list<const char*> SVF1 = {"SVF1_2P", "SVF1_4P", "SVF1_6P"};
-    static const std::initializer_list<const char*> ZDF1 = {"ZDF1_2P", "ZDF2_1P", "ZDF2_2P"};
+    //static const std::initializer_list<const char*> ZDF1 = {"ZDF1_2P", "ZDF2_1P", "ZDF2_2P"};
 
     switch (indx)
     {
@@ -54,8 +61,8 @@ private:
       return DF2;
     case (int)FilterAlgo::SVF1:
       return SVF1;
-    case (int)FilterAlgo::ZDF1:
-      return ZDF1;
+    //case (int)FilterAlgo::ZDF1:
+    //  return ZDF1;
     default:
       return {}; // Empty initializer list for safety
     }
@@ -67,10 +74,10 @@ private:
   int m_df1retainer{};
   int m_df2retainer{(int)FilterTypes::DF2_2P};
   int m_svf1retainer{(int)FilterTypes::SVF1_2P};
-  int m_zdf1retainer{(int)FilterTypes::ZDF1_2P};
+  //int m_zdf1retainer{(int)FilterTypes::ZDF1_2P};
   int columns = 5;
   int rows = 1;
-  int padding = 40;
+  int padding = 40.;
   IRECT m_ButtonsPanel{};
   double retained_kFilterSelector{};
 
@@ -87,7 +94,7 @@ public:
     chunk.Put(&m_df1retainer);
     chunk.Put(&m_df2retainer);
     chunk.Put(&m_svf1retainer);
-    chunk.Put(&m_zdf1retainer);
+    //chunk.Put(&m_zdf1retainer);
     chunk.Put(&m_filterAlgo);
     chunk.Put(&retained_kFilterSelector);
 
@@ -103,7 +110,7 @@ public:
     startPos = chunk.Get(&m_df1retainer, startPos);
     startPos = chunk.Get(&m_df2retainer, startPos);
     startPos = chunk.Get(&m_svf1retainer, startPos);
-    startPos = chunk.Get(&m_zdf1retainer, startPos);
+    //startPos = chunk.Get(&m_zdf1retainer, startPos);
     startPos = chunk.Get(&m_filterAlgo, startPos);
     startPos = chunk.Get(&retained_kFilterSelector, startPos);
     if (GetUI())
@@ -135,8 +142,8 @@ public:
   RingBuffer mRingBufferL{};
   RingBuffer mRingBufferR{};
 
-   DomeShaper mDomeShaperL{};
-   DomeShaper mDomeShaperR{};
+  SpectralShaper mDomeShaperL{};
+  SpectralShaper mDomeShaperR{};
   // std::vector<double> processedL, processedR;
   // std::map<double, double> sineLUT = mDomeShaperL.generateSineLUT();
 
@@ -156,8 +163,9 @@ public:
   iplug::LogParamSmooth<double> mShaperDriveSmooth{knobSmoothing};
   iplug::LogParamSmooth<double> mShaperShapeSmooth{knobSmoothing};
   iplug::LogParamSmooth<double> mShaperBiasSmooth{knobSmoothing};
-  iplug::LogParamSmooth<double> mShaperBypassSmooth{buttonSmoothing};
+  //iplug::LogParamSmooth<double> mShaperBypassSmooth{buttonSmoothing};
 
+  iplug::LogParamSmooth<double> mSpectralShaperShapeSmooth{knobSmoothing};
   // iplug::LogParamSmooth<double> mFilterSelectorSmooth{30};
 
   iplug::LogParamSmooth<double> mFilterCutoffSmooth{knobSmoothing};

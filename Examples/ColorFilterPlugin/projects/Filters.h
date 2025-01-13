@@ -10,6 +10,7 @@
 const double antiDenormal = 1e-20;
 constexpr double clampValue{5};
 
+
 class Filters
 {
 protected:

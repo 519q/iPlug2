@@ -10,7 +10,7 @@ private:
   DF1_1P_LP lpl{};
   double m_stateL{};
   double m_stateH{};
-  double m_bandwidth{0.11};
+  double m_bandwidth{bandwidthHighestLimit};
 
 public:
   void Process(double& input, FilterParameters& params);
@@ -23,7 +23,7 @@ private:
   DF1_2P_LP lph{};
   double m_stateL{};
   double m_stateH{};
-  double m_bandwidth{0.11};
+  double m_bandwidth{bandwidthHighestLimit};
 
 public:
   void Process(double& input, FilterParameters& params);
@@ -36,7 +36,7 @@ private:
   DF1_3P_LP lph{};
   double m_stateL{};
   double m_stateH{};
-  double m_bandwidth{0.11};
+  double m_bandwidth{bandwidthHighestLimit};
 
 public:
   void Process(double& input, FilterParameters& params);
@@ -49,7 +49,7 @@ private:
   DF1_4P_LP lph{};
   double m_stateL{};
   double m_stateH{};
-  double m_bandwidth{0.11};
+  double m_bandwidth{bandwidthHighestLimit};
 
 public:
   void Process(double& input, FilterParameters& params);
@@ -62,7 +62,7 @@ private:
   DF1_6P_LP lph{};
   double m_stateL{};
   double m_stateH{};
-  double m_bandwidth{0.11};
+  double m_bandwidth{bandwidthHighestLimit};
 
 public:
   void Process(double& input, FilterParameters& params);
@@ -75,20 +75,20 @@ private:
   DF2_2P_LP lph{};
   double m_stateL{};
   double m_stateH{};
-  double m_bandwidth{0.11};
+  double m_bandwidth{bandwidthHighestLimit};
 
 public:
   void Process(double& input, FilterParameters& params);
 };
 
 class DF2_4P_BP : public Filters
- {
+{
 private:
   DF2_4P_LP lpl{};
   DF2_4P_LP lph{};
   double m_stateL{};
   double m_stateH{};
-  double m_bandwidth{0.11};
+  double m_bandwidth{bandwidthHighestLimit};
 
 public:
   void Process(double& input, FilterParameters& params);
@@ -101,7 +101,7 @@ private:
   SVF1_2P_LP lph{};
   double m_stateL{};
   double m_stateH{};
-  double m_bandwidth{0.11};
+  double m_bandwidth{bandwidthHighestLimit};
 
 public:
   void Process(double& input, FilterParameters& params);
@@ -114,7 +114,7 @@ private:
   SVF1_4P_LP lph{};
   double m_stateL{};
   double m_stateH{};
-  double m_bandwidth{0.11};
+  double m_bandwidth{bandwidthHighestLimit};
 
 public:
   void Process(double& input, FilterParameters& params);
@@ -127,7 +127,7 @@ private:
   SVF1_6P_LP lph{};
   double m_stateL{};
   double m_stateH{};
-  double m_bandwidth{0.11};
+  double m_bandwidth{bandwidthHighestLimit};
 
 public:
   void Process(double& input, FilterParameters& params);

@@ -54,7 +54,7 @@ void DF1_1P_LP::Process(double& input, FilterParameters& params)
 void DF1_2P_LP::Process(double& input, FilterParameters& params)
 {
   getCoefficients(params);
-  input += resonate(input, params, m_poles[0], m_poles[1], 2.0);
+  input += resonate(input, params, m_poles[0], m_poles[1], DF1_2P_ResoScaling);
   for (double& pole : m_poles)
   {
     processPoleLP(input, pole, params);
@@ -64,7 +64,7 @@ void DF1_2P_LP::Process(double& input, FilterParameters& params)
 void DF1_3P_LP::Process(double& input, FilterParameters& params)
 {
   getCoefficients(params);
-  input += resonate(input, params, m_poles[0], m_poles[2], 1.2);
+  input += resonate(input, params, m_poles[0], m_poles[2], DF1_3P_ResoScaling);
   for (double& pole : m_poles)
   {
     processPoleLP(input, pole, params);
@@ -74,7 +74,7 @@ void DF1_3P_LP::Process(double& input, FilterParameters& params)
 void DF1_4P_LP::Process(double& input, FilterParameters& params)
 {
   getCoefficients(params);
-  input += resonate(input, params, m_poles[1], m_poles[3], 1.44);
+  input += resonate(input, params, m_poles[1], m_poles[3], DF1_4P_ResoScaling);
   for (double& pole : m_poles)
   {
     processPoleLP(input, pole, params);
@@ -84,7 +84,7 @@ void DF1_4P_LP::Process(double& input, FilterParameters& params)
 void DF1_6P_LP::Process(double& input, FilterParameters& params)
 {
   getCoefficients(params);
-  input += resonate(input, params, m_poles[1], m_poles[5], 0.9);
+  input += resonate(input, params, m_poles[1], m_poles[5], DF1_6P_ResoScaling);
   for (double& pole : m_poles)
   {
     processPoleLP(input, pole, params);
@@ -124,14 +124,14 @@ void DF2_2P_LP::getCoefficients(FilterParameters& params, double resoScaling, do
 
 void DF2_2P_LP::Process(double& input, FilterParameters& params)
 {
-  getCoefficients(params, 11.5);
+  getCoefficients(params, DF2_2P_ResoScaling);
   process2pole(input, params, m_state[0], m_state[1]);
   input = filnalTanh(input, params);
 }
 
 void DF2_4P_LP::Process(double& input, FilterParameters& params)
 {
-  getCoefficients(params, 6);
+  getCoefficients(params, DF2_4P_ResoScaling);
   process2pole(input, params, m_state[0], m_state[1]);
   process2pole(input, params, m_state[2], m_state[3]);
 }
@@ -146,7 +146,7 @@ void SVF1_2P_LP::getCoefficients(FilterParameters& params, double cutoffOffset, 
 void SVF1_2P_LP::Process(double& input, FilterParameters& params)
 {
   getCoefficients(params);
-  input += resonate(input, params, m_poles[0], m_poles[1], 1.9);
+  input += resonate(input, params, m_poles[0], m_poles[1], SVF1_2P_ResoScaling);
   for (double& pole : m_poles)
   {
     processPoleLP(input, pole, params);
@@ -156,7 +156,7 @@ void SVF1_2P_LP::Process(double& input, FilterParameters& params)
 void SVF1_4P_LP::Process(double& input, FilterParameters& params)
 {
   getCoefficients(params);
-  input += resonate(input, params, m_poles[1], m_poles[3], 1.55);
+  input += resonate(input, params, m_poles[1], m_poles[3], SVF1_4P_ResoScaling);
   for (double& pole : m_poles)
   {
     processPoleLP(input, pole, params);
@@ -166,7 +166,7 @@ void SVF1_4P_LP::Process(double& input, FilterParameters& params)
 void SVF1_6P_LP::Process(double& input, FilterParameters& params)
 {
   getCoefficients(params);
-  input += resonate(input, params, m_poles[1], m_poles[5], 0.95);
+  input += resonate(input, params, m_poles[1], m_poles[5], SVF1_6P_ResoScaling);
   for (double& pole : m_poles)
   {
     processPoleLP(input, pole, params);

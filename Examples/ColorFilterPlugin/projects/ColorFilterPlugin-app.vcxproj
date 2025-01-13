@@ -376,6 +376,9 @@
     </None>
     <None Include="..\config\ColorFilterPlugin-mac.xcconfig" />
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="Ideas.txt" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

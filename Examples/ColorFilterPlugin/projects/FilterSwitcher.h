@@ -35,7 +35,7 @@ inline auto getBPFilters() { return FilterSwitcher{DF1_1P_BP{}, DF1_2P_BP{}, DF1
 inline auto getBSFilters() { return FilterSwitcher{DF1_1P_BS{}, DF1_2P_BS{}, DF1_3P_BS{}, DF1_4P_BS{}, DF1_6P_BS{}, DF2_2P_BS{}, DF2_4P_BS{}, SVF1_2P_BS{}, SVF1_4P_BS{}, SVF1_6P_BS{}}; }
 inline auto getLPFilters()
 {
-  return FilterSwitcher{DF1_1P_LP{}, DF1_2P_LP{}, DF1_3P_LP{}, DF1_4P_LP{}, DF1_6P_LP{}, DF2_2P_LP{}, DF2_4P_LP{}, SVF1_2P_LP{}, SVF1_4P_LP{}, SVF1_6P_LP{}, ZDF1_2P_LP{}, ZDF2_1P_LP{}, ZDF2_2P_LP{}};
+  return FilterSwitcher{DF1_1P_LP{}, DF1_2P_LP{}, DF1_3P_LP{}, DF1_4P_LP{}, DF1_6P_LP{}, DF2_2P_LP{}, DF2_4P_LP{}, SVF1_2P_LP{}, SVF1_4P_LP{}, SVF1_6P_LP{}/*, ZDF1_2P_LP{}, ZDF2_1P_LP{}, ZDF2_2P_LP{}*/};
 }
 
 //inline auto getVintage_HPFilters()

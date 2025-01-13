@@ -1,6 +1,8 @@
 #include "ColorFilterPlugin.h"
 #include "IPlugConstants.h"
 #include "IPlug_include_in_plug_src.h"
+#include "projects/CustomGUI.h"
+
 class RoundedPanelControl : public IControl
 {
 public:
@@ -15,36 +17,73 @@ public:
   {
     // Draw a rounded rectangle with the specified color and corner radius
     g.FillRoundRect(mColor, mRECT, mCornerRadius);
-    // g.DrawRoundRect(IColor(255, 0xa5, 0x9b, 0xbf), mRECT, mCornerRadius, mCornerRadius, mCornerRadius, mCornerRadius); // border
   }
 
 private:
   IColor mColor;
   float mCornerRadius;
 };
+
+class RoundedToggleControl : public IVToggleControl
+{
+public:
+  RoundedToggleControl(const IRECT& bounds, int paramIdx, const char* label, const IVStyle& style, const char* offText, const char* onText, float cornerRadius = 5.0f)
+    : IVToggleControl(bounds, paramIdx, label, style, offText, onText)
+    , mCornerRadius(cornerRadius)
+  {
+  }
+  bool IsHit(float x, float y) const override
+  {
+    return mRECT.Contains(x, y); // Check if (x, y) is within mRECT
+  }
+  //void OnMouseDown(float x, float y, const IMouseMod& mod) override
+  //{
+  //  // Custom logic here
+  //  IVToggleControl::OnMouseDown(x, y, mod); // Call base class implementation
+  //}
+  void Draw(IGraphics& g) override
+  {
+    // Draw rounded rectangle background
+    const IColor bgColor = IColor(255, 0x8b, 0x86, 0xc1);
+    g.FillRoundRect(bgColor, mRECT, mCornerRadius);
+
+    // Draw toggle state text
+    const char* text = GetValue() > 0.5 ? mOnText.Get() : mOffText.Get();
+    g.DrawText(mText, text, mRECT);
+
+    // Draw outline (optional)
+    const IColor outlineColor = GetColor(kFG);
+    g.DrawRoundRect(outlineColor, mRECT, mCornerRadius, nullptr, 1.0f);
+  }
+
+private:
+  float mCornerRadius;
+};
+
 ColorFilterPlugin::ColorFilterPlugin(const InstanceInfo& info)
   : iplug::Plugin(info, MakeConfig(kNumParams, kNumPresets))
 {
 
-  GetParam(kFilterAlgo)->InitInt("FilterAlgo", 0, 0, 3, "FilterAlgo", IParam::kFlagStepped, "");
-
-
   GetParam(kGain)->InitDouble("PostGain", 0., 0., 200.0, 0.01, "%");
-  GetParam(kFilterCutoff)->InitDouble("Cutoff", 0., 0., 100.0, 0.01, "%");
+  // TODO: rotating knob with starting point at 50% position
+  GetParam(kFilterCutoff)->InitDouble("Cutoff", 100., 0., 100.0, 0.01, "%");
   GetParam(kFilterResonance)->InitDouble("Resonance", 0., 0., 100.0, 0.01, "%");
-  GetParam(kFilterBandwidth)->InitDouble("Bandwidth", 0., 0., 100.0, 0.01, "%");
+  GetParam(kFilterBandwidth)->InitDouble("Bandwidth", 50., 0., 100.0, 0.01, "%");
+  GetParam(kFilterSelector)->InitInt("FilterSelector", 0, 0, 9, "", IParam::kFlagStepped, "");
+  GetParam(kFilterType)->InitInt("FilterType", 0, 0, 3, "", IParam::kFlagStepped, "");
+  GetParam(kFilterAlgo)->InitInt("FilterAlgo", 0, 0, 2, "FilterAlgo", IParam::kFlagStepped, "");
   GetParam(kFilterBypass)->InitBool("FilterBypass", false, "", IParam::kFlagStepped, "", "Off", "On");
+
   GetParam(kShaperDrive)->InitDouble("ShaperDrive", 0., 0., 100.0, 0.01, "%");
   GetParam(kShaperShape)->InitDouble("ShaperShape", 0., 0., 100.0, 0.01, "%");
   GetParam(kShaperBias)->InitDouble("ShaperBias", 0., 0., 100.0, 0.01, "%");
-  GetParam(kShaperBypass)->InitBool("ShaperBypass", false, "", IParam::kFlagStepped, "", "Off", "On");
-  // GetParam(kFilterVintage)->InitBool("FilterVintage", false, "", IParam::kFlagStepped, "", "Off", "On");
+  // GetParam(kShaperBypass)->InitBool("ShaperBypass", false, "", IParam::kFlagStepped, "", "Off", "On");
+  //  GetParam(kFilterVintage)->InitBool("FilterVintage", false, "", IParam::kFlagStepped, "", "Off", "On");
 
-  GetParam(kFilterSelector)->InitInt("FilterSelector", 0, 0, 12, "", IParam::kFlagStepped, "");
+  GetParam(kSpectralShaperShape)->InitDouble("SpectralShape", 0., -100., 100.0, 0.01, "%");
 
 
-  GetParam(kFilterType)->InitInt("FilterType", 0, 0, 3, "", IParam::kFlagStepped, "");
-  GetParam(kOverSampling)->InitInt("Oversampler", 0, 0, 4, "OverSampler", IParam::kFlagStepped, "");
+  GetParam(kOverSampling)->InitInt("Oversampler", 0, 0, 3, "OverSampler", IParam::kFlagStepped, "");
   // https: // coolors.co/palette/000814-001d3d-003566-ffc300-ffd60a
 
 
@@ -85,25 +124,30 @@ ColorFilterPlugin::ColorFilterPlugin(const InstanceInfo& info)
     pGraphics->AttachControl(new IVKnobControl(FilterPanel.GetGridCell(1, 2, rows, columns).GetFromTop(100).GetTranslated(-50, -10)./*GetFromLeft(180).*/ GetMidHPadded(padding), kFilterCutoff));
     pGraphics->AttachControl(new IVKnobControl(FilterPanel.GetGridCell(1, 3, rows, columns).GetFromTop(75).GetMidHPadded(padding), kFilterResonance));
     pGraphics->AttachControl(new IVKnobControl(FilterPanel.GetGridCell(1, 4, rows, columns).GetFromTop(75).GetMidHPadded(padding), kFilterBandwidth));
-    pGraphics->AttachControl(
-      new IVToggleControl(FilterPanel.GetGridCell(1, 5, rows, columns).GetFromTop(75).GetMidHPadded(padding), kFilterBypass, "FilterBypass", DEFAULT_STYLE.WithColor(kFG, COLOR_WHITE), "Off", "On"));
-    // shaper
+    pGraphics->AttachControl(new RoundedToggleControl(FilterPanel.GetGridCell(1, 5, rows, columns).GetFromTop(40).GetMidHPadded(25).GetTranslated(20, 20), // Bounds
+                                                      kFilterBypass,                                                                      // Parameter index
+                                                      "Filter Bypass",                                                                    // Label
+                                                      DEFAULT_STYLE.WithColor(kFG, COLOR_WHITE),                                          // Style
+                                                      "Off",                                                                              // Off text
+                                                      "On",                                                                               // On text
+                                                      5.0f                                                                                // Corner radius
+                                                      ));
+     //pGraphics->AttachControl(
+     //new IVToggleControl(FilterPanel.GetGridCell(1, 5, rows, columns).GetFromTop(75).GetMidHPadded(padding), kFilterBypass, "FilterBypass", DEFAULT_STYLE.WithColor(kFG, COLOR_WHITE), "Off", "On"));
+     //shaper
     pGraphics->AttachControl(new IVKnobControl(ShaperPanel.GetGridCell(1, 1, rows, columns).GetFromTop(75).GetMidHPadded(padding), kShaperDrive));
     pGraphics->AttachControl(new IVKnobControl(ShaperPanel.GetGridCell(1, 2, rows, columns).GetFromTop(75).GetMidHPadded(padding), kShaperShape));
     pGraphics->AttachControl(new IVKnobControl(ShaperPanel.GetGridCell(1, 3, rows, columns).GetFromTop(75).GetMidHPadded(padding), kShaperBias));
+
+    pGraphics->AttachControl(new IVKnobControl(ShaperPanel.GetGridCell(1, 4, rows, columns).GetFromTop(75).GetMidHPadded(padding), kSpectralShaperShape));
 
 
     // pGraphics->AttachControl(
     // new IVToggleControl(ShaperPanel.GetGridCell(1, 4, rows, columns).GetFromTop(75).GetMidHPadded(padding), kFilterVintage, "FilterVintage", DEFAULT_STYLE.WithColor(kFG, COLOR_WHITE), "Off",
     // "On"));
 
-    pGraphics->AttachControl(new IVRadioButtonControl(m_ButtonsPanel.GetGridCell(1, 1, rows, columns).GetFromTop(100).GetMidHPadded(padding), kFilterAlgo, {"DF1", "DF2", "SVF1", "ZDF1"}, "FilterAlgo",
-                                                      DEFAULT_STYLE, EVShape::Ellipse, EDirection::Vertical, 5.f));
-
-
-    // pGraphics->AttachControl(new IVRadioButtonControl(ButtonsPanel.GetGridCell(1, 2, rows, columns).GetFromTop(100).GetMidHPadded(padding), // Use the stored bounds
-    //                                                   kFilterSelector, GetFilterSelectorOptions(filterAlgo), "FilterSelector", DEFAULT_STYLE, EVShape::Ellipse, EDirection::Vertical, 5.f));
-
+    pGraphics->AttachControl(new IVRadioButtonControl(m_ButtonsPanel.GetGridCell(1, 1, rows, columns).GetFromTop(100).GetMidHPadded(padding), kFilterAlgo, {"DF1", "DF2", "SVF1" /*, "ZDF1"*/},
+                                                      "FilterAlgo", DEFAULT_STYLE, EVShape::Ellipse, EDirection::Vertical, 5.f));
 
     pGraphics->AttachControl(new IVRadioButtonControl(m_ButtonsPanel.GetGridCell(1, 5, rows, columns).GetFromTop(75).GetMidHPadded(padding), kFilterType, {"LP", "BP", "BS", "HP"}, "FilterType",
                                                       DEFAULT_STYLE, EVShape::Ellipse, EDirection::Vertical));
@@ -146,7 +190,9 @@ void ColorFilterPlugin::ProcessBlock(sample** inputs, sample** outputs, int nFra
       const double shaperDrive = GetParam(kShaperDrive)->Value() / 100.;
       const double shaperShape = GetParam(kShaperShape)->Value() / 100.;
       const double shaperAsym = GetParam(kShaperBias)->Value() / 100.;
-      const double shaperBypassMix = GetParam(kShaperBypass)->Value();
+
+      const double SH_Shape = GetParam(kSpectralShaperShape)->Value() / 100.;
+      // const double shaperBypassMix = GetParam(kShaperBypass)->Value();
       const int oversamplingFactor = GetParam(kOverSampling)->Value();
 
       m_ovrsmpFactor = oversamplingFactor;
@@ -164,8 +210,12 @@ void ColorFilterPlugin::ProcessBlock(sample** inputs, sample** outputs, int nFra
       const double smoothedShaperDrive = mShaperDriveSmooth.Process(shaperDrive);
       const double smoothedShaperShape = mShaperShapeSmooth.Process(shaperShape);
       const double smoothedShaperBias = mShaperBiasSmooth.Process(shaperAsym);
-      const double smoothedShaperBypass = mShaperBypassSmooth.Process(shaperBypassMix);
-      fParams.setFilterParameters(smoothedFilterCutoff, smoothedFilterResonance, smoothedFilterBandwidth, smoothedShaperDrive, smoothedShaperShape, smoothedShaperBias, oversamplingFactor, sampleRate);
+      // const double smoothedShaperBypass = mShaperBypassSmooth.Process(shaperBypassMix);
+
+      const double smoothedSH_Shape = mSpectralShaperShapeSmooth.Process(SH_Shape);
+
+      fParams.setFilterParameters(
+        smoothedFilterCutoff, smoothedFilterResonance, smoothedFilterBandwidth, smoothedShaperDrive, smoothedShaperShape, smoothedShaperBias, smoothedSH_Shape, oversamplingFactor, sampleRate);
 
 
       const double L = inputs[0][s];
@@ -265,12 +315,14 @@ void ColorFilterPlugin::ProcessBlock(sample** inputs, sample** outputs, int nFra
       mRingBufferR.write(inputR);
       mRingBufferL.readChunk();
       mRingBufferR.readChunk();
-      //mDomeShaperL.ProcessBuffer(mRingBufferL.getChunkBuffer());
-      //mDomeShaperL.ProcessBuffer(mRingBufferL.getOverlapBuffer());
+      mDomeShaperL.ProcessBuffer(mRingBufferL.getChunkBuffer(), mRingBufferL.getChunkRead(), fParams, sampleRate);
+      mDomeShaperL.ProcessBuffer(mRingBufferL.getOverlapBuffer(), mRingBufferL.getChunkRead(), fParams, sampleRate);
+      mDomeShaperR.ProcessBuffer(mRingBufferR.getChunkBuffer(), mRingBufferR.getChunkRead(), fParams, sampleRate);
+      mDomeShaperR.ProcessBuffer(mRingBufferR.getOverlapBuffer(), mRingBufferR.getChunkRead(), fParams, sampleRate);
       mRingBufferL.writeChunk();
       mRingBufferR.writeChunk();
-      outputs[0][s] = mRingBufferL.read();
-      outputs[1][s] = mRingBufferR.read();
+      outputs[0][s] = mRingBufferL.read() * smoothedGain;
+      outputs[1][s] = mRingBufferR.read() * smoothedGain;
     }
   });
 
@@ -310,10 +362,10 @@ void ColorFilterPlugin::OnParamChange(int paramIdx, EParamSource, int sampleOffs
     {
       m_svf1retainer = GetParam(kFilterSelector)->Int();
     }
-    else if (m_filterAlgo == (int)FilterAlgo::ZDF1)
-    {
-      m_zdf1retainer = GetParam(kFilterSelector)->Int();
-    }
+    // else if (m_filterAlgo == (int)FilterAlgo::ZDF1)
+    //{
+    //   m_zdf1retainer = GetParam(kFilterSelector)->Int();
+    // }
     break;
   case kFilterAlgo:
     m_filterAlgo = GetParam(kFilterAlgo)->Int();
@@ -338,12 +390,12 @@ void ColorFilterPlugin::OnParamChange(int paramIdx, EParamSource, int sampleOffs
       min_value = 7;
       max_value = 9;
     }
-    else if (m_filterAlgo == (int)FilterAlgo::ZDF1)
-    {
-      default_value = m_zdf1retainer;
-      min_value = 10;
-      max_value = 12;
-    }
+    // else if (m_filterAlgo == (int)FilterAlgo::ZDF1)
+    //{
+    //   default_value = m_zdf1retainer;
+    //   min_value = 10;
+    //   max_value = 12;
+    // }
 
 
     GetParam(kFilterSelector)->InitInt("FilterSelector", default_value, min_value, max_value, "", IParam::kFlagStepped, "");
@@ -368,7 +420,6 @@ void ColorFilterPlugin::OnParamChange(int paramIdx, EParamSource, int sampleOffs
           idx++;
         }
       }
-      // pGraphics->SetAllControlsDirty();
 
       pGraphics->AttachControl(new IVRadioButtonControl(m_ButtonsPanel.GetGridCell(1, 2, rows, columns).GetFromTop(100).GetMidHPadded(padding), kFilterSelector, getInitList(m_filterAlgo),
                                                         "FilterSelector", DEFAULT_STYLE, EVShape::Ellipse, EDirection::Vertical, 5.f));
@@ -392,9 +443,9 @@ void ColorFilterPlugin::DefineSelector(int& selector) const
   {
     selector = m_svf1retainer;
   }
-  else if (m_filterAlgo == (int)FilterAlgo::ZDF1)
-  {
-    selector = m_zdf1retainer;
-  }
+  // else if (m_filterAlgo == (int)FilterAlgo::ZDF1)
+  //{
+  //   selector = m_zdf1retainer;
+  // }
 }
 #endif

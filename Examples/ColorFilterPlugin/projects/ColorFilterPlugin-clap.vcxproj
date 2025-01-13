@@ -45,6 +45,7 @@
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>MultiByte</CharacterSet>
     <PlatformToolset>v143</PlatformToolset>
+    <UseIntelIPP1A>false</UseIntelIPP1A>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
@@ -172,8 +173,9 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>$(CLAP_DEFS);$(DEBUG_DEFS);$(EXTRA_DEBUG_DEFS);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <AdditionalIncludeDirectories>$(CLAP_INC_PATHS);C:\Users\salva\Documents\GitHub\iPlug2\Dependencies\IPlug\kissfft;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(CLAP_INC_PATHS);C:\Users\salva\Documents\GitHub\iPlug2\Dependencies\IPlug\pffft;C:\Users\salva\Documents\GitHub\iPlug2\Dependencies\IPlug\kissfft;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpplatest</LanguageStandard>
+      <LanguageStandard_C>stdclatest</LanguageStandard_C>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -255,8 +257,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="../config.h" />
-    <ClInclude Include="..\..\..\Dependencies\IPlug\kissfft\kiss_fft.h" />
     <ClInclude Include="..\..\..\Dependencies\IPlug\kissfft\kiss_fftr.h" />
+    <ClInclude Include="..\..\..\Dependencies\IPlug\pffft\pffft.hpp" />
     <ClInclude Include="..\..\..\IGraphics\Controls\IControls.h" />
     <ClInclude Include="..\..\..\IGraphics\Controls\IFPSDisplayControl.h" />
     <ClInclude Include="..\..\..\IGraphics\Controls\IPopupMenuControl.h" />
@@ -302,9 +304,12 @@
     <ClInclude Include="..\..\..\IPlug\IPlug_include_in_plug_src.h" />
     <ClInclude Include="..\ColorFilterPlugin.h" />
     <ClInclude Include="..\resources\resource.h" />
+    <ClInclude Include="aligned_memory.cpp" />
     <ClInclude Include="BandPassFilters.h" />
     <ClInclude Include="BandStopFilters.h" />
-    <ClInclude Include="DomeShaper.h" />
+    <ClInclude Include="CustomGui.h" />
+    <ClInclude Include="DebugLogger.h" />
+    <ClInclude Include="SpectralShaper.h" />
     <ClInclude Include="FilterParameters.h" />
     <ClInclude Include="Filters.h" />
     <ClInclude Include="FilterSwitcher.h" />
@@ -320,6 +325,8 @@
   <ItemGroup>
     <ClCompile Include="..\..\..\Dependencies\IPlug\kissfft\kiss_fft.c" />
     <ClCompile Include="..\..\..\Dependencies\IPlug\kissfft\kiss_fftr.c" />
+    <ClCompile Include="..\..\..\Dependencies\IPlug\pffft\pffft.c" />
+    <ClCompile Include="..\..\..\Dependencies\IPlug\pffft\pffft.cpp" />
     <ClCompile Include="..\..\..\IGraphics\Controls\IControls.cpp" />
     <ClCompile Include="..\..\..\IGraphics\Controls\IPopupMenuControl.cpp" />
     <ClCompile Include="..\..\..\IGraphics\Controls\ITextEntryControl.cpp" />
@@ -353,7 +360,8 @@
     <ClCompile Include="..\ColorFilterPlugin.cpp" />
     <ClCompile Include="BandPassFilters.cpp" />
     <ClCompile Include="BandStopFilters.cpp" />
-    <ClCompile Include="DomeShaper.cpp" />
+    <ClCompile Include="CustomGui.cpp" />
+    <ClCompile Include="SpectralShaper.cpp" />
     <ClCompile Include="Filters.cpp" />
     <ClCompile Include="FilterSwitcher.cpp" />
     <ClCompile Include="HighPassFilters.cpp" />
