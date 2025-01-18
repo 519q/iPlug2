@@ -35,11 +35,11 @@ double RingBuffer::read()
   }
 }
 
+
 void RingBuffer::readChunk()
 {
   if (getAvailableSamples() >= getChunkSize())
   {
-    chunkRead = true;
     // Read samples from the main buffer
     for (size_t i = 0; i < chunkSize; ++i)
     {
@@ -58,6 +58,8 @@ void RingBuffer::readChunk()
       mChunkBuffer[i] *= hannWindow[i];
       mOverlapBuffer[i] *= hannWindow[i];
     }
+     chunkRead = true;
+
   }
 }
 

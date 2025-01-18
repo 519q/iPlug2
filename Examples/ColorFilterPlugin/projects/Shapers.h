@@ -2,74 +2,152 @@
 #include "FilterParameters.h"
 #include "IPlugConstants.h"
 #include "projects/SmoothTools.h"
+
+#define SpectShape params.m_SH_shape
+
 static double m_Vintage_scale{1 << VINTAGE_BIT_RATE};
+constexpr double processingFloor = 0.0001;
 
 static double filnalTanh(double input, FilterParameters params) { return tanh(input /** mapRange((1. - params.m_resonance), 0.5, 1)*/); }
 
-class DCStop
+class CubicShaper
 {
-private:
-  double m_alpha{};
-  double m_state{};
-
 public:
-  void process(double& input, FilterParameters& params, double cutoff = 0.05)
+  double Process(double input, FilterParameters& params)
   {
-    const double cutoffFreq = 2.5 * std::pow(8000.0, cutoff /*params.m_cutoff*/);
-    m_alpha = std::exp(-2.0 * iplug::PI * cutoffFreq / params.m_sampleRate);
-    m_state = (1 - m_alpha) * input + m_alpha * m_state;
-    input -= m_state;
+    if (SpectShape < processingFloor)
+      return input;
+    double t = SpectShape;
+    double a = 7; // Controls the curve
+    double scaled_t = std::log1p(a * t) / std::log1p(a);
+
+    double strength = 4.5;
+    double scaledInput = input * (1 + strength * SpectShape);
+    // Cubic soft clipping
+    double shaped = scaledInput - (1.0 / 3.0) * std::pow(scaledInput, 3);
+    return shaped / (1 + strength * 0.3 * scaled_t);
   }
 };
-// enum class ShaperParams
+
+class PolynomialShaper
+{
+public:
+  double Process(double input, FilterParameters& params)
+  {
+    if (SpectShape < processingFloor)
+      return input;
+    // Polynomial shaping (adjust coefficients for different curves)
+    else
+      return (input - (6 * SpectShape) * std::pow(input, 3) + (8 * SpectShape) * std::pow(input, 5)) * (1 + 1 * SpectShape);
+  }
+};
+
+class CeilLimiter
+{
+public:
+  double Process(double input, FilterParameters& params)
+  {
+    double ceil = SpectShape;
+    if (input > ceil)
+      input = ceil;
+    return input;
+  }
+};
+
+// variable transfer curve :
+//
+//   class CeilLimiter
 //{
-//   SHAPE,
-//   DRIVE,
-//   ASYM,
-//   MAX_SHAPER_PARAMS
+// public:
+//   double Process(double input, double drive, double shape)
+//   {
+//     // shape: 0 = hard clip, 1 = soft clip
+//     double ceil = drive;
+//
+//     if (std::abs(input) > ceil)
+//     {
+//       double x = input / ceil;
+//       double curve = 1.0 + shape * 10.0; // Adjust multiplier to taste
+//       return ceil * (x / (1.0 + std::pow(std::abs(x), curve)));
+//     }
+//
+//     return input;
+//   }
 // };
-class Shapers
+
+class TanhShaper
 {
-protected:
-  virtual ~Shapers() {}
-
-  virtual void Process(double& input, FilterParameters& params, double driveDivider) = 0; // Pure virtual function
-};
-
-class Tripler : public Shapers
-{
-  // https://www.desmos.com/calculator/sisddmcflj
-private:
-  static constexpr double a{8};
-  static constexpr double b{1.28};
-  static constexpr double c{0.6};
-  static constexpr double d{2.5};
-  double m_drive{};
-
 public:
-  Tripler()
-    : Shapers{}
+  double Process(double input, FilterParameters& params)
   {
-  }
-
-  void Process(double& input, FilterParameters& params, double driveDivider = 1) override
-  {
-    m_drive = params.m_drive;
-    const double shaped = (-d * input * (std::tanh(a * std::pow(input, 2) - b) - c)) * 0.3;
-    input = interpolateLin(input, shaped, m_drive);
+    if (SpectShape<processingFloor)
+    {
+      return input;
+    }
+    double t = SpectShape;
+    double a = 9.0; // Controls the curve
+    double scaled_t = std::log1p(a * t) / std::log1p(a);
+    double strength = 25 * 0.4;
+    double inputProcess = input * (1 + strength * SpectShape);
+    inputProcess = tanh(inputProcess);
+    // if (inputProcess > 1 - drive)
+    //   inputProcess = 1 - drive;
+    return inputProcess / (1 + strength * 0.2 * scaled_t);
   }
 };
 
-class AsymShape : public Shapers
+class FoldbackShaper
+{
+public:
+  double Process(double input, FilterParameters& params)
+  {
+    if (SpectShape < processingFloor)
+      return input;
+    double threshold = SpectShape;
+    // Foldback distortion
+    if (input > threshold || input < -threshold)
+    {
+      input = std::fmod(input + threshold, 4.0 * threshold) - 2.0 * threshold;
+    }
+    return input;
+  }
+};
+
+class ReflectShaper
+{
+public:
+  double Process(double input, FilterParameters& params)
+  {
+    double threshold = SpectShape;
+
+    // If the knob is below the processing floor, return the input unchanged
+    if (threshold < processingFloor)
+      return input;
+
+    // Compute the absolute value of the input for reflection
+    double absInput = std::abs(input);
+
+    // If the input is within the threshold, return it unchanged
+    if (absInput <= threshold)
+      return input;
+
+    // Apply foldback reflection
+    double folded = std::fmod(absInput, 2.0 * threshold);
+    if (folded > threshold)
+      folded = 2.0 * threshold - folded;
+
+    // Restore the original sign of the input
+    folded = (input >= 0.0) ? folded : -folded;
+
+    return folded;
+  }
+};
+
+class AsymShape
 {
 private:
 public:
-  AsymShape()
-    : Shapers{}
-  {
-  }
-
-  void Process(double& input, FilterParameters& params, double driveDivider = 1) override
+  void Process(double& input, FilterParameters& params)
   {
     if (input > 0)
     {
@@ -78,23 +156,16 @@ public:
   }
 };
 
-class Sigmoidal : public Shapers
+class Sigmoidal
 {
 private:
   AsymShape asym{};
-  DCStop dcstop{};
 
 public:
-  Sigmoidal()
-    : Shapers{}
-  {
-  }
-
-  void Process(double& input, FilterParameters& params, double driveDivider = 1) override
+  void Process(double& input, FilterParameters& params)
   {
     if (params.m_drive > 0)
     {
-      params.m_drive /= driveDivider;
       const double t = 0.4 - ((0.4 - 0.01) * params.m_shape);
       const double z = 0.7 - ((0.7 - 0.24) * params.m_shape);
       double shaped = (input / (t + std::abs(input))) * z;
@@ -102,7 +173,6 @@ public:
       {
         asym.Process(shaped, params);
       }
-      dcstop.process(shaped, params);
       input = interpolateLin(input, shaped, params.m_drive);
     }
   }

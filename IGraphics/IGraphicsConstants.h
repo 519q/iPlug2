@@ -123,7 +123,7 @@ enum EVColor
   kHL,             // highlight: mouse over and splash click animation
   kSH,             // shadow
   kX1,             // extra1: typically used for indicator tracks on knobs and sliders
-  kX2,             // extra2
+  kX2,             // extra2: Knob Pointer
   kX3,             // extra3
   kNumVColors
 };

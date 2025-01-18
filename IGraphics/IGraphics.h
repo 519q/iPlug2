@@ -269,11 +269,15 @@ public:
    * @param pBlend Optional blend method */
   virtual void FillTriangle(const IColor& color, float x1, float y1, float x2, float y2, float x3, float y3, const IBlend* pBlend = 0);
 
+  virtual void FillTriangle(const IPattern& pattern, float x1, float y1, float x2, float y2, float x3, float y3, const IBlend* pBlend = 0);
+
   /** Fill a rectangular region of the graphics context with a color
    * @param color The color to fill the shape with
    * @param bounds The rectangular region to fill the shape in
    * @param pBlend Optional blend method */
   virtual void FillRect(const IColor& color, const IRECT& bounds, const IBlend* pBlend = 0);
+
+  virtual void FillRect(const IPattern& pattern, const IRECT& bounds, const IBlend* pBlend = 0);
 
   /** Fill a rounded rectangle with a color
    * @param color The color to fill the shape with
@@ -281,6 +285,9 @@ public:
    * @param cornerRadius The corner radius in pixels
    * @param pBlend Optional blend method */
   virtual void FillRoundRect(const IColor& color, const IRECT& bounds, float cornerRadius = 5.f, const IBlend* pBlend = 0);
+
+  /*Overload for IPattern support*/
+  virtual void FillRoundRect(const IPattern& pattern, const IRECT& bounds, float cornerRadius = 5.f, const IBlend* pBlend = 0);
 
   /** Fill a rounded rectangle with a color
    * @param color The color to fill the shape with
@@ -291,6 +298,9 @@ public:
    * @param cRBL The bottom left corner radius in pixels
    * @param pBlend Optional blend method */
   virtual void FillRoundRect(const IColor& color, const IRECT& bounds, float cRTL, float cRTR, float cRBR, float cRBL, const IBlend* pBlend = 0);
+
+  /*Overload for IPattern support*/
+  virtual void FillRoundRect(const IPattern& pattern, const IRECT& bounds, float cRTL, float cRTR, float cRBR, float cRBL, const IBlend* pBlend = 0);
   
   /** Fill a circle with a color
    * @param color The color to fill the shape with
@@ -300,11 +310,17 @@ public:
    * @param pBlend Optional blend method */
   virtual void FillCircle(const IColor& color, float cx, float cy, float r, const IBlend* pBlend = 0);
 
+  /*Overload for IPattern support*/
+  virtual void FillCircle(const IPattern& pattern, float cx, float cy, float r, const IBlend* pBlend = 0);
+
   /** Fill an ellipse within a rectangular region of the graphics context
    * @param color The color to fill the shape with
    * @param bounds The rectangular region to fill the shape in
    * @param pBlend Optional blend method */
   virtual void FillEllipse(const IColor& color, const IRECT& bounds, const IBlend* pBlend = 0);
+
+  /*Overload for IPattern support*/
+  virtual void FillEllipse(const IPattern& pattern, const IRECT& bounds, const IBlend* pBlend = 0);
   
   /** Fill an ellipse
    * @param color The color to draw the shape with
@@ -316,6 +332,9 @@ public:
    * @param pBlend Optional blend method */
   virtual void FillEllipse(const IColor& color, float x, float y, float r1, float r2, float angle = 0.0, const IBlend* pBlend = 0);
   
+  /*Overload for IPattern support*/
+  virtual void FillEllipse(const IPattern& pattern, float x, float y, float r1, float r2, float angle = 0.0, const IBlend* pBlend = 0);
+
   /** Fill an arc segment with a color
    * @param color The color to fill the shape with
    * @param cx The X coordinate of the centre of the circle on which the arc lies

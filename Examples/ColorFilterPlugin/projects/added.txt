@@ -1,0 +1,38 @@
+virtual void FillRect(const IPattern& pattern, const IRECT& bounds, const IBlend* pBlend = 0);
+
+void ISliderControlBase::OnMouseDown(float x, float y, const IMouseMod& mod)
+
+  virtual void FillEllipse(const IPattern& pattern, const IRECT& bounds, const IBlend* pBlend = 0);
+  virtual void FillCircle(const IPattern& pattern, float cx, float cy, float r, const IBlend* pBlend = 0);
+
+  virtual void FillEllipse(const IPattern& pattern, float x, float y, float r1, float r2, float angle = 0.0, const IBlend* pBlend = 0);
+
+  virtual void FillRoundRect(const IPattern& pattern, const IRECT& bounds, float cornerRadius = 5.f, const IBlend* pBlend = 0);
+  virtual void FillRoundRect(const IPattern& pattern, const IRECT& bounds, float cRTL, float cRTR, float cRBR, float cRBL, const IBlend* pBlend = 0);
+
+
+  IPattern() { IPattern(COLOR_TRANSPARENT);
+struct IVPatternSpec
+
+
+  const IPattern& GetPattern(EVColor color) const
+  IRECT DrawPressableRectangle(IGraphics&g, const IRECT& bounds, bool pressed, bool mouseOver, bool disabled,
+  void DrawPressableEllipse(IGraphics& g, const IRECT& bounds, bool pressed, bool mouseOver, bool disabled, bool useGradients = 0)
+
+
+     bool useGradient = 0;
+   IVPatternSpec patternSpec = DEFAULT_PATTERN_SPEC;   // in IVStyle
+
+
+  IVStyle useGradients() const
+  IVStyle WithGradient(EVColor idx, const IPattern& pattern) const
+  IVStyle WithGradients(const IVPatternSpec& spec) const
+
+
+  kX2,             // extra2: Knob Pointer
+
+
+  IVStyle withBackgroundTrack() const
+  bool addBackgroundTrack = 0;
+
+  IVStyle constructor

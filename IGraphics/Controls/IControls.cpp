@@ -655,6 +655,10 @@ void IVKnobControl::DrawWidget(IGraphics& g)
   const float cx = mWidgetBounds.MW(), cy = mWidgetBounds.MH();
   IRECT knobHandleBounds = mWidgetBounds.GetCentredInside((widgetRadius - mTrackToHandleDistance) * 2.f );
   const float angle = mAngle1 + (static_cast<float>(GetValue()) * (mAngle2 - mAngle1));
+  if (mStyle.addBackgroundTrack)
+  {
+    DrawBackgroundTrack(g, cx, cy, widgetRadius);
+  }
   DrawIndicatorTrack(g, angle, cx, cy, widgetRadius);
   DrawHandle(g, knobHandleBounds);
   DrawPointer(g, angle, cx, cy, knobHandleBounds.W() / 2.f);
@@ -662,20 +666,28 @@ void IVKnobControl::DrawWidget(IGraphics& g)
 
 void IVKnobControl::DrawHandle(IGraphics& g, const IRECT& bounds)
 {
-  DrawPressableShape(g, /*mShape*/ EVShape::Ellipse, bounds, mMouseDown, mMouseIsOver, IsDisabled());
+  DrawPressableShape(g, mShape, bounds, mMouseDown, mMouseIsOver, IsDisabled());
 }
 
 void IVKnobControl::DrawIndicatorTrack(IGraphics& g, float angle, float cx, float cy, float radius)
 {
   if (mTrackSize > 0.f)
   {
-    g.DrawArc(GetColor(kX1), cx, cy, radius, angle >= mAnchorAngle ? mAnchorAngle : mAnchorAngle - (mAnchorAngle - angle), angle >= mAnchorAngle ? angle : mAnchorAngle, &mBlend, mTrackSize);
+    g.DrawArc(GetColor(kX1), cx, cy, radius, angle >= mAnchorAngle ? mAnchorAngle : mAnchorAngle - (mAnchorAngle - angle), angle >= mAnchorAngle ? angle : mAnchorAngle, &mBlend, mTrackSize + 0.2);
   }
+}
+
+void IVKnobControl::DrawBackgroundTrack(IGraphics& g, float cx, float cy, float radius)
+{
+  float startAngle = -135.f; // -135 degrees
+  float endAngle = 135.f;    // 135 degrees
+
+  g.DrawArc(GetColor(kX3), cx, cy, radius, startAngle, endAngle, &mBlend, mTrackSize);
 }
 
 void IVKnobControl::DrawPointer(IGraphics& g, float angle, float cx, float cy, float radius)
 {
-  g.DrawRadialLine(GetColor(kFR), cx, cy, angle, mInnerPointerFrac * radius, mOuterPointerFrac * radius, &mBlend, mPointerThickness);
+  g.DrawRadialLine(GetColor(kX2), cx, cy, angle, mInnerPointerFrac * radius, mOuterPointerFrac * radius, &mBlend, mPointerThickness);
 }
 
 void IVKnobControl::OnMouseDown(float x, float y, const IMouseMod& mod)

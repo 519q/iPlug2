@@ -22,7 +22,7 @@ public:
   Filters()
   {
   }
-  virtual ~Filters() {}
+  virtual ~Filters() = default;
   bool isDirty(FilterParameters& params);
   double getCutoffFreq(FilterParameters& params);
   double getOmega(FilterParameters& params);

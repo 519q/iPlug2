@@ -5,7 +5,7 @@
 class Highpass
 {
 protected:
-  DCStop dcstop{};
+  //DCStop dcstop{};
 };
 
 class DF1_1P_HP : public DF1_1P_LP, public Highpass
@@ -80,7 +80,7 @@ private:
   double m_poles[2]{};
 
 protected:
-  DCStop dcstop{};
+  //DCStop dcstop{};
 
 public:
   DF2_2P_HP()

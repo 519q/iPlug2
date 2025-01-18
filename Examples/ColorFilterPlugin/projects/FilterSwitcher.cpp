@@ -1,7 +1,7 @@
 #include "FilterSwitcher.h"
 
 
-void FilterSwitcher::Process(double& input, int filterSelector, FilterParameters fParams)
+void FilterSwitcher::Process(double& input, int filterSelector, FilterParameters& fParams)
 {
   if (filterSelector != (int)m_currentFilter && filterSelector < (int)FilterTypes::MAX_FILTER_TYPES)
   {

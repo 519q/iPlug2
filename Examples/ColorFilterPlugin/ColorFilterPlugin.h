@@ -3,12 +3,17 @@
 #include "IPlug_include_in_plug_hdr.h"
 #include "OverSampler.h"
 #include "Smoothers.h"
+#include "projects/SpectralFilter.h"
+#include "projects/FFT_F_I.h"
 #include "projects/SpectralShaper.h"
-#include "projects/FilterSwitcher.h"
+//#include "projects/FilterSwitcher.h"
 #include "projects/Filters.h"
 #include "projects/Shapers.h"
 #include "projects/SmoothTools.h"
-#include "projects/aligned_memory.cpp"
+#include "projects/FilterSelector.h"
+//#include "projects/aligned_memory.cpp"
+#include "projects/CustomGUI.h"
+
 
 const int kNumPresets = 1;
 
@@ -17,6 +22,8 @@ enum EParams
 {
   kGain,
 
+  kSpectralFilterOn,
+
   kFilterCutoff,
   kFilterResonance,
   kFilterBandwidth,
@@ -24,7 +31,6 @@ enum EParams
   kFilterAlgo,
   kFilterType,
   kFilterSelector,
-  // kFilterVintage,
 
   kShaperDrive,
   kShaperShape,
@@ -67,6 +73,9 @@ private:
       return {}; // Empty initializer list for safety
     }
   }
+  int columns = 5;
+  int rows = 1;
+  int padding = 40.;
   bool mFactorChanged = true;
   int m_ovrsmpFactor{};
   OverSampler<sample> mOverSampler{kNone, true, 2, 2};
@@ -75,9 +84,7 @@ private:
   int m_df2retainer{(int)FilterTypes::DF2_2P};
   int m_svf1retainer{(int)FilterTypes::SVF1_2P};
   //int m_zdf1retainer{(int)FilterTypes::ZDF1_2P};
-  int columns = 5;
-  int rows = 1;
-  int padding = 40.;
+
   IRECT m_ButtonsPanel{};
   double retained_kFilterSelector{};
 
@@ -123,18 +130,13 @@ public:
   }
 
 #if IPLUG_DSP // http://bit.ly/2S64BDd
-  // Direct Processing
-  FilterSwitcher filterSwitcherLP_L{FilterPresets::getLPFilters()};
-  FilterSwitcher filterSwitcherLP_R{FilterPresets::getLPFilters()};
+  FilterParameters fParams{};
 
-  FilterSwitcher filterSwitcherBP_L{FilterPresets::getBPFilters()};
-  FilterSwitcher filterSwitcherBP_R{FilterPresets::getBPFilters()};
+  FilterSelector filterSelectorL{};
+  FilterSelector filterSelectorR{};
 
-  FilterSwitcher filterSwitcherBS_L{FilterPresets::getBSFilters()};
-  FilterSwitcher filterSwitcherBS_R{FilterPresets::getBSFilters()};
-
-  FilterSwitcher filterSwitcherHP_L{FilterPresets::getHPFilters()};
-  FilterSwitcher filterSwitcherHP_R{FilterPresets::getHPFilters()};
+  SpectralFilter spectralFilterL{};
+  SpectralFilter spectralFilterR{};
 
   Sigmoidal sigmoidalShaperL{};
   Sigmoidal sigmoidalShaperR{};
@@ -142,21 +144,9 @@ public:
   RingBuffer mRingBufferL{};
   RingBuffer mRingBufferR{};
 
-  SpectralShaper mDomeShaperL{};
-  SpectralShaper mDomeShaperR{};
-  // std::vector<double> processedL, processedR;
-  // std::map<double, double> sineLUT = mDomeShaperL.generateSineLUT();
+  SpectralShaper mSpectralShaperL{};
+  SpectralShaper mSpectralShaperR{};
 
-
-  // Vintage Processing
-  // FilterSwitcher filterSwitcherLP_Vintage_L{FilterPresets::getVintage_LPFilters()};
-  // FilterSwitcher filterSwitcherLP_Vintage_R{FilterPresets::getVintage_LPFilters()};
-  // FilterSwitcher filterSwitcherBP_Vintage_L{FilterPresets::getVintage_BPFilters()};
-  // FilterSwitcher filterSwitcherBP_Vintage_R{FilterPresets::getVintage_BPFilters()};
-  // FilterSwitcher filterSwitcherBS_Vintage_L{FilterPresets::getVintage_BSFilters()};
-  // FilterSwitcher filterSwitcherBS_Vintage_R{FilterPresets::getVintage_BSFilters()};
-  // FilterSwitcher filterSwitcherHP_Vintage_L{FilterPresets::getVintage_HPFilters()};
-  // FilterSwitcher filterSwitcherHP_Vintage_R{FilterPresets::getVintage_HPFilters()};
   double knobSmoothing = 10;
   double buttonSmoothing = 30;
   iplug::LogParamSmooth<double> mGainSmooth{knobSmoothing};
@@ -172,7 +162,7 @@ public:
   iplug::LogParamSmooth<double> mFilterResonanceSmooth{knobSmoothing};
   iplug::LogParamSmooth<double> mFilterBandwidthSmooth{knobSmoothing};
   iplug::LogParamSmooth<double> mFilterBypassSmooth{buttonSmoothing};
-  void DefineSelector(int& selector) const;
+  void DefineSelector(int selector) const;
   void ProcessBlock(sample** inputs, sample** outputs, int nFrames) override;
   void OnReset() override;
   void OnParamChange(int paramIdx, EParamSource, int sampleOffset) override;

@@ -378,6 +378,7 @@
   </ItemGroup>
   <ItemGroup>
     <Text Include="Ideas.txt" />
+    <Text Include="plan_to_do.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

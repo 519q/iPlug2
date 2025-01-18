@@ -257,8 +257,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="../config.h" />
-    <ClInclude Include="..\..\..\Dependencies\IPlug\kissfft\kiss_fftr.h" />
-    <ClInclude Include="..\..\..\Dependencies\IPlug\pffft\pffft.hpp" />
     <ClInclude Include="..\..\..\IGraphics\Controls\IControls.h" />
     <ClInclude Include="..\..\..\IGraphics\Controls\IFPSDisplayControl.h" />
     <ClInclude Include="..\..\..\IGraphics\Controls\IPopupMenuControl.h" />
@@ -304,29 +302,25 @@
     <ClInclude Include="..\..\..\IPlug\IPlug_include_in_plug_src.h" />
     <ClInclude Include="..\ColorFilterPlugin.h" />
     <ClInclude Include="..\resources\resource.h" />
-    <ClInclude Include="aligned_memory.cpp" />
+    <ClInclude Include="FilterSelector.h" />
+    <ClInclude Include="IIR_HilbertTransform.h" />
     <ClInclude Include="BandPassFilters.h" />
     <ClInclude Include="BandStopFilters.h" />
     <ClInclude Include="CustomGui.h" />
     <ClInclude Include="DebugLogger.h" />
-    <ClInclude Include="SpectralShaper.h" />
+    <ClInclude Include="DelayLine.h" />
+    <ClInclude Include="FFT_F_I.h" />
     <ClInclude Include="FilterParameters.h" />
     <ClInclude Include="Filters.h" />
-    <ClInclude Include="FilterSwitcher.h" />
     <ClInclude Include="HighPassFilters.h" />
+    <ClInclude Include="FIR_HilbertTransform.h" />
     <ClInclude Include="RingBuffer.h" />
     <ClInclude Include="Shapers.h" />
     <ClInclude Include="SmoothTools.h" />
-    <ClInclude Include="VintageBandpassFilters.h" />
-    <ClInclude Include="VintageBandStopFilters.h" />
-    <ClInclude Include="VintageFilters.h" />
-    <ClInclude Include="VintageHighpassFilters.h" />
+    <ClInclude Include="SpectralFilter.h" />
+    <ClInclude Include="SpectralShaper.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\Dependencies\IPlug\kissfft\kiss_fft.c" />
-    <ClCompile Include="..\..\..\Dependencies\IPlug\kissfft\kiss_fftr.c" />
-    <ClCompile Include="..\..\..\Dependencies\IPlug\pffft\pffft.c" />
-    <ClCompile Include="..\..\..\Dependencies\IPlug\pffft\pffft.cpp" />
     <ClCompile Include="..\..\..\IGraphics\Controls\IControls.cpp" />
     <ClCompile Include="..\..\..\IGraphics\Controls\IPopupMenuControl.cpp" />
     <ClCompile Include="..\..\..\IGraphics\Controls\ITextEntryControl.cpp" />
@@ -358,19 +352,20 @@
     <ClCompile Include="..\..\..\IPlug\IPlugProcessor.cpp" />
     <ClCompile Include="..\..\..\IPlug\IPlugTimer.cpp" />
     <ClCompile Include="..\ColorFilterPlugin.cpp" />
+    <ClCompile Include="FilterSelector.cpp" />
+    <ClCompile Include="IIR_HilbertTransform.cpp" />
     <ClCompile Include="BandPassFilters.cpp" />
     <ClCompile Include="BandStopFilters.cpp" />
     <ClCompile Include="CustomGui.cpp" />
-    <ClCompile Include="SpectralShaper.cpp" />
+    <ClCompile Include="DelayLine.cpp" />
+    <ClCompile Include="FFT_F_I.cpp" />
     <ClCompile Include="Filters.cpp" />
-    <ClCompile Include="FilterSwitcher.cpp" />
     <ClCompile Include="HighPassFilters.cpp" />
+    <ClCompile Include="FIR_HilbertTransform.cpp" />
     <ClCompile Include="RingBuffer.cpp" />
     <ClCompile Include="Shapers.cpp" />
-    <ClCompile Include="VintageBandpassFilters.cpp" />
-    <ClCompile Include="VintageBandStopFilters.cpp" />
-    <ClCompile Include="VintageFilters.cpp" />
-    <ClCompile Include="VintageHighpassFilters.cpp" />
+    <ClCompile Include="SpectralFilter.cpp" />
+    <ClCompile Include="SpectralShaper.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\resources\main.rc" />
@@ -380,6 +375,9 @@
     <None Include="..\config\ColorFilterPlugin-web.mk" />
     <None Include="..\config\ColorFilterPlugin-win.props" />
     <None Include="..\config\ColorFilterPlugin-mac.xcconfig" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="added.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

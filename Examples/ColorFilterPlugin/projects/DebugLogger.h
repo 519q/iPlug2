@@ -1,5 +1,3 @@
-#pragma once
-
 /*
 
 Recieve msgs in:
@@ -16,6 +14,7 @@ if (initStatus != ippStsNoErr)
 }
 
 */
+#pragma once
 
 #include <sstream>
 #include <windows.h> // For OutputDebugString

@@ -279,6 +279,7 @@ public:
   virtual void DrawWidget(IGraphics& g) override;
   virtual void DrawHandle(IGraphics& g, const IRECT& bounds);
   virtual void DrawIndicatorTrack(IGraphics& g, float angle, float cx, float cy, float radius);
+  virtual void DrawBackgroundTrack(IGraphics& g, float cx, float cy, float radius);
   virtual void DrawPointer(IGraphics& g, float angle, float cx, float cy, float radius);
 
   void OnMouseDown(float x, float y, const IMouseMod& mod) override;

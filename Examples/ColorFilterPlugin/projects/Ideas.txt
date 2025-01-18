@@ -1,3 +1,59 @@
+
+dc sine osc
+
+foldback shaper for feedback osc
+
+class ReflectShaper *
+{
+public:
+  double Process(double input, FilterParameters& params)
+  {
+    double threshold = SpectShape;
+
+    // If the knob is below the processing floor, return the input unchanged
+    if (threshold < processingFloor)
+      return input;
+
+    // Compute the absolute value of the input for reflection
+    double absInput = std::abs(input);
+
+    // If the input is within the threshold, return it unchanged
+    if (absInput <= threshold)
+      return input;
+
+    // Apply foldback reflection
+    double folded = std::fmod(absInput, 2.0 * threshold);
+    if (folded > threshold)
+      folded = 2.0 * threshold - folded;
+
+    // Restore the original sign of the input
+    folded = (input >= 0.0) ? folded : -folded;
+
+    return folded;
+  }
+};
+
+
+double SpectralShaper::morphSine(double phase, FilterParameters& params)
+{
+    // shapeParam controls the shape:
+    // - shapeParam = 0: Sine wave
+    // - shapeParam = 1: Square-like wave
+
+    // Add odd harmonics
+    double sine = std::sin(phase);
+    double thirdHarmonic = std::sin(3.0 * phase) / 3.0;
+    double fifthHarmonic = std::sin(5.0 * phase) / 5.0;
+
+    // Blend harmonics based on shapeParam
+    double shaped = sine + params.m_SH_shape * (thirdHarmonic + fifthHarmonic);
+
+    // Normalize to ensure the output is in [-1, 1]
+    double maxAmplitude = 1.0 + params.m_SH_shape * (1.0 / 3.0 + 1.0 / 5.0); // Max amplitude for sine = 1
+    shaped /= maxAmplitude;
+
+    return shaped;
+}
 SHAPERS
 
 
@@ -175,3 +231,464 @@ public:
     return delayLine.process(offsetValue);
   }
 };
+****************************************
+
+SCALING
+
+- Cubic Scaling:
+     
+     double scaled_t = std::pow(t, 3);
+
+   - Exponential Scaling:
+     
+     double k = 2.0; // Steepness factor
+     double scaled_t = (std::exp(k * t) - 1.0) / (std::exp(k) - 1.0);
+
+   - Logarithmic Scaling:
+     
+     double a = 9.0; // Controls the curve
+     double scaled_t = std::log1p(a * t) / std::log1p(a);
+
+     example:  std::pow(param, 2)
+
+     TanhShaper() : processingFloor(0.1), maxGain(5.0), maxOutputScaling(3.5) {}
+
+       double Process(double input, FilterParameters& params)
+       {
+           if (params.m_SH_shape < processingFloor)
+               return input;
+
+           double t = params.m_SH_shape; // Knob position [0, 1]
+
+           // Apply quadratic (non-linear) scaling to smooth out loudness increase
+           double scaled_t = std::pow(t, 2); // Adjust exponent as needed
+
+           // Calculate the scaling factors
+           double inputScaling = 1.0 + scaled_t * (maxGain - 1.0);          // [1, maxGain]
+           double outputScaling = 1.0 + scaled_t * (maxOutputScaling - 1.0); // [1, maxOutputScaling]
+
+           // Scale the input signal
+           double inputProcess = input * inputScaling;
+
+           // Apply the tanh shaping
+           double shaped = std::tanh(inputProcess);
+
+           // Scale the shaped signal to control overall gain
+           double output = shaped / outputScaling;
+
+           // Optional: Prevent clipping by ensuring the output stays within [-1, 1]
+           output = std::clamp(output, -1.0, 1.0);
+
+           return output;
+       }
+
+   private:
+       double processingFloor;
+       const double maxGain;          // Maximum input scaling factor
+       const double maxOutputScaling; // Maximum output scaling factor
+   };
+
+
+*****************************************************************************
+
+Hilbert transformers
+
+
+   // IIR Allpass-based approach
+class AllpassHilbertTransformer {
+public:
+    AllpassHilbertTransformer() {
+        // Initialize cascade of 6 allpass sections
+        // These coefficients create 90° phase shift over wide bandwidth
+        allpassCoeffs = {0.6923878, 0.9360654322959, 0.9882295226860, 
+                        0.9971486762419, 0.9992646999119, 0.9998117571563};
+        
+        for(int i = 0; i < 6; ++i) {
+            x1[i] = x2[i] = y1[i] = y2[i] = 0.0;
+        }
+    }
+
+    double processQuadrature(double input) {
+        double output = input;
+        // Cascade of second-order allpass sections
+        for(int i = 0; i < 6; ++i) {
+            double a = allpassCoeffs[i];
+            double w = output - a * a * x2[i] + a * y1[i];
+            double y = a * w + y1[i];
+            
+            y2[i] = y1[i];
+            y1[i] = y;
+            x2[i] = x1[i];
+            x1[i] = w;
+            
+            output = y;
+        }
+        return output;
+    }
+
+private:
+    std::vector<double> allpassCoeffs;
+    double x1[6], x2[6], y1[6], y2[6];
+};
+
+// FFT-based implementation
+class FFTHilbertTransformer {
+public:
+    FFTHilbertTransformer(int blockSize) 
+        : fftSize(blockSize)
+    {
+        // Initialize FFT (using your preferred FFT library)
+        // Setup buffers
+        buffer.resize(fftSize);
+        spectrum.resize(fftSize/2 + 1);
+    }
+
+    std::vector<double> processBlock(const std::vector<double>& input) {
+        // Copy input to working buffer
+        std::copy(input.begin(), input.end(), buffer.begin());
+        
+        // Forward FFT
+        fft.forward(buffer, spectrum);
+        
+        // Modify spectrum for Hilbert transform:
+        // DC and Nyquist scaled by 0.5
+        spectrum[0] *= 0.5;
+        spectrum[fftSize/2] *= 0.5;
+        
+        // Positive frequencies unchanged
+        // Negative frequencies zeroed (already handled by most FFT implementations)
+        
+        // Inverse FFT
+        fft.inverse(spectrum, buffer);
+        
+        return buffer;
+    }
+
+private:
+    int fftSize;
+    std::vector<std::complex<double>> buffer;
+    std::vector<std::complex<double>> spectrum;
+    FFT fft; // Your FFT implementation
+};
+
+// Phase unwrapping for continuous phase output
+class PhaseUnwrapper {
+public:
+    PhaseUnwrapper() : previousPhase(0.0), unwrappedPhase(0.0) {}
+    
+    double process(double phase) {
+        double diff = phase - previousPhase;
+        
+        // Detect and correct phase wrapping
+        if(diff > M_PI) {
+            accumulator -= 2.0 * M_PI;
+        }
+        else if(diff < -M_PI) {
+            accumulator += 2.0 * M_PI;
+        }
+        
+        previousPhase = phase;
+        unwrappedPhase = phase + accumulator;
+        
+        return unwrappedPhase;
+    }
+
+private:
+    double previousPhase;
+    double unwrappedPhase;
+    double accumulator = 0.0;
+};
+
+// Enhanced version of original HilbertTransformer with magnitude smoothing
+class EnhancedHilbertTransformer {
+public:
+    EnhancedHilbertTransformer(int order) 
+        : basic(order),
+        magnitudeSmoothing(0.99)  // Very slow smoothing
+    {
+    }
+
+    struct Output {
+        double magnitude;
+        double phase;
+        double real;
+        double imag;
+    };
+
+    Output process(double input) {
+        Output out;
+        
+        out.real = basic.processReal(input);
+        out.imag = basic.processQuadrature(input);
+        
+        // Raw magnitude
+        double instantMagnitude = std::sqrt(out.real * out.real + out.imag * out.imag);
+        
+        // Smoothed magnitude
+        out.magnitude = magnitudeSmoothing.process(instantMagnitude);
+        
+        // Unwrapped phase
+        double rawPhase = std::atan2(out.imag, out.real);
+        out.phase = phaseUnwrapper.process(rawPhase);
+        
+        return out;
+    }
+
+private:
+    HilbertTransformer basic;
+    
+    // One-pole lowpass for magnitude smoothing
+    class Smoother {
+    public:
+        Smoother(double coeff) : alpha(coeff), lastValue(0.0) {}
+        
+        double process(double input) {
+            lastValue = input * (1.0 - alpha) + lastValue * alpha;
+            return lastValue;
+        }
+    private:
+        double alpha;
+        double lastValue;
+    } magnitudeSmoothing;
+    
+    PhaseUnwrapper phaseUnwrapper;
+};
+
+
+Usage example:
+
+EnhancedHilbertTransformer hilbert(51);
+
+// In your processing loop:
+auto result = hilbert.process(inputSample);
+
+// Now you have:
+// result.magnitude - Smoothed magnitude (should be more DC-like for sine)
+// result.phase    - Continuous unwrapped phase (should ramp without steps)
+// result.real     - Real component
+// result.imag     - Imaginary component
+
+
+
+Key points about these implementations:
+
+1. The AllpassHilbertTransformer is more efficient for realtime processing but might have some frequency-dependent magnitude response.
+
+2. The FFT approach is most accurate but requires block processing and introduces latency.
+
+3. The EnhancedHilbertTransformer combines the original FIR approach with additional processing to get smoother magnitude and continuous phase.
+
+4. Phase unwrapping helps achieve the continuous ramp you see in Bitwig.
+
+5. Magnitude smoothing helps stabilize the amplitude reading, especially for complex signals.
+
+You can experiment with these different approaches depending on your specific needs:
+- Need low latency? Use AllpassHilbertTransformer
+- Need highest accuracy? Use FFTHilbertTransformer
+- Need a good compromise? Use EnhancedHilbertTransformer
+
+
+*********************************************************************************
+
+FFT PROCESSING                        
+
+// Working approaches for FFT manipulation:
+
+// 1. Magnitude/phase modification
+void manipulateSpectrum(std::vector<std::complex<float>>& spectrum) {
+    for(int i = 0; i < spectrum.size(); i++) {
+        float magnitude = std::abs(spectrum[i]);
+        float phase = std::arg(spectrum[i]);
+        
+        // These work well:
+        magnitude *= 2.0f;                    // Gain
+        magnitude = std::pow(magnitude, 1.5f); // Compression
+        phase += 0.1f;                        // Phase shift
+        
+        spectrum[i] = std::polar(magnitude, phase);
+    }
+}
+
+// 2. Frequency shifting/scaling
+void frequencyShift(std::vector<std::complex<float>>& spectrum) {
+    // Move bins up/down
+    int shift = 1;
+    std::rotate(spectrum.begin(), 
+                spectrum.begin() + shift, 
+                spectrum.end());
+}
+
+// 3. Spectral filtering
+void spectralFilter(std::vector<std::complex<float>>& spectrum) {
+    // Multiply by filter response
+    for(int i = 0; i < spectrum.size(); i++) {
+        float freq = i * sampleRate / fftSize;
+        float response = calculateFilterResponse(freq);
+        spectrum[i] *= response;
+    }
+}
+
+
+For more complex transformations, you might want to:
+
+// 1. Use analysis-synthesis approach
+class SpectralProcessor {
+    void process(const float* input, float* output) {
+        // 1. Analysis
+        std::vector<float> magnitude(fftSize/2);
+        std::vector<float> phase(fftSize/2);
+        analyzeFrame(input, magnitude, phase);
+        
+        // 2. Transform magnitude/phase separately
+        transformMagnitude(magnitude);  // This works well
+        transformPhase(phase);         // This works well
+        
+        // 3. Resynthesize
+        synthesizeFrame(magnitude, phase, output);
+    }
+};
+
+// 2. Use multiple parallel FFT streams
+class MultiStreamProcessor {
+    std::vector<FFTStream> streams;
+    
+    void process() {
+        // Process each stream separately
+        for(auto& stream : streams) {
+            stream.analyze();
+            stream.transform();
+            stream.synthesize();
+        }
+        
+        // Mix streams back together
+        mixStreams();
+    }
+};
+
+// 3. Use phase vocoder techniques
+class PhaseVocoder {
+    void process() {
+        // Track phase progression
+        analyzePhaseDerivative();
+        
+        // Modify time/pitch independently
+        stretchTime(2.0);    // This works
+        shiftPitch(1.5);     // This works
+        
+        // Preserve phase coherence
+        synthesizeWithPhaseCorrection();
+    }
+};
+
+
+For "Bitwig-like" effects, you might want:
+
+class SpectralEffects {
+    // 1. Frequency-dependent processing
+    void spectralShaper() {
+        for(int bin = 0; bin < numBins; bin++) {
+            float freq = binToFreq(bin);
+            float amount = shapeAmount * (freq / nyquist);
+            magnitudes[bin] = transform(magnitudes[bin], amount);
+        }
+    }
+    
+    // 2. Bin relationship processing
+    void spectralEnhancer() {
+        for(int bin = 0; bin < numBins-1; bin++) {
+            // Compare adjacent bins
+            float ratio = magnitudes[bin+1] / magnitudes[bin];
+            if(ratio > threshold) {
+                // Enhance spectral peaks
+                magnitudes[bin] *= emphasis;
+            }
+        }
+    }
+    
+    // 3. Time-coherent processing
+    void coherentTransform() {
+        // Track bin evolution over time
+        trackPeaks();
+        // Apply transformations that preserve motion
+        transformTrajectories();
+    }
+};
+
+
+Key points:
+1. Direct time-domain effects don't work well in FFT domain
+2. Focus on magnitude/phase relationships
+3. Consider using multiple processing streams
+4. Preserve phase coherence for natural sound
+5. Use frequency-dependent processing
+6. Track spectral evolution over time
+
+For your specific goals:
+1. If you want waveshaping-like effects, apply them to magnitude spectrum
+2. For harmonic manipulation, work with bin relationships
+3. Consider using phase vocoder for more complex transformations
+4. Multiple parallel FFT streams can help with time-varying effects
+
+Remember: FFT processing is about relationships between frequencies, not direct waveform manipulation. Think in terms of spectral transformations rather than time-domain effects.
+
+
+******************************************************************************************************************************
+
+
+In iPlug2, you can create gradients using IPattern. Here are a few examples:
+
+void Draw(IGraphics& g) override {
+    // Linear gradient (from top to bottom)
+    IPattern gradient = IPattern::CreateLinearGradient(
+        mRECT.L, mRECT.T,  // Start point (left, top)
+        mRECT.L, mRECT.B,  // End point (left, bottom)
+        {
+            {IColor(255, 0x1E1E1E), 0.0f},    // Color at start (0%)
+            {IColor(255, 0x252526), 1.0f}     // Color at end (100%)
+        }
+    );
+    g.FillRect(gradient, mRECT);
+
+    // Or diagonal gradient
+    IPattern diagonalGradient = IPattern::CreateLinearGradient(
+        mRECT.L, mRECT.T,  // Top-left
+        mRECT.R, mRECT.B,  // Bottom-right
+        {
+            {IColor(255, 0x1E1E1E), 0.0f},
+            {IColor(255, 0x252526), 0.5f},    // Middle point (50%)
+            {IColor(255, 0x2D2D2D), 1.0f}
+        }
+    );
+
+    // Radial gradient (from center outwards)
+    IPattern radialGradient = IPattern::CreateRadialGradient(
+        mRECT.MW(), mRECT.MH(),  // Center point
+        mRECT.W() * 0.5f,        // Radius
+        {
+            {IColor(255, 0x1E1E1E), 0.0f},    // Center color
+            {IColor(255, 0x252526), 1.0f}     // Edge color
+        }
+    );
+}
+
+
+For a background panel, you might want to create a custom control:
+class GradientPanel : public IControl {
+public:
+    GradientPanel(const IRECT& bounds) : IControl(bounds) {}
+
+    void Draw(IGraphics& g) override {
+        IPattern gradient = IPattern::CreateLinearGradient(
+            mRECT.L, mRECT.T, 
+            mRECT.L, mRECT.B,
+            {
+                {IColor(255, 0x1E1E1E), 0.0f},
+                {IColor(255, 0x252526), 1.0f}
+            }
+        );
+        g.FillRect(gradient, mRECT);
+    }
+};
+
+// Add it to your plugin:
+pGraphics->AttachControl(new GradientPanel(IRECT(0, 0, GUI_WIDTH, GUI_HEIGHT)), -1);
