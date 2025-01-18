@@ -2764,15 +2764,7 @@ struct IVStyle
     newStyle.patternSpec.mPatterns[idx] = pattern;
     return newStyle;
   }
-  IVStyle WithGradients(const IVPatternSpec& spec) const
-  {
-    IVStyle newStyle = *this;
-    for (int i = 0; i < kNumVColors; i++)
-    {
-      newStyle.patternSpec.mPatterns[i] = spec.mPatterns[i];
-    }
-    return newStyle;
-  }
+
 
   IVStyle WithRoundness(float v) const
   {

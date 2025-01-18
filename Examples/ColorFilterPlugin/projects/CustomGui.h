@@ -65,18 +65,8 @@ const IColor XTRA_3 = MONOKAI_TEXT_GREY;
 static const std::initializer_list<IColor> ColorFilterStyleColorList_FilterPanel{BACKGROUND, OFF_FOREGROUND, ON_PRESSED, FRAME, HIGHLIGHT, SHADOW, XTRA_1, XTRA_2, XTRA_3};
 static const IVColorSpec ColorFilterColorSpec_FilterPanel{ColorFilterStyleColorList_FilterPanel};
 
-static const std::initializer_list<IPattern> ColorFilterStylePatternList_FilterPanel{BACKGROUND,
-                                                                                     IPattern::CreateLinearGradient(0, 0, 0, 1, {{BW_DARK_KNOB_TOP, 0.6}, {BW_DARK_KNOB_BOTTOM, 1.0}}),
-                                                                                     IPattern::CreateLinearGradient(0, 0, 0, 1, {{BW_DARK_KNOB_TOP, 0.6}, {BW_DARK_KNOB_BOTTOM, 1.0}}),
-                                                                                     FRAME,
-                                                                                     HIGHLIGHT,
-                                                                                     SHADOW,
-                                                                                     XTRA_1,
-                                                                                     XTRA_2,
-                                                                                     XTRA_3};
-
+static const std::initializer_list<IPattern> ColorFilterStylePatternList_FilterPanel{BACKGROUND, OFF_FOREGROUND, ON_PRESSED, FRAME, HIGHLIGHT, SHADOW, XTRA_1, XTRA_2, XTRA_3};
 static const IVPatternSpec ColorFilterPatternSpec_FilterPanel{ColorFilterStylePatternList_FilterPanel};
-
 
 } // namespace Colors
 
@@ -156,7 +146,8 @@ static IVStyle ColorFilterStyle{true,
                                 DEFAULT_WIDGET_ANGLE,
                                 DEFAULT_LABEL_ORIENTATION,
                                 true,
-                                true};
+                                true,
+                                Colors::ColorFilterPatternSpec_FilterPanel};
 
 
 class RoundedPanelControl : public IControl

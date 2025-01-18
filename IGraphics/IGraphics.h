@@ -214,6 +214,8 @@ public:
    * @param pBlend Optional blend method
    * @param thickness Optional line thickness */
   virtual void DrawArc(const IColor& color, float cx, float cy, float r, float a1, float a2, const IBlend* pBlend = 0, float thickness = 1.f);
+  //overload for pattern support
+  virtual void DrawArc(const IPattern& pattern, float cx, float cy, float r, float a1, float a2, const IBlend* pBlend = 0, float thickness = 1.f);
 
   /** Draw a circle to the graphics context
    * @param color The color to draw the shape with

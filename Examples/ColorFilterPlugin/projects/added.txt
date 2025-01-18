@@ -26,7 +26,6 @@ struct IVPatternSpec
 
   IVStyle useGradients() const
   IVStyle WithGradient(EVColor idx, const IPattern& pattern) const
-  IVStyle WithGradients(const IVPatternSpec& spec) const
 
 
   kX2,             // extra2: Knob Pointer
@@ -36,3 +35,6 @@ struct IVPatternSpec
   bool addBackgroundTrack = 0;
 
   IVStyle constructor
+
+void IVKnobControl::DrawBackgroundTrack(IGraphics& g, float cx, float cy, float radius) //edit
+void IGraphics::DrawArc(const IPattern& pattern, float cx, float cy, float r, float a1, float a2, const IBlend* pBlend, float thickness)

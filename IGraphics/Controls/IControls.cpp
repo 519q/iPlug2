@@ -673,7 +673,8 @@ void IVKnobControl::DrawIndicatorTrack(IGraphics& g, float angle, float cx, floa
 {
   if (mTrackSize > 0.f)
   {
-    g.DrawArc(GetColor(kX1), cx, cy, radius, angle >= mAnchorAngle ? mAnchorAngle : mAnchorAngle - (mAnchorAngle - angle), angle >= mAnchorAngle ? angle : mAnchorAngle, &mBlend, mTrackSize + 0.2);
+    g.DrawArc(mStyle.usingGradients ? GetPattern(kX1) : GetColor(kX1), cx, cy, radius, angle >= mAnchorAngle ? mAnchorAngle : mAnchorAngle - (mAnchorAngle - angle),
+              angle >= mAnchorAngle ? angle : mAnchorAngle, &mBlend, mTrackSize + 0.2);
   }
 }
 
@@ -682,7 +683,7 @@ void IVKnobControl::DrawBackgroundTrack(IGraphics& g, float cx, float cy, float 
   float startAngle = -135.f; // -135 degrees
   float endAngle = 135.f;    // 135 degrees
 
-  g.DrawArc(GetColor(kX3), cx, cy, radius, startAngle, endAngle, &mBlend, mTrackSize);
+  g.DrawArc(mStyle.usingGradients ? GetPattern(kX3) : GetColor(kX3), cx, cy, radius, startAngle, endAngle, &mBlend, mTrackSize);
 }
 
 void IVKnobControl::DrawPointer(IGraphics& g, float angle, float cx, float cy, float radius)

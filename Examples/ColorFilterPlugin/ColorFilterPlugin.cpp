@@ -56,7 +56,7 @@ ColorFilterPlugin::ColorFilterPlugin(const InstanceInfo& info)
     pGraphics->AttachControl(new RoundedPanelControl(b.GetFromTop(PLUG_HEIGHT).GetFromLeft(PLUG_WIDTH), Colors::BW_LIGHT_BG));
 
 
-     pGraphics->AttachControl(new RoundedPanelControl(FilterPanel.GetFromTop(filterPanelSize).GetFromLeft(450.f).GetTranslated(75, topSpaceSize + 5), Colors::BW_DARK_BG, 5));
+    pGraphics->AttachControl(new RoundedPanelControl(FilterPanel.GetFromTop(filterPanelSize).GetFromLeft(450.f).GetTranslated(75, topSpaceSize + 5), Colors::BW_DARK_BG, 5));
     // pGraphics->AttachControl(new RoundedPanelControl(FilterPanel.GetFromTop(shaperPanelSize).GetFromLeft(450.f).GetTranslated(75, topSpaceSize + filterPanelSize), IColor(255, 0x8f, 0x83, 0xaf),
     // 5)); pGraphics->AttachControl( new RoundedPanelControl(FilterPanel.GetFromTop(buttonsPanelSize).GetFromLeft(450.f).GetTranslated(75, topSpaceSize + filterPanelSize + shaperPanelSize),
     // IColor(255, 0x83, 0x76, 0xa7), 5));
@@ -81,15 +81,16 @@ ColorFilterPlugin::ColorFilterPlugin(const InstanceInfo& info)
 
     // filter
     IRECT cutoffKnobBounds = FilterPanel.GetGridCell(1, 2, rows, columns).GetFromTop(100).GetTranslated(-50, -10).GetMidHPadded(padding) /*GetFromLeft(180).*/;
-    pGraphics->AttachControl(new IVKnobControl(cutoffKnobBounds, kFilterCutoff, "Cutoff",
-                                               ColorFilterStyle.WithGradients(Colors::ColorFilterPatternSpec_FilterPanel)
-                                                 /*.WithGradient(kFG, IPattern::CreateLinearGradient(cutoffKnobBounds.L, cutoffKnobBounds.T, cutoffKnobBounds.L, cutoffKnobBounds.B,
-                                                                                                   {{Colors::BW_DARK_KNOB_TOP, 0.55f}, {Colors::BW_DARK_KNOB_BOTTOM, 1.f}}))
-                                                 .WithGradient(kPR, IPattern::CreateLinearGradient(cutoffKnobBounds.L, cutoffKnobBounds.T, cutoffKnobBounds.L, cutoffKnobBounds.B,
-                                                                                                   {{Colors::BW_DARK_KNOB_TOP, 0.55f}, {Colors::BW_DARK_KNOB_BOTTOM, 1.f}}))*/
-                                                 /*.withBackgroundTrack()*/,
-                                               false, false, -135.f, 135.f, -135.f, EDirection::Vertical, DEFAULT_GEARING, 2.3));
-    pGraphics->AttachControl(new IVKnobControl(FilterPanel.GetGridCell(1, 3, rows, columns).GetFromTop(75).GetMidHPadded(padding), kFilterResonance, "Reso", ColorFilterStyle));
+    pGraphics->AttachControl(new IVKnobControl(
+      cutoffKnobBounds, kFilterCutoff, "Cutoff",
+      ColorFilterStyle
+        .WithGradient(
+          kFG, IPattern::CreateLinearGradient(cutoffKnobBounds.L, cutoffKnobBounds.T, cutoffKnobBounds.L, cutoffKnobBounds.B, {{Colors::BW_DARK_KNOB_TOP, 0.55f}, {Colors::BW_DARK_KNOB_BOTTOM, 1.f}}))
+        .WithGradient(
+          kPR, IPattern::CreateLinearGradient(cutoffKnobBounds.L, cutoffKnobBounds.T, cutoffKnobBounds.L, cutoffKnobBounds.B, {{Colors::BW_DARK_KNOB_TOP, 0.55f}, {Colors::BW_DARK_KNOB_BOTTOM, 1.f}}))
+        .WithGradient(kX1, IPattern::CreateLinearGradient(cutoffKnobBounds.L, cutoffKnobBounds.T, cutoffKnobBounds.L, cutoffKnobBounds.B, {{Colors::BW_RED, 0.f}, {Colors::BW_GREEN, 1.f}})),
+      false, false, -135.f, 135.f, -135.f, EDirection::Vertical, DEFAULT_GEARING, 2.3));
+    pGraphics->AttachControl(new IVKnobControl(FilterPanel.GetGridCell(1, 3, rows, columns).GetFromTop(75).GetMidHPadded(padding), kFilterResonance, "Reso"));
     pGraphics->AttachControl(new IVKnobControl(FilterPanel.GetGridCell(1, 4, rows, columns).GetFromTop(75).GetMidHPadded(padding), kFilterBandwidth, "Band", ColorFilterStyle));
 
     // Filter Bypass:

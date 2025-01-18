@@ -2537,6 +2537,13 @@ void IGraphics::DrawArc(const IColor& color, float cx, float cy, float r, float 
   PathStroke(color, thickness, IStrokeOptions(), pBlend);
 }
 
+void IGraphics::DrawArc(const IPattern& pattern, float cx, float cy, float r, float a1, float a2, const IBlend* pBlend, float thickness)
+{
+  PathClear();
+  PathArc(cx, cy, r, a1, a2);
+  PathStroke(pattern, thickness, IStrokeOptions(), pBlend);
+}
+
 void IGraphics::DrawCircle(const IColor& color, float cx, float cy, float r, const IBlend* pBlend, float thickness)
 {
   PathClear();
