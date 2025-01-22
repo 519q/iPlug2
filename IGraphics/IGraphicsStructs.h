@@ -676,7 +676,6 @@ struct IStrokeOptions
       for (int i = 0; i < count; i++)
         mArray[i] = pArray[i];
     }
-
   private:
     float mArray[8] = {};
     float mOffset;
