@@ -21,3 +21,9 @@ augument delay line class to support time (allpass filter interpolation to try i
 comb filter
 
 phaser
+
+
+ICornerResizerControl STYLE EDIT
+
+VISUALS: 
+shader reacting more to high freqs

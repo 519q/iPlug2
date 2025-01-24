@@ -10,10 +10,16 @@ constexpr double processingFloor = 0.0001;
 
 static double filnalTanh(double input, FilterParameters params) { return tanh(input /** mapRange((1. - params.m_resonance), 0.5, 1)*/); }
 
-class CubicShaper
+class Shapers
+{
+protected:
+  virtual double Process(double input, FilterParameters& params) = 0;
+};
+
+class CubicShaper : public Shapers
 {
 public:
-  double Process(double input, FilterParameters& params)
+  double Process(double input, FilterParameters& params) override
   {
     if (SpectShape < processingFloor)
       return input;
@@ -29,10 +35,10 @@ public:
   }
 };
 
-class PolynomialShaper
+class PolynomialShaper : public Shapers
 {
 public:
-  double Process(double input, FilterParameters& params)
+  double Process(double input, FilterParameters& params) override
   {
     if (SpectShape < processingFloor)
       return input;
@@ -42,10 +48,10 @@ public:
   }
 };
 
-class CeilLimiter
+class CeilLimiter : public Shapers
 {
 public:
-  double Process(double input, FilterParameters& params)
+  double Process(double input, FilterParameters& params) override
   {
     double ceil = SpectShape;
     if (input > ceil)
@@ -75,10 +81,10 @@ public:
 //   }
 // };
 
-class TanhShaper
+class TanhShaper : public Shapers
 {
 public:
-  double Process(double input, FilterParameters& params)
+  double Process(double input, FilterParameters& params) override
   {
     if (SpectShape<processingFloor)
     {
@@ -96,10 +102,10 @@ public:
   }
 };
 
-class FoldbackShaper
+class FoldbackShaper : public Shapers
 {
 public:
-  double Process(double input, FilterParameters& params)
+  double Process(double input, FilterParameters& params) override
   {
     if (SpectShape < processingFloor)
       return input;
@@ -113,10 +119,10 @@ public:
   }
 };
 
-class ReflectShaper
+class ReflectShaper : public Shapers
 {
 public:
-  double Process(double input, FilterParameters& params)
+  double Process(double input, FilterParameters& params) override
   {
     double threshold = SpectShape;
 
@@ -143,26 +149,27 @@ public:
   }
 };
 
-class AsymShape
+class AsymShape : public Shapers
 {
 private:
 public:
-  void Process(double& input, FilterParameters& params)
+  double Process(double input, FilterParameters& params) override
   {
     if (input > 0)
     {
       input *= 1 - (0.5 * params.m_bias);
     }
+    return input;
   }
 };
 
-class Sigmoidal
+class Sigmoidal : public Shapers
 {
 private:
   AsymShape asym{};
 
 public:
-  void Process(double& input, FilterParameters& params)
+  double Process(double input, FilterParameters& params) override
   {
     if (params.m_drive > 0)
     {
@@ -171,9 +178,10 @@ public:
       double shaped = (input / (t + std::abs(input))) * z;
       if (params.m_bias > 0)
       {
-        asym.Process(shaped, params);
+        shaped = asym.Process(shaped, params);
       }
       input = interpolateLin(input, shaped, params.m_drive);
     }
+    return input;
   }
 };

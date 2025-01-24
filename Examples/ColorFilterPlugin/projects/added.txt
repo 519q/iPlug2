@@ -38,3 +38,13 @@ struct IVPatternSpec
 
 void IVKnobControl::DrawBackgroundTrack(IGraphics& g, float cx, float cy, float radius) //edit
 void IGraphics::DrawArc(const IPattern& pattern, float cx, float cy, float r, float a1, float a2, const IBlend* pBlend, float thickness)
+
+
+  void setCapOption(ELineCap cap) { mStrokeOptions.mCapOption = cap; }
+  void setJoinOption(ELineJoin join) { mStrokeOptions.mJoinOption = join; }
+  IStrokeOptions getStrokeOptions() const { return mStrokeOptions; }
+
+
+
+
+  void Draw(IGraphics& g) override// EDIT

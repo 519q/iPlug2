@@ -71,15 +71,12 @@ IGraphics::~IGraphics()
   StaticStorage<SVGHolder>::Accessor svgStorage(sSVGCache);
   svgStorage.Release();
 }
-
 void IGraphics::SetScreenScale(float scale)
 {
   mScreenScale = scale;
   int windowWidth = WindowWidth() * GetPlatformWindowScale();
   int windowHeight = WindowHeight() * GetPlatformWindowScale();
-  
   assert(windowWidth > 0 && windowHeight > 0 && "Window dimensions invalid");
-
   bool parentResized = GetDelegate()->EditorResizeFromUI(windowWidth, windowHeight, true);
   PlatformResize(parentResized);
   ForAllControls(&IControl::OnRescale);
@@ -90,7 +87,6 @@ void IGraphics::SetScreenScale(float scale)
 void IGraphics::Resize(int w, int h, float scale, bool needsPlatformResize)
 {
   GetDelegate()->ConstrainEditorResize(w, h);
-  
   scale = Clip(scale, mMinScale, mMaxScale);
   
   if (w == Width() && h == Height() && scale == GetDrawScale()) return;
@@ -816,11 +812,11 @@ void IGraphics::DrawHorizontalLine(const IColor& color, float yi, float xLo, flo
   DrawLine(color, xLo, yi, xHi, yi, pBlend, thickness);
 }
 
-void IGraphics::DrawRadialLine(const IColor& color, float cx, float cy, float angle, float rMin, float rMax, const IBlend* pBlend, float thickness)
+void IGraphics::DrawRadialLine(const IColor& color, float cx, float cy, float angle, float rMin, float rMax, const IBlend* pBlend, float thickness, const IStrokeOptions& strokeOptions)
 {
   float data[2][2];
   RadialPoints(angle, cx, cy, rMin, rMax, 2, data);
-  DrawLine(color, data[0][0], data[0][1], data[1][0], data[1][1], pBlend, thickness);
+  DrawLine(color, data[0][0], data[0][1], data[1][0], data[1][1], pBlend, thickness, strokeOptions);
 }
 
 void IGraphics::PathRadialLine(float cx, float cy, float angle, float rMin, float rMax)
@@ -978,7 +974,7 @@ void IGraphics::SetStrictDrawing(bool strict)
 
 void IGraphics::OnMouseDown(const std::vector<IMouseInfo>& points)
 {
-//  Trace("IGraphics::OnMouseDown", __LINE__, "x:%0.2f, y:%0.2f, mod:LRSCA: %i%i%i%i%i", x, y, mod.L, mod.R, mod.S, mod.C, mod.A);
+  //Trace("IGraphics::OnMouseDown", __LINE__, "x:%0.2f, y:%0.2f, mod:LRSCA: %i%i%i%i%i", x, y, mod.L, mod.R, mod.S, mod.C, mod.A);
 
   bool singlePoint = points.size() == 1;
 
@@ -2421,12 +2417,12 @@ void IGraphics::DrawPoint(const IColor& color, float x, float y, const IBlend* p
   FillRect(color, IRECT(x, y, x+1.f, y+1.f), pBlend);
 }
 
-void IGraphics::DrawLine(const IColor& color, float x1, float y1, float x2, float y2, const IBlend* pBlend, float thickness)
+void IGraphics::DrawLine(const IColor& color, float x1, float y1, float x2, float y2, const IBlend* pBlend, float thickness, const IStrokeOptions& strokeOptions)
 {
   PathClear();
   PathMoveTo(x1, y1);
   PathLineTo(x2, y2);
-  PathStroke(color, thickness, IStrokeOptions(), pBlend);
+  PathStroke(color, thickness, strokeOptions, pBlend);
 }
 
 void IGraphics::DrawGrid(const IColor& color, const IRECT& bounds, float gridSizeH, float gridSizeV, const IBlend* pBlend, float thickness)

@@ -40,6 +40,19 @@ enum class FilterTypes
   MAX_FILTER_TYPES
 };
 
+enum class SpectralFilterTypes
+{
+  DF1_1P,
+  DF1_2P,
+  DF1_3P,
+  DF1_4P,
+  DF1_6P,
+  SVF1_2P,
+  SVF1_4P,
+  SVF1_6P,
+  MAX_SPECTRAL_FILTER_TYPES
+};
+
 enum class FilterAlgo
 {
   DF1,

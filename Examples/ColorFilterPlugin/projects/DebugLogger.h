@@ -1,18 +1,12 @@
 /*
 
 Recieve msgs in:
- https://learn.microsoft.com/sysinternals/downloads/debugview
+ https://github.com/CobaltFusion/DebugViewPP/releases
 
 // Usage Example: .cpp
 
 #include "DebugLogger.h"
-
-IppStatus initStatus = ippsFFTInit_R_64f(&pFFTSpec, order, IPP_FFT_NODIV_BY_ANY, ippAlgHintNone, pFFTInitBuf, pFFTBuffer);
-if (initStatus != ippStsNoErr)
-{
-  DebugPrint(ippGetStatusString(initStatus));
-}
-
+DebugPrint(value);
 */
 #pragma once
 

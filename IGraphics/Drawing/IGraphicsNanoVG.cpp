@@ -714,7 +714,7 @@ void IGraphicsNanoVG::PathFill(const IPattern& pattern, const IFillOptions& opti
   switch(options.mFillRule)
   {
     // This concept of fill vs. even/odd winding does not really translate to nanovg.
-    // Instead the caller is responsible for settting winding correctly for each subpath
+    // Instead the caller is responsible for setting winding correctly for each subpath
     // based on whether it's a solid (NVG_CCW) or hole (NVG_CW).
     case EFillRule::Winding:
       nvgPathWinding(mVG, NVG_CCW);

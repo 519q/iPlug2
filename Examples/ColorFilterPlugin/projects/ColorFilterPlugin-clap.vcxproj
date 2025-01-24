@@ -179,6 +179,7 @@
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
+      <AdditionalLibraryDirectories>C:\Users\salva\Documents\GitHub\iPlug2\Dependencies\Build\win\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent />
     <ResourceCompile>

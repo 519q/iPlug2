@@ -676,6 +676,7 @@ struct IStrokeOptions
       for (int i = 0; i < count; i++)
         mArray[i] = pArray[i];
     }
+
   private:
     float mArray[8] = {};
     float mOffset;
@@ -2539,8 +2540,7 @@ static const IPattern DEFAULT_X3COLOR_PATTERN = IPattern(DEFAULT_X3COLOR);
 /** Contains a set of 9 Patterns used to theme IVControls, selected with bool useGradient = true */
 struct IVPatternSpec
 {
-  IPattern mPatterns[kNumVColors] = {IPattern(DEFAULT_BGCOLOR),
-                                     IPattern(DEFAULT_FGCOLOR), IPattern(DEFAULT_PRCOLOR), IPattern(DEFAULT_FRCOLOR), IPattern(DEFAULT_HLCOLOR),
+  IPattern mPatterns[kNumVColors] = {IPattern(DEFAULT_BGCOLOR), IPattern(DEFAULT_FGCOLOR), IPattern(DEFAULT_PRCOLOR), IPattern(DEFAULT_FRCOLOR), IPattern(DEFAULT_HLCOLOR),
                                      IPattern(DEFAULT_SHCOLOR), IPattern(DEFAULT_X1COLOR), IPattern(DEFAULT_X2COLOR), IPattern(DEFAULT_X3COLOR)};
 
   /** @return The IPattern for the EVColor in this ColorSpec */
@@ -2613,7 +2613,7 @@ struct IVPatternSpec
 };
 
 const IVPatternSpec DEFAULT_PATTERN_SPEC = IVPatternSpec();
-
+const IStrokeOptions DEFAULT_STROKE_OPTIONS = IStrokeOptions();
 static constexpr bool DEFAULT_HIDE_CURSOR = true;
 static constexpr bool DEFAULT_SHOW_VALUE = true;
 static constexpr bool DEFAULT_SHOW_LABEL = true;
@@ -2652,8 +2652,7 @@ struct IVStyle
   IText labelText = DEFAULT_LABEL_TEXT;
   IText valueText = DEFAULT_VALUE_TEXT;
   EOrientation labelOrientation = DEFAULT_LABEL_ORIENTATION;
-
-
+  IStrokeOptions strokeOptions = IStrokeOptions();
   /** Create a new IVStyle to configure common styling for IVControls
    * @param showLabel Show the label
    * @param showValue Show the value
@@ -2686,8 +2685,8 @@ struct IVStyle
           EOrientation labelOrientation = DEFAULT_LABEL_ORIENTATION,
           bool usingGradients = DEFAULT_USING_GRADIENTS,
           bool addBackgroundTrack = DEFAULT_ADD_BACKGROUND_TRACK,
-          IVPatternSpec patternSpec = DEFAULT_PATTERN_SPEC
-    )
+          IVPatternSpec patternSpec = DEFAULT_PATTERN_SPEC,
+          IStrokeOptions strokeOptions = DEFAULT_STROKE_OPTIONS)
     : hideCursor(hideCursor)
     , showLabel(showLabel)
     , showValue(showValue)
@@ -2705,6 +2704,7 @@ struct IVStyle
     , usingGradients(usingGradients)
     , addBackgroundTrack(addBackgroundTrack)
     , patternSpec(patternSpec)
+    , strokeOptions(strokeOptions)
   {
   }
 
@@ -2763,8 +2763,6 @@ struct IVStyle
     newStyle.patternSpec.mPatterns[idx] = pattern;
     return newStyle;
   }
-
-
   IVStyle WithRoundness(float v) const
   {
     IVStyle newStyle = *this;
@@ -2825,10 +2823,22 @@ struct IVStyle
     newStyle.usingGradients = true;
     return newStyle;
   }
-  IVStyle withBackgroundTrack() const
+  IVStyle WithBackgroundTrack() const
   {
     IVStyle newStyle = *this;
     newStyle.addBackgroundTrack = true;
+    return newStyle;
+  }
+  IVStyle SetLineCap(ELineCap cap)
+  {
+    IVStyle newStyle = *this;
+    newStyle.strokeOptions.mCapOption = cap;
+    return newStyle;
+  }
+  IVStyle SetLineJoin(ELineJoin join)
+  {
+    IVStyle newStyle = *this;
+    newStyle.strokeOptions.mJoinOption = join;
     return newStyle;
   }
 };

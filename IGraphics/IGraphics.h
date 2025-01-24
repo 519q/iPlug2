@@ -153,8 +153,9 @@ public:
    * @param x2 The X coordinate of the end of the line
    * @param y2 The Y coordinate of the end of the line
    * @param pBlend Optional blend method
-   * @param thickness Optional line thickness */
-  virtual void DrawLine(const IColor& color, float x1, float y1, float x2, float y2, const IBlend* pBlend = 0, float thickness = 1.f);
+   * @param thickness Optional line thickness
+   * @param strokeOptions Optional stroke options*/
+  virtual void DrawLine(const IColor& color, float x1, float y1, float x2, float y2, const IBlend* pBlend = 0, float thickness = 1.f, const IStrokeOptions& strokeOptions = IStrokeOptions());
 
   /** Draw a dotted line to the graphics context
    * @param color The color to draw the shape with
@@ -163,7 +164,7 @@ public:
    * @param x2 The X coordinate of the end of the line
    * @param y2 The Y coordinate of the end of the line
    * @param pBlend Optional blend method
-   * @param thickness Optional line thickness */
+   * @param thickness Optional line thickness*/
   virtual void DrawDottedLine(const IColor& color, float x1, float y1, float x2, float y2, const IBlend* pBlend = 0, float thickness = 1.f, float dashLen = 2.f);
   
   /** Draw a triangle to the graphics context
@@ -498,7 +499,8 @@ public:
    * @param rMax maxima of the radial line (distance from cx,cy)
    * @param pBlend Optional blend method
    * @param thickness Optional line thickness */
-  void DrawRadialLine(const IColor& color, float cx, float cy, float angle, float rMin, float rMax, const IBlend* pBlend = 0, float thickness = 1.f);
+  void DrawRadialLine(
+    const IColor& color, float cx, float cy, float angle, float rMin, float rMax, const IBlend* pBlend = 0, float thickness = 1.f, const IStrokeOptions& strokeOptions = IStrokeOptions());
 
   /** Draw a grid to the graphics context
    * @param color The color to draw the grid lines with
@@ -1125,6 +1127,10 @@ public:
   /** Gets the graphics context scaling factor.
    * @return The scaling applied to the graphics context */
   float GetDrawScale() const { return mDrawScale; }
+  
+  /** Sets the graphics context scaling factor.
+   * Use to deserialize zoom factor */
+  void SetDrawScale(double drawScale) { mDrawScale = drawScale; }
 
   /** Gets the screen/display scaling factor, e.g. 2 for a macOS retina screen, 1.5 on Windows when screen is scaled to 150%
     * @return The scale factor of the display on which this graphics context is currently located */
@@ -1801,7 +1807,7 @@ protected:
   void CalculateTextRotation(const IText& text, const IRECT& bounds, IRECT& rect, double& tx, double& ty) const;
   
   /** @return float \todo */
-  virtual float GetBackingPixelScale() const { return GetScreenScale() * GetDrawScale(); };
+  virtual float GetBackingPixelScale() const { return GetTotalScale() * GetDrawScale(); };
 
   IMatrix GetTransformMatrix() const { return mTransform; }
 #pragma mark -
@@ -1834,7 +1840,6 @@ private:
   int mFPS;
   float mScreenScale = 1.f; // the scaling of the display that the UI is currently on e.g. 2 for retina
   float mDrawScale = 1.f; // scale deviation from  default width and height i.e stretching the UI by dragging bottom right hand corner
-
   int mIdleTicks = 0;
   
   std::vector<EGestureType> mRegisteredGestures; // All the types of gesture registered with the graphics context

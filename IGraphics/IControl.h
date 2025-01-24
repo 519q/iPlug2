@@ -592,7 +592,6 @@ protected:
 
   /** Controls can be grouped for hiding and showing panels */
   WDL_String mGroup;
-
   IText mText;
   IBlend mBlend;
   int mTextEntryLength = DEFAULT_TEXT_ENTRY_LEN;
@@ -2084,7 +2083,6 @@ public:
   {
     g.PathRect(mRECT);
     g.PathFill(mPattern, IFillOptions(), &mBlend);
-
     if (mDrawFrame)
       g.DrawRect(COLOR_LIGHT_GRAY, mRECT, &mBlend);
   }

@@ -5,10 +5,10 @@ SpectralShaper::SpectralShaper() {}
 void SpectralShaper::Process(double& input, FilterParameters& params)
 {
   auto output = IIR_hilbert.getMagintude_Phase(input);
-  //double magnitude = output.magnitude;
-  //double phase = output.phase;
-  double magnitude = FIR_hilbert.getMagnitude(input);
-  double phase = FIR_hilbert.getPhase(input);
+  double magnitude = output.magnitude;
+  double phase = output.phase;
+  //double magnitude = FIR_hilbert.getMagnitude(input);
+  //double phase = FIR_hilbert.getPhase(input);
   //double real = hilbert.getReal(input);
   //double imag = hilbert.getImag(input);
   double shapedMagnitude = shaper.Process(magnitude, params);

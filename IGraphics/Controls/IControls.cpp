@@ -579,7 +579,7 @@ void IVMenuButtonControl::SetValueFromUserInput(double value, int valIdx)
   }
 }
 
-IVKnobControl::IVKnobControl(const IRECT& bounds, int paramIdx, const char* label, const IVStyle& style, bool valueIsEditable, bool valueInWidget, float a1, float a2, float aAnchor,  EDirection direction, double gearing, float trackSize)
+IVKnobControl:: IVKnobControl(const IRECT& bounds, int paramIdx, const char* label, const IVStyle& style, bool valueIsEditable, bool valueInWidget, float a1, float a2, float aAnchor,  EDirection direction, double gearing, float trackSize)
 : IKnobControlBase(bounds, paramIdx, direction, gearing)
 , IVectorBase(style, false, valueInWidget)
 , mAngle1(a1)
@@ -609,10 +609,8 @@ IVKnobControl::IVKnobControl(const IRECT& bounds, IActionFunction aF, const char
   SetActionFunction(aF);
   AttachIControl(this, label);
 }
-
 void IVKnobControl::Draw(IGraphics& g)
 {
-  DrawBackground(g, mRECT);
   DrawLabel(g);
   DrawWidget(g);
   DrawValue(g, mValueMouseOver);
@@ -688,9 +686,8 @@ void IVKnobControl::DrawBackgroundTrack(IGraphics& g, float cx, float cy, float 
 
 void IVKnobControl::DrawPointer(IGraphics& g, float angle, float cx, float cy, float radius)
 {
-  g.DrawRadialLine(GetColor(kX2), cx, cy, angle, mInnerPointerFrac * radius, mOuterPointerFrac * radius, &mBlend, mPointerThickness);
+  g.DrawRadialLine(GetColor(kX2), cx, cy, angle, mInnerPointerFrac * radius, mOuterPointerFrac * radius, &mBlend, mPointerThickness, mStyle.strokeOptions);
 }
-
 void IVKnobControl::OnMouseDown(float x, float y, const IMouseMod& mod)
 {
   if(mStyle.showValue && mValueBounds.Contains(x, y))
@@ -701,7 +698,6 @@ void IVKnobControl::OnMouseDown(float x, float y, const IMouseMod& mod)
   {    
     IKnobControlBase::OnMouseDown(x, y, mod);
   }
-
   SetDirty(false);
 }
 

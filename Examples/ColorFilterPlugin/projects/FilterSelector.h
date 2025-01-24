@@ -5,6 +5,8 @@
 #include "HighPassFilters.h"
 
 #define FilterArray std::array<std::unique_ptr<Filters>, static_cast<int>(FilterTypes::MAX_FILTER_TYPES)>
+#define SpectralFilterArray std::array<std::unique_ptr<Filters>, static_cast<int>(SpectralFilterTypes::MAX_SPECTRAL_FILTER_TYPES)>
+static const std::initializer_list<const char*> SpectralFilterTypes = {"DF1_1P", "DF1_2P", "DF1_3P", "DF1_4P", "DF1_6P", "SVF1_2P", "SVF1_4P", "SVF1_6P"};
 
 class FilterSelector
 {
@@ -58,7 +60,8 @@ private:
     std::make_unique<SVF1_4P_BS>(),
     std::make_unique<SVF1_6P_BS>()};
 
-  FilterArray LP_ArraySpectral{
+  SpectralFilterArray LP_Array_Spectral{
+    std::make_unique<DF1_1P_LP>(),
     std::make_unique<DF1_2P_LP>(),
     std::make_unique<DF1_3P_LP>(),
     std::make_unique<DF1_4P_LP>(),
@@ -95,7 +98,28 @@ public:
 
   double ProcessSpectral(double input, FilterParameters& params)
   {
-    LP_ArraySpectral[2]->Process(input, params);
+    LP_Array_Spectral[2]->Process(input, params);
     return input;
+  }
+
+  static std::initializer_list<const char*> getInitList(int indx)
+  {
+    static const std::initializer_list<const char*> DF1 = {"DF1_1P", "DF1_2P", "DF1_3P", "DF1_4P", "DF1_6P"};
+    static const std::initializer_list<const char*> DF2 = {"DF2_2P", "DF2_4P"};
+    static const std::initializer_list<const char*> SVF1 = {"SVF1_2P", "SVF1_4P", "SVF1_6P"};
+
+    switch (indx)
+    {
+    case (int)FilterAlgo::DF1:
+      return DF1;
+    case (int)FilterAlgo::DF2:
+      return DF2;
+    case (int)FilterAlgo::SVF1:
+      return SVF1;
+    // case (int)FilterAlgo::ZDF1:
+    //   return ZDF1;
+    default:
+      return {}; // Empty initializer list for safety
+    }
   }
 };
