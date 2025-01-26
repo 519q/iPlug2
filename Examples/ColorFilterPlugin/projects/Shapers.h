@@ -3,16 +3,22 @@
 #include "IPlugConstants.h"
 #include "projects/SmoothTools.h"
 
-#define SpectShape params.m_SH_shape
-
 static double m_Vintage_scale{1 << VINTAGE_BIT_RATE};
 constexpr double processingFloor = 0.0001;
 
 static double filnalTanh(double input, FilterParameters params) { return tanh(input /** mapRange((1. - params.m_resonance), 0.5, 1)*/); }
 
+enum class ShaperTypes
+{
+  TanhShaper,
+  PolynomialShaper,
+  CubicShaper,
+  MAX_SHAPER_TYPES
+};
+
 class Shapers
 {
-protected:
+public:
   virtual double Process(double input, FilterParameters& params) = 0;
 };
 
@@ -21,14 +27,14 @@ class CubicShaper : public Shapers
 public:
   double Process(double input, FilterParameters& params) override
   {
-    if (SpectShape < processingFloor)
+    if (params.m_spectralShaperShape < processingFloor)
       return input;
-    double t = SpectShape;
+    double t = params.m_spectralShaperShape;
     double a = 7; // Controls the curve
     double scaled_t = std::log1p(a * t) / std::log1p(a);
 
     double strength = 4.5;
-    double scaledInput = input * (1 + strength * SpectShape);
+    double scaledInput = input * (1 + strength * params.m_spectralShaperShape);
     // Cubic soft clipping
     double shaped = scaledInput - (1.0 / 3.0) * std::pow(scaledInput, 3);
     return shaped / (1 + strength * 0.3 * scaled_t);
@@ -40,11 +46,11 @@ class PolynomialShaper : public Shapers
 public:
   double Process(double input, FilterParameters& params) override
   {
-    if (SpectShape < processingFloor)
+    if (params.m_spectralShaperShape < processingFloor)
       return input;
     // Polynomial shaping (adjust coefficients for different curves)
     else
-      return (input - (6 * SpectShape) * std::pow(input, 3) + (8 * SpectShape) * std::pow(input, 5)) * (1 + 1 * SpectShape);
+      return (input - (6 * params.m_spectralShaperShape) * std::pow(input, 3) + (8 * params.m_spectralShaperShape) * std::pow(input, 5)) * (1 + 1 * params.m_spectralShaperShape);
   }
 };
 
@@ -53,7 +59,7 @@ class CeilLimiter : public Shapers
 public:
   double Process(double input, FilterParameters& params) override
   {
-    double ceil = SpectShape;
+    double ceil = params.m_spectralShaperShape;
     if (input > ceil)
       input = ceil;
     return input;
@@ -86,15 +92,15 @@ class TanhShaper : public Shapers
 public:
   double Process(double input, FilterParameters& params) override
   {
-    if (SpectShape<processingFloor)
+    if (params.m_spectralShaperShape<processingFloor)
     {
       return input;
     }
-    double t = SpectShape;
+    double t = params.m_spectralShaperShape;
     double a = 9.0; // Controls the curve
     double scaled_t = std::log1p(a * t) / std::log1p(a);
     double strength = 25 * 0.4;
-    double inputProcess = input * (1 + strength * SpectShape);
+    double inputProcess = input * (1 + strength * params.m_spectralShaperShape);
     inputProcess = tanh(inputProcess);
     // if (inputProcess > 1 - drive)
     //   inputProcess = 1 - drive;
@@ -107,9 +113,9 @@ class FoldbackShaper : public Shapers
 public:
   double Process(double input, FilterParameters& params) override
   {
-    if (SpectShape < processingFloor)
+    if (params.m_spectralShaperShape < processingFloor)
       return input;
-    double threshold = SpectShape;
+    double threshold = params.m_spectralShaperShape;
     // Foldback distortion
     if (input > threshold || input < -threshold)
     {
@@ -124,7 +130,7 @@ class ReflectShaper : public Shapers
 public:
   double Process(double input, FilterParameters& params) override
   {
-    double threshold = SpectShape;
+    double threshold = params.m_spectralShaperShape;
 
     // If the knob is below the processing floor, return the input unchanged
     if (threshold < processingFloor)
@@ -149,11 +155,11 @@ public:
   }
 };
 
-class AsymShape : public Shapers
+class AsymShape
 {
 private:
 public:
-  double Process(double input, FilterParameters& params) override
+  double Process(double input, FilterParameters& params)
   {
     if (input > 0)
     {
@@ -163,13 +169,13 @@ public:
   }
 };
 
-class Sigmoidal : public Shapers
+class Sigmoidal
 {
 private:
   AsymShape asym{};
 
 public:
-  double Process(double input, FilterParameters& params) override
+  double Process(double input, FilterParameters& params)
   {
     if (params.m_drive > 0)
     {

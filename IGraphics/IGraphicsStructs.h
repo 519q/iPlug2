@@ -2823,10 +2823,10 @@ struct IVStyle
     newStyle.usingGradients = true;
     return newStyle;
   }
-  IVStyle WithBackgroundTrack() const
+  IVStyle WithBackgroundTrack(bool status = 1) const
   {
     IVStyle newStyle = *this;
-    newStyle.addBackgroundTrack = true;
+    newStyle.addBackgroundTrack = status;
     return newStyle;
   }
   IVStyle SetLineCap(ELineCap cap)

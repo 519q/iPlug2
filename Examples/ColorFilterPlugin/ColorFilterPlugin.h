@@ -28,19 +28,19 @@ enum EParams
   kFilterAlgo,
   kFilterType,
   kFilterSelector,
-  kSpectralFilterSelector,
   kSpectralFilterOn,
+  kSpectralFilterAlgo,
+  kSpectralFilterSelector,
+  kSpectralFilter_IR,
   kFilterBypass,
 
   kShaperDrive,
   kShaperShape,
   kShaperBias,
-  // kShaperBypass,
 
   kSpectralShaperShape,
-  // kSpectralShaperDC,
-  // kSpectralShaperPhase,
-  // kSpectralShaperBypass,
+  kSpectralShaper_IR,
+  kSpectralShaperSelector,
 
   kOverSampling,
   kNumParams
@@ -60,23 +60,24 @@ private:
   //   ██████   ██████  ██      ██████  ██████  ██   ████    ██    ██   ██  ██████  ███████ ███████
   int columns = 5;
   int rows = 1;
-  int padding = 40;
+  int padding = 25;
+  int buttonsPadding = 35;
   double getFromTopFilter = 65;
   double getFromTopShaper = 60;
   IControl* mCutoff_Knob{};
-  IVStyle mFilterCutoffStyle{};
-  IRECT mCutoffKnobBounds{};
+  IControl* mCutoff_Knob_Spectral{};
   IControl* mReso_Knob{};
-  IVStyle mFilterResoStyle{};
-  IRECT mResoKnobBounds{};
+  IControl* mReso_Knob_Spectral{};
   IControl* mF_BW_Knob{};
-  IRECT mFilter_Type_RB_Bounds{};
   IControl* mFilter_Type_RB{};
-  IVStyle mFilterBypassStyle{};
-  IRECT mFilterBypass_Bounds{};
   IControl* mFilterBypassSwitch{};
-  IRECT mFilterAlgo_Bounds{};
+  IControl* mFilterBypassSwitch_Spectral{};
   IControl* mFilterAlgoSwitch{};
+  IControl* mFilterSelectorSwitch{};
+  IControl* mSpectral_FilterAlgoSwitch{};
+  IControl* mSpectral_FilterSelectorSwitch{};
+  IControl* mSpectralFilter_IR{};
+  IControl* mSpectralFilterOnToggle{};
 
   bool mFactorChanged = true;
   int m_ovrsmpFactor{};
@@ -85,10 +86,14 @@ private:
   int m_df1retainer{};
   int m_df2retainer{(int)FilterTypes::DF2_2P};
   int m_svf1retainer{(int)FilterTypes::SVF1_2P};
+
+  int m_spectral_FilterAlgo{};
+  int m_spectral_df1retainer{};
+  int m_spectral_svf1retainer{(int)SpectralFilterTypes::SVF1_2P};
+
   IRECT m_ButtonsPanel{};
   IRECT m_FilterPanel{};
   IRECT m_ShaperPanel{};
-  double retained_kFilterSelector{};
 
 public:
   ColorFilterPlugin(const InstanceInfo& info);
@@ -104,12 +109,14 @@ public:
     if (!SerializeParams(chunk))
       return false;
     // Add any additional state you want to save here
+    chunk.Put(&mDrawScaleRetainer);
     chunk.Put(&m_df1retainer);
     chunk.Put(&m_df2retainer);
     chunk.Put(&m_svf1retainer);
     chunk.Put(&m_filterAlgo);
-    chunk.Put(&retained_kFilterSelector);
-    chunk.Put(&mDrawScaleRetainer);
+    chunk.Put(&m_spectral_FilterAlgo);
+    chunk.Put(&m_spectral_df1retainer);
+    chunk.Put(&m_spectral_svf1retainer);
     return SerializeParams(chunk);
   }
   // Override UnserializeParams to restore plugin state
@@ -119,12 +126,14 @@ public:
     startPos = UnserializeParams(chunk, startPos);
 
     // Add any additional state you want to restore here
+    startPos = chunk.Get(&mDrawScaleRetainer, startPos);
     startPos = chunk.Get(&m_df1retainer, startPos);
     startPos = chunk.Get(&m_df2retainer, startPos);
     startPos = chunk.Get(&m_svf1retainer, startPos);
     startPos = chunk.Get(&m_filterAlgo, startPos);
-    startPos = chunk.Get(&retained_kFilterSelector, startPos);
-    startPos = chunk.Get(&mDrawScaleRetainer, startPos);
+    startPos = chunk.Get(&m_spectral_FilterAlgo, startPos);
+    startPos = chunk.Get(&m_spectral_df1retainer, startPos);
+    startPos = chunk.Get(&m_spectral_svf1retainer, startPos);
 
     return UnserializeParams(chunk, startPos);
   }
@@ -175,9 +184,9 @@ public:
   void OnReset() override;
   void OnParamChange(int paramIdx, EParamSource, int sampleOffset) override;
   void RemoveControl(int paramIdx);
-  void DecideResoStatus();
-  void DecideBandwidthStatus();
-  void DecideFilterTypeStatus();
-  void DecideFilterAlgoStatus();
+  template <typename... Args>
+  void DecideControlHideStatus(bool hideCondition, Args... controls);
+  template <typename... Args>
+  void DecideControlDisableStatus(bool disableCondition, Args... controls);
 #endif
 };

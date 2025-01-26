@@ -1,6 +1,7 @@
 #pragma once
-#include "FilterParameters.h"
+#include "ShaperSelector.h"
 #include "projects/FIR_HilbertTransform.h"
+#include "projects/FilterParameters.h"
 #include "projects/Filters.h"
 #include "projects/IIR_HilbertTransform.h"
 #include "projects/Shapers.h"
@@ -10,16 +11,16 @@ class WaveShaper
 public:
   double process(double phase, FilterParameters& params)
   {
-    double result = cos(phase)/* + params.m_SH_shape*/; // bias
+    double result = cos(phase) /* + params.m_SH_shape*/; // bias
     if (result > 0)
     {
-      if (result > params.m_SH_shape)
-        result = params.m_SH_shape;
+      if (result > params.m_spectralShaperShape)
+        result = params.m_spectralShaperShape;
     }
     if (result < 0)
     {
-      if (result < -params.m_SH_shape)
-        result = -params.m_SH_shape;
+      if (result < -params.m_spectralShaperShape)
+        result = -params.m_spectralShaperShape;
     }
     return result;
   }
@@ -31,13 +32,9 @@ private:
 class SpectralShaper
 {
 private:
-   IIR_HilbertTransform IIR_hilbert{};
+  IIR_HilbertTransform IIR_hilbert{};
   FIR_HilbertTransform FIR_hilbert{};
-  // TanhShaper shaper{};
-  PolynomialShaper shaper{};
-  // CeilLimiter shaper{};
-  // FoldbackShaper shaper{};
-  // CubicShaper shaper{};
+  ShaperSelector shaperSelector{};
   WaveShaper waveShaper;
 
 public:

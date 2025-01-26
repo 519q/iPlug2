@@ -37,6 +37,7 @@ const IColor MONOKAI_TEXT_BROWN_YELLOW = IColor(255, 0xdc, 0xdc, 0xaa);
 const IColor MONOKAI_TEXT_GREY = IColor(255, 0x9a, 0x9b, 0x99);
 
 const IColor JET_BRAINS_PINK = IColor(255, 0xed, 0x94, 0xc0);
+const IColor COMMENT_GREEN = IColor(255, 0x85, 0xc4, 0x6c);
 
 const IColor REAPER_MID_GREY = IColor(255, 0x3e, 0x3e, 0x3e);
 
@@ -60,6 +61,13 @@ const IColor BW_GREEN = IColor(255, 0x4a, 0xca, 0x00);
 const IColor BW_YELLOW = IColor(255, 0xff, 0xe5, 0x43);
 const IColor BW_RED = IColor(255, 0xff, 0x16, 0x41);
 const IColor BW_CYAN = IColor(255, 0x19, 0xee, 0xf0);
+
+const IColor SAFFRON = IColor(255, 0xe9, 0xc4, 0x6a);
+const IColor SANDY_BROWN = IColor(255, 0xf4, 0xa2, 0x61);
+const IColor BURNT_SIENNA = IColor(255, 0xe7, 0x6f, 0x51);
+
+// accent colors
+const IColor SHAPER_COLOR = COMMENT_GREEN;
 
 // ColorFilterStyle_Knob IVColorSpec
 const IColor BACKGROUND = NO_COLOR;

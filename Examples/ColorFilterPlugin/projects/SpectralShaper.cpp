@@ -1,24 +1,35 @@
 #include "SpectralShaper.h"
+#include "projects/DebugLogger.h"
 
 SpectralShaper::SpectralShaper() {}
 
 void SpectralShaper::Process(double& input, FilterParameters& params)
 {
-  auto output = IIR_hilbert.getMagintude_Phase(input);
-  double magnitude = output.magnitude;
-  double phase = output.phase;
-  //double magnitude = FIR_hilbert.getMagnitude(input);
-  //double phase = FIR_hilbert.getPhase(input);
-  //double real = hilbert.getReal(input);
-  //double imag = hilbert.getImag(input);
-  double shapedMagnitude = shaper.Process(magnitude, params);
-  //double shapedMagnitude = magnitude;
-  input = shapedMagnitude * cosWave(phase);
-  //input = shapedMagnitude * triangleWave(phase);
-  //input = shapedMagnitude * waveShaper.process(phase, params);
-  //input = magnitude * morphSine(phase, params);
-  //input = magnitude * cosWave(phase);
-  //input = phase;
+  double magnitude{};
+  double phase{};
+
+  if (params.m_spectralShaper_IR == (int)Spectral_IR::IIR)
+  {
+    auto output = IIR_hilbert.getMagintude_Phase(input);
+    magnitude = output.magnitude;
+    phase = output.phase;
+  }
+  else
+  {
+    magnitude = FIR_hilbert.getMagnitude(input);
+    phase = FIR_hilbert.getPhase(input);
+  }
+
+  // double real = hilbert.getReal(input);
+  // double imag = hilbert.getImag(input);
+  magnitude = shaperSelector.Process(magnitude, params);
+  // double shapedMagnitude = magnitude;
+  input = magnitude * cosWave(phase);
+  // input = shapedMagnitude * triangleWave(phase);
+  // input = shapedMagnitude * waveShaper.process(phase, params);
+  // input = magnitude * morphSine(phase, params);
+  // input = magnitude * cosWave(phase);
+  // input = phase;
 }
 
 double SpectralShaper::cosWave(double phase) { return std::cos(phase); }
@@ -42,35 +53,35 @@ double SpectralShaper::triangleWave(double phase)
   }
 }
 
- double SpectralShaper::morphSine(double phase, FilterParameters& params)
+double SpectralShaper::morphSine(double phase, FilterParameters& params)
 {
-   // shapeParam controls the shape:
-   // - shapeParam = 0: Thin blips (narrow pulse)
-   // - shapeParam = 0.5: Sine wave
-   // - shapeParam = 1: Almost square wave (wide pulse)
+  // shapeParam controls the shape:
+  // - shapeParam = 0: Thin blips (narrow pulse)
+  // - shapeParam = 0.5: Sine wave
+  // - shapeParam = 1: Almost square wave (wide pulse)
 
-   // Apply a nonlinear transformation to the phase
-   double transformedPhase = std::sin(phase) / std::sqrt(1.0 + params.m_SH_shape * std::pow(std::sin(phase), 2));
+  // Apply a nonlinear transformation to the phase
+  double transformedPhase = std::sin(phase) / std::sqrt(1.0 + params.m_spectralShaperShape * std::pow(std::sin(phase), 2));
 
-   // Scale and bias to ensure the output is in [-1, 1]
-   double output = transformedPhase / std::sqrt(1.0 + params.m_SH_shape);
+  // Scale and bias to ensure the output is in [-1, 1]
+  double output = transformedPhase / std::sqrt(1.0 + params.m_spectralShaperShape);
 
-   return output;
- }
+  return output;
+}
 
-//double SpectralShaper::morphSine(double phase, FilterParameters& params)
+// double SpectralShaper::morphSine(double phase, FilterParameters& params)
 //{
-//  // shapeParam controls the shape:
-//  // - shapeParam = 0: Sine wave
-//  // - shapeParam = 1: Square-like wave
+//   // shapeParam controls the shape:
+//   // - shapeParam = 0: Sine wave
+//   // - shapeParam = 1: Square-like wave
 //
-//  // Apply a polynomial waveshaper
-//  double sine = std::sin(phase);
-//  double shaped = sine - params.m_SH_shape * std::pow(sine, 3); // Cubic shaping
+//   // Apply a polynomial waveshaper
+//   double sine = std::sin(phase);
+//   double shaped = sine - params.m_SH_shape * std::pow(sine, 3); // Cubic shaping
 //
-//  // Normalize to ensure the output is in [-1, 1]
-//  double maxAmplitude = 1.0 - params.m_SH_shape * std::pow(1.0, 3); // Max amplitude for sine = 1
-//  shaped /= maxAmplitude;
+//   // Normalize to ensure the output is in [-1, 1]
+//   double maxAmplitude = 1.0 - params.m_SH_shape * std::pow(1.0, 3); // Max amplitude for sine = 1
+//   shaped /= maxAmplitude;
 //
-//  return shaped;
-//}
+//   return shaped;
+// }

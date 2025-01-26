@@ -98,7 +98,7 @@ public:
 
   double ProcessSpectral(double input, FilterParameters& params)
   {
-    LP_Array_Spectral[2]->Process(input, params);
+    LP_Array_Spectral[params.m_spectralFilterSelector]->Process(input, params);
     return input;
   }
 
@@ -115,6 +115,23 @@ public:
     case (int)FilterAlgo::DF2:
       return DF2;
     case (int)FilterAlgo::SVF1:
+      return SVF1;
+    // case (int)FilterAlgo::ZDF1:
+    //   return ZDF1;
+    default:
+      return {}; // Empty initializer list for safety
+    }
+  }
+  static std::initializer_list<const char*> getInitListSpectral(int indx)
+  {
+    static const std::initializer_list<const char*> DF1 = {"DF1_1P", "DF1_2P", "DF1_3P", "DF1_4P", "DF1_6P"};
+    static const std::initializer_list<const char*> SVF1 = {"SVF1_2P", "SVF1_4P", "SVF1_6P"};
+
+    switch (indx)
+    {
+    case (int)SpectralFilterAlgo::DF1:
+      return DF1;
+    case (int)SpectralFilterAlgo::SVF1:
       return SVF1;
     // case (int)FilterAlgo::ZDF1:
     //   return ZDF1;

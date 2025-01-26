@@ -61,6 +61,20 @@ enum class FilterAlgo
   MAX_ALGO
 };
 
+enum class Spectral_IR
+{
+  FIR,
+  IIR,
+  MAX_IR
+};
+
+enum class SpectralFilterAlgo
+{
+  DF1,
+  SVF1,
+  MAX_ALGO
+};
+
 enum class FilterType
 {
   LP,
@@ -75,6 +89,7 @@ class FilterParameters
 public:
   int m_filterType{};
   int m_filterSelector{};
+  int m_spectralFilterSelector{};
 
   double m_cutoff{};
   double m_resonance{};
@@ -82,16 +97,34 @@ public:
   double m_drive{};
   double m_shape{};
   double m_bias{};
+  bool m_spectralFilter_IR{};
 
-  double m_SH_shape{};
-
+  double m_spectralShaperShape{};
+  bool m_spectralShaper_IR{};
+  int m_spectralShaperSelector{};
   double m_sampleRate{};
   int m_oversample{};
 
-  void setFilterParameters(int filterType, int filterSelector, double cutoff, double resonance, double bandwidth, double drive, double shape, double bias, double SH_Shape, int overSampling, double sampleRate)
+  void setFilterParameters(int filterType,
+                           int filterSelector,
+                           int spectralFilterSelector,
+                           bool spectralFilter_IR,
+                           double cutoff,
+                           double resonance,
+                           double bandwidth,
+                           double drive,
+                           double shape,
+                           double bias,
+                           double spectralShaperShape,
+                           bool spectralShaper_IR,
+                           int spectralShaperSelector,
+                           int overSampling,
+                           double sampleRate)
   {
     m_filterType = filterType;
     m_filterSelector = filterSelector;
+    m_spectralFilterSelector = spectralFilterSelector;
+    m_spectralFilter_IR = spectralFilter_IR;
 
     m_cutoff = cutoff;
     m_resonance = resonance;
@@ -100,10 +133,10 @@ public:
     m_shape = shape;
     m_bias = bias;
 
-    m_SH_shape = SH_Shape;
-
+    m_spectralShaperShape = spectralShaperShape;
+    m_spectralShaper_IR = spectralShaper_IR;
+    m_spectralShaperSelector = spectralShaperSelector;
     m_oversample = overSampling;
     m_sampleRate = sampleRate * std::pow(2, m_oversample);
   }
-
 };

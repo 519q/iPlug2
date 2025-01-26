@@ -64,6 +64,7 @@
     <ClCompile Include="IIR_HilbertTransform.cpp" />
     <ClCompile Include="FilterSelector.cpp" />
     <ClCompile Include="SpectralFilter.cpp" />
+    <ClCompile Include="ShaperSelector.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="../config.h" />
@@ -217,6 +218,7 @@
     <ClInclude Include="IIR_HilbertTransform.h" />
     <ClInclude Include="FilterSelector.h" />
     <ClInclude Include="SpectralFilter.h" />
+    <ClInclude Include="ShaperSelector.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="IPlug">

@@ -1,5 +1,6 @@
 #pragma once
 #include "IIR_HilbertTransform.h"
+#include "FIR_HilbertTransform.h"
 #include "Shapers.h"
 #include "FilterSelector.h"
 
@@ -8,7 +9,7 @@ class SpectralFilter
 {
 private:
   IIR_HilbertTransform IIR_hilbert{};
-  CeilLimiter magnitudeLimiter{};
+  FIR_HilbertTransform FIR_hilbert{};
   FilterSelector fitlerSelector{};
 
 public:

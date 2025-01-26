@@ -317,6 +317,7 @@
     <ClInclude Include="FIR_HilbertTransform.h" />
     <ClInclude Include="RingBuffer.h" />
     <ClInclude Include="Shapers.h" />
+    <ClInclude Include="ShaperSelector.h" />
     <ClInclude Include="SmoothTools.h" />
     <ClInclude Include="SpectralFilter.h" />
     <ClInclude Include="SpectralShaper.h" />
@@ -365,6 +366,7 @@
     <ClCompile Include="FIR_HilbertTransform.cpp" />
     <ClCompile Include="RingBuffer.cpp" />
     <ClCompile Include="Shapers.cpp" />
+    <ClCompile Include="ShaperSelector.cpp" />
     <ClCompile Include="SpectralFilter.cpp" />
     <ClCompile Include="SpectralShaper.cpp" />
   </ItemGroup>
