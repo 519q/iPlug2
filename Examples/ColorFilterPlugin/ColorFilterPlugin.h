@@ -14,7 +14,7 @@
 // #include "projects/aligned_memory.cpp"
 #include "projects/CustomGUI.h"
 #include "projects/DebugLogger.h"
-
+//#define PLUG_HAS_CLAP 1
 
 const int kNumPresets = 1;
 
@@ -28,6 +28,7 @@ enum EParams
   kFilterAlgo,
   kFilterType,
   kFilterSelector,
+  kFilterSelector_BS,
   kSpectralFilterOn,
   kSpectralFilterAlgo,
   kSpectralFilterSelector,
@@ -42,7 +43,13 @@ enum EParams
   kSpectralShaper_IR,
   kSpectralShaperSelector,
 
+  kFilterFIR_O,
+  kFilterFIR_O_Plus1,
+  kShaperFIR_O,
+  kShaperFIR_O_Plus1,
+
   kOverSampling,
+  kBypass,
   kNumParams
 };
 
@@ -58,12 +65,13 @@ private:
   //  ██   ███ ██    ██ ██     ██      ██    ██ ██ ██  ██    ██    ██████  ██    ██ ██      ███████
   //  ██    ██ ██    ██ ██     ██      ██    ██ ██  ██ ██    ██    ██   ██ ██    ██ ██           ██
   //   ██████   ██████  ██      ██████  ██████  ██   ████    ██    ██   ██  ██████  ███████ ███████
-  int columns = 5;
-  int rows = 1;
-  int padding = 25;
-  int buttonsPadding = 35;
-  double getFromTopFilter = 65;
-  double getFromTopShaper = 60;
+  const int columns = 5;
+  const int columns_BP = 4;
+  const int rows = 1;
+  const int padding = 25;
+  const int buttonsPadding = 35;
+  const double getFromTopFilter = 65;
+  const double getFromTopShaper = 60;
   IControl* mCutoff_Knob{};
   IControl* mCutoff_Knob_Spectral{};
   IControl* mReso_Knob{};
@@ -71,6 +79,7 @@ private:
   IControl* mF_BW_Knob{};
   IControl* mFilter_Type_RB{};
   IControl* mFilterBypassSwitch{};
+  IControl* mFilterSelectorSwitch_BS{};
   IControl* mFilterBypassSwitch_Spectral{};
   IControl* mFilterAlgoSwitch{};
   IControl* mFilterSelectorSwitch{};
@@ -78,6 +87,11 @@ private:
   IControl* mSpectral_FilterSelectorSwitch{};
   IControl* mSpectralFilter_IR{};
   IControl* mSpectralFilterOnToggle{};
+  IVKnobControl* mFilterFirQ_Odd{};
+  IVKnobControl* mFilterFirQ_Even{};
+  IControl* mFilterFirQ_Plus1{};
+  IVKnobControl* mShaperFirQ{};
+  IControl* mShaperFirQ_Plus1{};
 
   bool mFactorChanged = true;
   int m_ovrsmpFactor{};
@@ -86,6 +100,10 @@ private:
   int m_df1retainer{};
   int m_df2retainer{(int)FilterTypes::DF2_2P};
   int m_svf1retainer{(int)FilterTypes::SVF1_2P};
+
+  int m_df1retainer_BS{};
+  int m_df2retainer_BS{};
+  int m_svf1retainer_BS{};
 
   int m_spectral_FilterAlgo{};
   int m_spectral_df1retainer{};
@@ -97,12 +115,7 @@ private:
 
 public:
   ColorFilterPlugin(const InstanceInfo& info);
-  // Override SerializeParams to save plugin state
-  // mDrawScaleRetainer = GetUI()->GetDrawScale();
-  // bool SerializeEditorState(IByteChunk& chunk) const override
-  //{ return true;
-  //}
-  // int UnserializeEditorState(const IByteChunk& chunk, int startPos) override { return startPos; }
+
   bool SerializeState(IByteChunk& chunk) const override
   {
     // Call the base class implementation to serialize parameters
@@ -170,15 +183,12 @@ public:
   iplug::LogParamSmooth<double> mShaperDriveSmooth{knobSmoothing};
   iplug::LogParamSmooth<double> mShaperShapeSmooth{knobSmoothing};
   iplug::LogParamSmooth<double> mShaperBiasSmooth{knobSmoothing};
-  // iplug::LogParamSmooth<double> mShaperBypassSmooth{buttonSmoothing};
 
   iplug::LogParamSmooth<double> mSpectralShaperShapeSmooth{knobSmoothing};
-  // iplug::LogParamSmooth<double> mFilterSelectorSmooth{30};
 
   iplug::LogParamSmooth<double> mFilterCutoffSmooth{knobSmoothing};
   iplug::LogParamSmooth<double> mFilterResonanceSmooth{knobSmoothing};
   iplug::LogParamSmooth<double> mFilterBandwidthSmooth{knobSmoothing};
-  // iplug::LogParamSmooth<double> mFilterBypassSmooth{buttonSmoothing};
   void DefineSelector(int selector) const;
   void ProcessBlock(sample** inputs, sample** outputs, int nFrames) override;
   void OnReset() override;

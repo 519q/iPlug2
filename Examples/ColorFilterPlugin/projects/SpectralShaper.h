@@ -41,10 +41,7 @@ public:
   SpectralShaper();
 
   void Process(double& input, FilterParameters& params);
-
   double triangleWave(double phase);
-
   double cosWave(double phase);
-
   double morphSine(double phase, FilterParameters& params);
 };

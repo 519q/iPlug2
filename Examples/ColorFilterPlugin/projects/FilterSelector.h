@@ -49,7 +49,7 @@ private:
     std::make_unique<SVF1_6P_BP>()};
 
   FilterArray BS_Array{
-    std::make_unique<DF1_1P_BS>(),
+    //std::make_unique<DF1_1P_BS>(),
     std::make_unique<DF1_2P_BS>(),
     std::make_unique<DF1_3P_BS>(),
     std::make_unique<DF1_4P_BS>(),
@@ -104,9 +104,9 @@ public:
 
   static std::initializer_list<const char*> getInitList(int indx)
   {
-    static const std::initializer_list<const char*> DF1 = {"DF1_1P", "DF1_2P", "DF1_3P", "DF1_4P", "DF1_6P"};
-    static const std::initializer_list<const char*> DF2 = {"DF2_2P", "DF2_4P"};
-    static const std::initializer_list<const char*> SVF1 = {"SVF1_2P", "SVF1_4P", "SVF1_6P"};
+    static const std::initializer_list<const char*> DF1 = {"1P", "2P", "3P", "4P", "6P"};
+    static const std::initializer_list<const char*> DF2 = {"2P", "4P"};
+    static const std::initializer_list<const char*> SVF1 = {"2P", "4P", "6P"};
 
     switch (indx)
     {
@@ -116,16 +116,32 @@ public:
       return DF2;
     case (int)FilterAlgo::SVF1:
       return SVF1;
-    // case (int)FilterAlgo::ZDF1:
-    //   return ZDF1;
+    default:
+      return {}; // Empty initializer list for safety
+    }
+  }
+  static std::initializer_list<const char*> getInitList_BS(int indx)
+  {
+    static const std::initializer_list<const char*> DF1 = {"2P", "3P", "4P", "6P"};
+    static const std::initializer_list<const char*> DF2 = {"2P", "4P"};
+    static const std::initializer_list<const char*> SVF1 = {"2P", "4P", "6P"};
+
+    switch (indx)
+    {
+    case (int)FilterAlgo::DF1:
+      return DF1;
+    case (int)FilterAlgo::DF2:
+      return DF2;
+    case (int)FilterAlgo::SVF1:
+      return SVF1;
     default:
       return {}; // Empty initializer list for safety
     }
   }
   static std::initializer_list<const char*> getInitListSpectral(int indx)
   {
-    static const std::initializer_list<const char*> DF1 = {"DF1_1P", "DF1_2P", "DF1_3P", "DF1_4P", "DF1_6P"};
-    static const std::initializer_list<const char*> SVF1 = {"SVF1_2P", "SVF1_4P", "SVF1_6P"};
+    static const std::initializer_list<const char*> DF1 = {"1P", "2P", "3P", "4P", "6P"};
+    static const std::initializer_list<const char*> SVF1 = {"2P", "4P", "6P"};
 
     switch (indx)
     {
@@ -133,8 +149,6 @@ public:
       return DF1;
     case (int)SpectralFilterAlgo::SVF1:
       return SVF1;
-    // case (int)FilterAlgo::ZDF1:
-    //   return ZDF1;
     default:
       return {}; // Empty initializer list for safety
     }

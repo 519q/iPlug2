@@ -12,7 +12,8 @@ private:
     // clang-format off
     std::make_unique<TanhShaper>(),
     std::make_unique<PolynomialShaper>(),
-    std::make_unique<CubicShaper>()
+    std::make_unique<CubicShaper>(),
+    std::make_unique<Clipper>()
     // clang-format on
   };
 

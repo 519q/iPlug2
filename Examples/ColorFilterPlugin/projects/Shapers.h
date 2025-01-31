@@ -13,6 +13,7 @@ enum class ShaperTypes
   TanhShaper,
   PolynomialShaper,
   CubicShaper,
+  Clipper,
   MAX_SHAPER_TYPES
 };
 
@@ -37,6 +38,7 @@ public:
     double scaledInput = input * (1 + strength * params.m_spectralShaperShape);
     // Cubic soft clipping
     double shaped = scaledInput - (1.0 / 3.0) * std::pow(scaledInput, 3);
+    shaped = filnalTanh(shaped, params);
     return shaped / (1 + strength * 0.3 * scaled_t);
   }
 };
@@ -50,16 +52,20 @@ public:
       return input;
     // Polynomial shaping (adjust coefficients for different curves)
     else
-      return (input - (6 * params.m_spectralShaperShape) * std::pow(input, 3) + (8 * params.m_spectralShaperShape) * std::pow(input, 5)) * (1 + 1 * params.m_spectralShaperShape);
+    {
+      double shaped = (input - (6 * params.m_spectralShaperShape) * std::pow(input, 3) + (8 * params.m_spectralShaperShape) * std::pow(input, 5)) * (1 + 1 * params.m_spectralShaperShape);
+      return filnalTanh(shaped, params);
+    }
   }
 };
 
-class CeilLimiter : public Shapers
+class Clipper : public Shapers
 {
 public:
   double Process(double input, FilterParameters& params) override
   {
-    double ceil = params.m_spectralShaperShape;
+    double offset = 0.01;
+    double ceil = 1 - (params.m_spectralShaperShape - offset);
     if (input > ceil)
       input = ceil;
     return input;
@@ -92,7 +98,7 @@ class TanhShaper : public Shapers
 public:
   double Process(double input, FilterParameters& params) override
   {
-    if (params.m_spectralShaperShape<processingFloor)
+    if (params.m_spectralShaperShape < processingFloor)
     {
       return input;
     }

@@ -1,28 +1,41 @@
 #include "FIR_HilbertTransform.h"
 
-FIR_HilbertTransform::FIR_HilbertTransform(int order)
+FIR_HilbertTransform::FIR_HilbertTransform()
 {
-  firDelayLine.resize(order);
-  coefficients.resize(order);
-  
+  resize(m_Order);
+  calculateCoefficients();
+}
 
-  // Calculate coefficients
-  for (int i = 0; i < order; i++)
+void FIR_HilbertTransform::resize(int order)
+{
+  m_Order = order;
+  firDelayLine.resize(m_Order);
+  coefficients.resize(m_Order);
+}
+
+void FIR_HilbertTransform::calculateCoefficients()
+{
+  for (int i = 0; i < m_Order; i++)
   {
-    if (i == order / 2)
+    if (i == m_Order / 2)
     {
       coefficients[i] = 0.0f;
     }
     else
     {
-      double n = i - order / 2.f;
+      double n = i - m_Order / 2.f;
       coefficients[i] = 2.0f / (iplug::PI * n) * (1.0f - std::cos(iplug::PI * n)); // Window function
     }
   }
 }
 
-double FIR_HilbertTransform::getImaginary(double input)
+double FIR_HilbertTransform::getImaginary(double input, int order)
 {
+  if (m_Order != order)
+  {
+    resize(order);
+    calculateCoefficients();
+  }
   firDelayLine[position] = input;
   double output = 0.0f;
 
@@ -43,17 +56,17 @@ double FIR_HilbertTransform::getImaginary(double input)
 //  return coefficients.size() / 2; // Delay is (order - 1) / 2
 //}
 
-double FIR_HilbertTransform::getMagnitude(double input)
+double FIR_HilbertTransform::getMagnitude(double input, int order)
 {
-  double ImaginaryOut = getImaginary(input);
+  double ImaginaryOut = getImaginary(input, order);
   //double delayedInput = delayLine.process(input);
   double delayedInput = input;
   return std::sqrt(delayedInput * delayedInput + ImaginaryOut * ImaginaryOut);
 }
 
-double FIR_HilbertTransform::getPhase(double input)
+double FIR_HilbertTransform::getPhase(double input, int order)
 {
-  double ImaginaryOut = getImaginary(input);
+  double ImaginaryOut = getImaginary(input, order);
   //double delayedInput = delayLine.process(input);
   double delayedInput = input;
   return std::atan2(ImaginaryOut, delayedInput);
@@ -61,5 +74,5 @@ double FIR_HilbertTransform::getPhase(double input)
   //return phase + 2;
 }
 
-double FIR_HilbertTransform::getReal(double input) { return getMagnitude(input) * std::cos(getPhase(input)); }
+double FIR_HilbertTransform::getReal(double input, int order) { return getMagnitude(input, order) * std::cos(getPhase(input, order)); }
 

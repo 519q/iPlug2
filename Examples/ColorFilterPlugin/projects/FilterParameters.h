@@ -99,6 +99,9 @@ public:
   double m_bias{};
   bool m_spectralFilter_IR{};
 
+  int m_spectralFilterFIR_Order{};
+  int m_spectralShaperFIR_Order{};
+
   double m_spectralShaperShape{};
   bool m_spectralShaper_IR{};
   int m_spectralShaperSelector{};
@@ -118,6 +121,8 @@ public:
                            double spectralShaperShape,
                            bool spectralShaper_IR,
                            int spectralShaperSelector,
+                           int spectralFilterFIR_Order,
+                           int spectralShaperFIR_Order,
                            int overSampling,
                            double sampleRate)
   {
@@ -136,6 +141,10 @@ public:
     m_spectralShaperShape = spectralShaperShape;
     m_spectralShaper_IR = spectralShaper_IR;
     m_spectralShaperSelector = spectralShaperSelector;
+
+    m_spectralFilterFIR_Order = spectralFilterFIR_Order;
+    m_spectralShaperFIR_Order = spectralShaperFIR_Order;
+
     m_oversample = overSampling;
     m_sampleRate = sampleRate * std::pow(2, m_oversample);
   }

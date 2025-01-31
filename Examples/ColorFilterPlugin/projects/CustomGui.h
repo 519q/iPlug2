@@ -35,6 +35,7 @@ const IColor MONOKAI_TEXT_LIGHT_GREY = IColor(255, 0xd8, 0xd8, 0xd8);
 const IColor MONOKAI_TEXT_LIGHT_GREY_PLUS = IColor(255, 0xfe, 0xfe, 0xfe);
 const IColor MONOKAI_TEXT_BROWN_YELLOW = IColor(255, 0xdc, 0xdc, 0xaa);
 const IColor MONOKAI_TEXT_GREY = IColor(255, 0x9a, 0x9b, 0x99);
+const IColor MONOKAI_STRING_ORANGE = IColor(255, 0xc9, 0x99, 0x52);
 
 const IColor JET_BRAINS_PINK = IColor(255, 0xed, 0x94, 0xc0);
 const IColor COMMENT_GREEN = IColor(255, 0x85, 0xc4, 0x6c);
@@ -66,6 +67,7 @@ const IColor SAFFRON = IColor(255, 0xe9, 0xc4, 0x6a);
 const IColor SANDY_BROWN = IColor(255, 0xf4, 0xa2, 0x61);
 const IColor BURNT_SIENNA = IColor(255, 0xe7, 0x6f, 0x51);
 
+const IColor PREPROCESSOR_VIOLET = IColor(255, 0xbe, 0xb7, 0xff);
 // accent colors
 const IColor SHAPER_COLOR = COMMENT_GREEN;
 
@@ -171,13 +173,13 @@ static IStrokeOptions getStrokeOptions()
   return strokeOptions;
 };
 
-static const IText labelText20 = IText(20, Colors::MONOKAI_TEXT_LIGHT_GREY);
+static const IText labelText15 = IText(15, Colors::MONOKAI_TEXT_LIGHT_GREY);
 static const IText labelText12 = IText(12, Colors::MONOKAI_TEXT_LIGHT_GREY);
 
 static IVStyle ColorFilterStyle_Knob{true, // show label
                                 false, // show value
                                 Colors::ColorFilterColorSpec_FilterPanel,
-                                labelText20, // text styling
+                                labelText15, // text styling
                                 DEFAULT_VALUE_TEXT,
                                 DEFAULT_HIDE_CURSOR,
                                 DEFAULT_DRAW_FRAME,
@@ -198,7 +200,7 @@ static IVStyle ColorFilterStyle_Knob{true, // show label
 static IVStyle ColorFilterStyle_RadioButtons{true, // show label
                                 false, // show value
                                 Colors::ColorFilterColorSpec_FilterPanel_RB,
-                                labelText20, // text styling
+                                labelText15, // text styling
                                 DEFAULT_VALUE_TEXT,
                                 DEFAULT_HIDE_CURSOR,
                                 DEFAULT_DRAW_FRAME,
@@ -288,7 +290,7 @@ public:
       mInitialized = true;
     }
   }
-
+  
 private:
   IColor mColor;
   float mCornerRadius;

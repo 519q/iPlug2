@@ -13,7 +13,17 @@ exponential average moving filter
 - b0 and b1 are feedforward coefficients
 - a1 is the feedback coefficient.
 */
-
+double Filters::resonate(double input, FilterParameters& params, double bpPole1, double minusbpPole2, double resoScl)
+{
+  if (params.m_resonance > 0)
+  {
+    double resoScaling{resoScl};
+    double bandpass = (bpPole1 - minusbpPole2);
+    double feedback = bandpass * params.m_resonance * resoScaling;
+    return feedback;
+  }
+  return 0;
+}
 bool Filters::isDirty(FilterParameters& params)
 {
   if ((m_cutoff != params.m_cutoff) || (m_reso != params.m_resonance) || (m_sampleRate != params.m_sampleRate))

@@ -27,17 +27,7 @@ public:
   double getCutoffFreq(FilterParameters& params);
   double getOmega(FilterParameters& params);
 
-  template <typename T>
-  double resonate(T& input, FilterParameters& params, T& bpPole1, T& minusbpPole2, double resoScl)
-  {
-    if (params.m_resonance > 0)
-    {
-      double resoScaling{resoScl};
-      T bandpass = (bpPole1 - minusbpPole2);
-      T feedback = bandpass * params.m_resonance * resoScaling;
-      return feedback;
-    }
-  }
+  double resonate(double input, FilterParameters& params, double bpPole1, double minusbpPole2, double resoScl);
 
   virtual void Process(double& input, FilterParameters& params) = 0; // Pure virtual function
 };

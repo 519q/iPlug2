@@ -16,20 +16,20 @@ void SpectralShaper::Process(double& input, FilterParameters& params)
   }
   else
   {
-    magnitude = FIR_hilbert.getMagnitude(input);
-    phase = FIR_hilbert.getPhase(input);
+    magnitude = FIR_hilbert.getMagnitude(input, params.m_spectralShaperFIR_Order);
+    phase = FIR_hilbert.getPhase(input, params.m_spectralShaperFIR_Order);
   }
 
   // double real = hilbert.getReal(input);
   // double imag = hilbert.getImag(input);
-  magnitude = shaperSelector.Process(magnitude, params);
+   magnitude = shaperSelector.Process(magnitude, params);
   // double shapedMagnitude = magnitude;
-  input = magnitude * cosWave(phase);
-  // input = shapedMagnitude * triangleWave(phase);
-  // input = shapedMagnitude * waveShaper.process(phase, params);
-  // input = magnitude * morphSine(phase, params);
   // input = magnitude * cosWave(phase);
-  // input = phase;
+  // input = magnitude * triangleWave(phase);
+  // input = magnitude * waveShaper.process(phase, params);
+   //input = magnitude * morphSine(phase, params);
+  input = magnitude * cosWave(phase);
+  // input = magnitude;
 }
 
 double SpectralShaper::cosWave(double phase) { return std::cos(phase); }
@@ -61,7 +61,7 @@ double SpectralShaper::morphSine(double phase, FilterParameters& params)
   // - shapeParam = 1: Almost square wave (wide pulse)
 
   // Apply a nonlinear transformation to the phase
-  double transformedPhase = std::sin(phase) / std::sqrt(1.0 + params.m_spectralShaperShape * std::pow(std::sin(phase), 2));
+  double transformedPhase = (std::sin(phase) / std::sqrt(1.0 + params.m_spectralShaperShape * std::pow(std::sin(phase), 2))) + iplug::PI / 2;
 
   // Scale and bias to ensure the output is in [-1, 1]
   double output = transformedPhase / std::sqrt(1.0 + params.m_spectralShaperShape);
