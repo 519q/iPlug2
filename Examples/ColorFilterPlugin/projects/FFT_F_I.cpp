@@ -82,19 +82,6 @@ std::vector<std::complex<double>> FFT_F_I::computeAnalyticSignal(const std::arra
       analyticSignal[i] = 2.0 * fft_in_data[i];
     }
   }
-
-  //// Mirror the positive frequencies to negative frequencies
-  //for (int i = N / 2 + 1; i < N; ++i)
-  //{
-  //  // Get the corresponding positive frequency index
-  //  int pos_freq_index = N - i;
-  //  // Set as complex conjugate
-  //  analyticSignal[i] = std::conj(analyticSignal[pos_freq_index]);
-
-  //  // zero negs
-  //  // analyticSignal[i] = std::complex<double>(0.0, 0.0);
-  //}
-
   return analyticSignal;
 }
 
