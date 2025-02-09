@@ -1,17 +1,29 @@
 #include "IIR_HilbertTransform.h"
 #include <cmath>
 
-IIR_HilbertTransform::IIR_HilbertTransform()
+void IIR_HilbertTransform::calculateCoefficients()
 {
-  // Coefficients for 90° phase shift
-  allpassCoeffs = {0.6923878, 0.9360654322959, 0.9882295226860, 0.9971486762419, 0.9992646999119, 0.9998117571563};
-  // Initialize states
-  for (int i = 0; i < 6; ++i)
+  allpassCoeffs.resize(m_Order);
+  // Example: Simple heuristic to initialize coefficients
+  //allpassCoeffs[0] = 0.6923878;
+  for (int i = 0; i < m_Order; ++i)
   {
-    x1[i] = x2[i] = y1[i] = y2[i] = 0.0;
+    allpassCoeffs[i] = 0.9 + 0.1 * (i / static_cast<double>(m_Order));
   }
+  // TODO: Implement optimization to find the best coefficients
+}
 
-  // Calculate total group delay
+void IIR_HilbertTransform::initializeStates()
+{
+  x1.resize(m_Order, 0.0);
+  x2.resize(m_Order, 0.0);
+  y1.resize(m_Order, 0.0);
+  y2.resize(m_Order, 0.0);
+  initializeDelayLine();
+}
+
+void IIR_HilbertTransform::initializeDelayLine()
+{ // Calculate total group delay
   totalDelay = 0;
   for (double a : allpassCoeffs)
   {
@@ -22,6 +34,21 @@ IIR_HilbertTransform::IIR_HilbertTransform()
   // Initialize delay line for real signal
   iirDelayLine.resize(static_cast<size_t>(std::ceil(totalDelay)));
   delayPos = 0;
+}
+
+IIR_HilbertTransform::IIR_HilbertTransform()
+{
+  calculateCoefficients();
+  initializeStates();
+  // Coefficients for 90° phase shift
+  //allpassCoeffs = {0.6923878, 0.9360654322959, 0.9882295226860, 0.9971486762419, 0.9992646999119, 0.9998117571563};
+  // Initialize states
+  //for (int i = 0; i < 6; ++i)
+  //{
+  //  x1[i] = x2[i] = y1[i] = y2[i] = 0.0;
+  //}
+
+
 }
 
 //double IIR_HilbertTransform::getDelay() const
@@ -36,18 +63,24 @@ IIR_HilbertTransform::IIR_HilbertTransform()
 //  return totalDelay;
 //}
 
-IIR_HilbertTransform::Magn_Phas_Output IIR_HilbertTransform::getMagintude_Phase(double input)
+IIR_HilbertTransform::Magn_Phas_Output IIR_HilbertTransform::getMagintude_Phase(double input, int order)
 {
-  auto r_i_out = getReal_Imag(input);
+  auto r_i_out = getReal_Imag(input, order);
   double magnitude = std::sqrt(r_i_out.real * r_i_out.real + r_i_out.imag * r_i_out.imag);
   double phase = std::atan2(r_i_out.imag, r_i_out.real);
   return {magnitude, phase};
 }
 
-IIR_HilbertTransform::Real_Imag_Output IIR_HilbertTransform::getReal_Imag(double input)
+IIR_HilbertTransform::Real_Imag_Output IIR_HilbertTransform::getReal_Imag(double input, int order)
 {
+  if (m_Order != order)
+  {
+    m_Order = order;
+    calculateCoefficients();
+    initializeStates();
+  }
   // Get imaginary (quadrature) component
-  double imag = processQuadrature(input);
+  double imag = getImaginary(input, order);
 
   // Delay the real component to match
   iirDelayLine[delayPos] = input;
@@ -57,10 +90,11 @@ IIR_HilbertTransform::Real_Imag_Output IIR_HilbertTransform::getReal_Imag(double
   return {real, imag};
 }
 
-double IIR_HilbertTransform::processQuadrature(double input)
+double IIR_HilbertTransform::getImaginary(double input, int order)
 {
+
   double output = input;
-  for (int i = 0; i < 6; ++i)
+  for (int i = 0; i < m_Order; ++i)
   {
     double a = allpassCoeffs[i];
     double w = output - a * a * x2[i] + a * y1[i];

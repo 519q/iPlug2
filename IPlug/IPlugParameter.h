@@ -488,6 +488,7 @@ public:
 
   /** Helper to print the parameter details to debug console in debug builds */
   void PrintDetails() const;
+
 private:
   /** A DisplayText is used to link a certain real value of the parameter with a CString. For example -70 on a decibel gain parameter could instead read "-inf" */
   struct DisplayText

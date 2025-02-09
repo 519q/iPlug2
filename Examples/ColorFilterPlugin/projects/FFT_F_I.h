@@ -1,6 +1,7 @@
 #pragma once
-#include "projects/RingBuffer.h"
+//#include "projects/RingBuffer.h"
 #include "FilterParameters.h"
+#include "projects/FFT_F_I_SIMD.h"
 
 #include "DebugLogger.h"
 #include <complex>
@@ -17,7 +18,7 @@ private:
 public:
 
   // Process the buffer and return the reconstructed signal
-  void ProcessBuffer(std::array<double, RingBuffer::getChunkSize()>& ChunkBuffer, bool chunkRead, FilterParameters& params, double sampleRate = 44100);
+  void ProcessBuffer(std::array<double, RingBuffer::getChunkSize()>& ChunkBuffer, bool chunkRead, FilterParameters& params);
   // Compute the analytic signal using FFT
   std::vector<std::complex<double>> computeAnalyticSignal(const std::array<double, RingBuffer::getChunkSize()>& ringBuffer);
 
@@ -30,6 +31,5 @@ public:
   void reconstructSignal(std::array<double, RingBuffer::getChunkSize()>& magnitude,
                          std::array<double, RingBuffer::getChunkSize()>& phase,
                          std::array<double, RingBuffer::getChunkSize()>& ringBuffer,
-                         double sampleRate,
                          FilterParameters& params) const;
 };

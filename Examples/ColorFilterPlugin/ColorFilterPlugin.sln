@@ -15,7 +15,10 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ColorFilterPlugin-clap", "p
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{1827118B-0348-415A-9D22-6B9E6A194088}"
 	ProjectSection(SolutionItems) = preProject
-		..\..\Dependencies\IPlug\kissfft\kiss_fft.h = ..\..\Dependencies\IPlug\kissfft\kiss_fft.h
+		projects\added.txt = projects\added.txt
+		projects\Ideas.txt = projects\Ideas.txt
+		projects\plan_to_do.txt = projects\plan_to_do.txt
+		projects\UIUX.txt = projects\UIUX.txt
 	EndProjectSection
 EndProject
 Global

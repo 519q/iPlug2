@@ -1,8 +1,8 @@
 #pragma once
 #include <vector>
-#include "DelayLine.h"
-//#include "projects/PhaseUnwrapper.h"
-  
+// #include "DelayLine.h"
+// #include "projects/PhaseUnwrapper.h"
+
 // IIR Allpass-based approach
 
 class IIR_HilbertTransform
@@ -22,21 +22,27 @@ public:
 
   IIR_HilbertTransform();
 
-  Magn_Phas_Output getMagintude_Phase(double input);
+  Magn_Phas_Output getMagintude_Phase(double input, int order);
 
-  Real_Imag_Output getReal_Imag(double input);
+  Real_Imag_Output getReal_Imag(double input, int order);
 
-  double processQuadrature(double input);
+  double getImaginary(double input, int order);
 
-  //double getDelay() const;
+  void calculateCoefficients();
+  void initializeStates();
+  void initializeDelayLine();
+
+  // double getDelay() const;
 
 private:
   std::vector<double> allpassCoeffs;
-  double x1[6], x2[6], y1[6], y2[6];
+  std::vector<double> x1, x2, y1, y2;
+  //double x1[6], x2[6], y1[6], y2[6];
   std::vector<double> iirDelayLine;
   size_t delayPos;
   double totalDelay;
-  //DelayLine DelayLine{};
+  int m_Order{6};
+  // DelayLine DelayLine{};
 };
 
 /*

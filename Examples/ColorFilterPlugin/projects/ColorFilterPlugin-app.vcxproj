@@ -258,7 +258,6 @@
     </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="../config.h" />
     <ClInclude Include="..\..\..\Dependencies\IPlug\RTAudio\include\asio.h" />
     <ClInclude Include="..\..\..\Dependencies\IPlug\RTAudio\include\asiodrivers.h" />
     <ClInclude Include="..\..\..\Dependencies\IPlug\RTAudio\include\asiodrvr.h" />
@@ -375,11 +374,6 @@
       <SubType>Designer</SubType>
     </None>
     <None Include="..\config\ColorFilterPlugin-mac.xcconfig" />
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="Ideas.txt" />
-    <Text Include="plan_to_do.txt" />
-    <Text Include="UIUX.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

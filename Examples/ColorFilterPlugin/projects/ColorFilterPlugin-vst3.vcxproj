@@ -328,6 +328,30 @@
     <ClInclude Include="..\..\..\IPlug\VST3\IPlugVST3_View.h" />
     <ClInclude Include="..\ColorFilterPlugin.h" />
     <ClInclude Include="..\resources\resource.h" />
+    <ClInclude Include="BandPassFilters.h" />
+    <ClInclude Include="BandStopFilters.h" />
+    <ClInclude Include="CustomGui.h" />
+    <ClInclude Include="DCBlock.h" />
+    <ClInclude Include="DebugLogger.h" />
+    <ClInclude Include="DelayLine.h" />
+    <ClInclude Include="FFT_F_I.h" />
+    <ClInclude Include="FilterParameters.h" />
+    <ClInclude Include="Filters.h" />
+    <ClInclude Include="FilterSelector.h" />
+    <ClInclude Include="FilterSwitcher.h" />
+    <ClInclude Include="FIR_HilbertTransform.h" />
+    <ClInclude Include="HighPassFilters.h" />
+    <ClInclude Include="IIR_HilbertTransform.h" />
+    <ClInclude Include="RingBuffer.h" />
+    <ClInclude Include="Shapers.h" />
+    <ClInclude Include="ShaperSelector.h" />
+    <ClInclude Include="SmoothTools.h" />
+    <ClInclude Include="SpectralFilter.h" />
+    <ClInclude Include="SpectralShaper.h" />
+    <ClInclude Include="VintageBandpassFilters.h" />
+    <ClInclude Include="VintageBandStopFilters.h" />
+    <ClInclude Include="VintageFilters.h" />
+    <ClInclude Include="VintageHighpassFilters.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\Dependencies\IPlug\VST3_SDK\base\source\baseiids.cpp" />
@@ -389,6 +413,27 @@
     <ClCompile Include="..\..\..\IPlug\VST3\IPlugVST3.cpp" />
     <ClCompile Include="..\..\..\IPlug\VST3\IPlugVST3_ProcessorBase.cpp" />
     <ClCompile Include="..\ColorFilterPlugin.cpp" />
+    <ClCompile Include="BandPassFilters.cpp" />
+    <ClCompile Include="BandStopFilters.cpp" />
+    <ClCompile Include="CustomGui.cpp" />
+    <ClCompile Include="DCBlock.cpp" />
+    <ClCompile Include="DelayLine.cpp" />
+    <ClCompile Include="FFT_F_I.cpp" />
+    <ClCompile Include="Filters.cpp" />
+    <ClCompile Include="FilterSelector.cpp" />
+    <ClCompile Include="FilterSwitcher.cpp" />
+    <ClCompile Include="FIR_HilbertTransform.cpp" />
+    <ClCompile Include="HighPassFilters.cpp" />
+    <ClCompile Include="IIR_HilbertTransform.cpp" />
+    <ClCompile Include="RingBuffer.cpp" />
+    <ClCompile Include="Shapers.cpp" />
+    <ClCompile Include="ShaperSelector.cpp" />
+    <ClCompile Include="SpectralFilter.cpp" />
+    <ClCompile Include="SpectralShaper.cpp" />
+    <ClCompile Include="VintageBandpassFilters.cpp" />
+    <ClCompile Include="VintageBandStopFilters.cpp" />
+    <ClCompile Include="VintageFilters.cpp" />
+    <ClCompile Include="VintageHighpassFilters.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\resources\main.rc" />

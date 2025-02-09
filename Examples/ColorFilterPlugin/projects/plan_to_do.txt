@@ -1,13 +1,4 @@
-gui:
 
-spectral filter instead of filter, own radiobutton, own filtertype, filteralgo = lp, filterselector (retainer too?)
-edit knobs, edit radio button. edit magnitude clipper to have curved clips
-
-add spectral shaper w/ shaping algo selector (+more algo)
-
-+++ try refactoring custom gui
-
-****
 
 spectral clipper with same softening as on magn clipper
 
@@ -23,7 +14,13 @@ comb filter
 phaser
 
 
-ICornerResizerControl STYLE EDIT
-
 VISUALS: 
 shader reacting more to high freqs
+----------------
+show values and parameter names
+
+shaper bias softer in transition?? 
+
+fix oversampler??
+
+hilbert transform comp--

@@ -5,8 +5,6 @@
 #include "HighPassFilters.h"
 
 #define FilterArray std::array<std::unique_ptr<Filters>, static_cast<int>(FilterTypes::MAX_FILTER_TYPES)>
-#define SpectralFilterArray std::array<std::unique_ptr<Filters>, static_cast<int>(SpectralFilterTypes::MAX_SPECTRAL_FILTER_TYPES)>
-static const std::initializer_list<const char*> SpectralFilterTypes = {"DF1_1P", "DF1_2P", "DF1_3P", "DF1_4P", "DF1_6P", "SVF1_2P", "SVF1_4P", "SVF1_6P"};
 
 class FilterSelector
 {
@@ -60,17 +58,6 @@ private:
     std::make_unique<SVF1_4P_BS>(),
     std::make_unique<SVF1_6P_BS>()};
 
-  SpectralFilterArray LP_Array_Spectral{
-    std::make_unique<DF1_1P_LP>(),
-    std::make_unique<DF1_2P_LP>(),
-    std::make_unique<DF1_3P_LP>(),
-    std::make_unique<DF1_4P_LP>(),
-    std::make_unique<DF1_6P_LP>(),
-    std::make_unique<SVF1_2P_LP>(),
-    std::make_unique<SVF1_4P_LP>(),
-    std::make_unique<SVF1_6P_LP>()};
-  // clang-format on
-
 public:
   double Process(double input, FilterParameters& params)
   {
@@ -93,12 +80,6 @@ public:
     {
       HP_Array[params.m_filterSelector]->Process(input, params);
     }
-    return input;
-  }
-
-  double ProcessSpectral(double input, FilterParameters& params)
-  {
-    LP_Array_Spectral[params.m_spectralFilterSelector]->Process(input, params);
     return input;
   }
 
@@ -138,19 +119,5 @@ public:
       return {}; // Empty initializer list for safety
     }
   }
-  static std::initializer_list<const char*> getInitListSpectral(int indx)
-  {
-    static const std::initializer_list<const char*> DF1 = {"1P", "2P", "3P", "4P", "6P"};
-    static const std::initializer_list<const char*> SVF1 = {"2P", "4P", "6P"};
 
-    switch (indx)
-    {
-    case (int)SpectralFilterAlgo::DF1:
-      return DF1;
-    case (int)SpectralFilterAlgo::SVF1:
-      return SVF1;
-    default:
-      return {}; // Empty initializer list for safety
-    }
-  }
 };

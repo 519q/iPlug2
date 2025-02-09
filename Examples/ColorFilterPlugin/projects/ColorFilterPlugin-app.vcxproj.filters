@@ -176,7 +176,6 @@
     <ClInclude Include="..\..\..\IPlug\IPlug_include_in_plug_src.h">
       <Filter>IPlug</Filter>
     </ClInclude>
-    <ClInclude Include="../config.h" />
     <ClInclude Include="..\..\..\IPlug\APP\IPlugAPP.h">
       <Filter>IPlug\APP</Filter>
     </ClInclude>
@@ -314,10 +313,5 @@
     <Image Include="..\resources\ColorFilterPlugin.ico">
       <Filter>resources</Filter>
     </Image>
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="Ideas.txt" />
-    <Text Include="plan_to_do.txt" />
-    <Text Include="UIUX.txt" />
   </ItemGroup>
 </Project>

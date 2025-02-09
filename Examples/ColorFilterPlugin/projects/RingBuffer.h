@@ -5,9 +5,9 @@
 class RingBuffer
 {
 private:
-  static constexpr size_t chunkSize = 256;   // Fixed chunk size
-  static constexpr size_t hopSize = 128;     // Fixed hop size
-  static constexpr size_t bufferSize = 2048; // Fixed buffer size
+  static constexpr size_t chunkSize = 128;   // Fixed chunk size
+  static constexpr size_t hopSize = 64;     // Fixed hop size
+  static constexpr size_t bufferSize = 1024; // Fixed buffer size
   bool chunkRead{};
 
   std::array<double, bufferSize> mBuffer{};       // Fixed-size buffer

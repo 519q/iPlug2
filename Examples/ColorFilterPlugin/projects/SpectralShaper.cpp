@@ -10,7 +10,7 @@ void SpectralShaper::Process(double& input, FilterParameters& params)
 
   if (params.m_spectralShaper_IR == (int)Spectral_IR::IIR)
   {
-    auto output = IIR_hilbert.getMagintude_Phase(input);
+    auto output = IIR_hilbert.getMagintude_Phase(input, params.m_spectralShaperIIR_Order);
     magnitude = output.magnitude;
     phase = output.phase;
   }
@@ -61,10 +61,10 @@ double SpectralShaper::morphSine(double phase, FilterParameters& params)
   // - shapeParam = 1: Almost square wave (wide pulse)
 
   // Apply a nonlinear transformation to the phase
-  double transformedPhase = (std::sin(phase) / std::sqrt(1.0 + params.m_spectralShaperShape * std::pow(std::sin(phase), 2))) + iplug::PI / 2;
+  double transformedPhase = (std::sin(phase) / std::sqrt(1.0 + params.m_spectralShaperDrive * std::pow(std::sin(phase), 2))) + iplug::PI / 2;
 
   // Scale and bias to ensure the output is in [-1, 1]
-  double output = transformedPhase / std::sqrt(1.0 + params.m_spectralShaperShape);
+  double output = transformedPhase / std::sqrt(1.0 + params.m_spectralShaperDrive);
 
   return output;
 }

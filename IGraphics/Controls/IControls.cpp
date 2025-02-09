@@ -658,6 +658,7 @@ void IVKnobControl::DrawWidget(IGraphics& g)
     DrawBackgroundTrack(g, cx, cy, widgetRadius);
   }
   DrawIndicatorTrack(g, angle, cx, cy, widgetRadius);
+  //DrawModValuePosition(g, angle, cx, cy, widgetRadius, MonophonicModulationBuffer[paramIdx]);
   DrawHandle(g, knobHandleBounds);
   DrawPointer(g, angle, cx, cy, knobHandleBounds.W() / 2.f);
 }
@@ -673,6 +674,25 @@ void IVKnobControl::DrawIndicatorTrack(IGraphics& g, float angle, float cx, floa
   {
     g.DrawArc(mStyle.usingGradients ? GetPattern(kX1) : GetColor(kX1), cx, cy, radius, angle >= mAnchorAngle ? mAnchorAngle : mAnchorAngle - (mAnchorAngle - angle),
               angle >= mAnchorAngle ? angle : mAnchorAngle, &mBlend, mTrackSize + 0.2);
+  }
+}
+
+void IVKnobControl::DrawModValuePosition(IGraphics& g, float angle, float cx, float cy, float radius, float modOffset)
+{
+  if (mTrackSize > 0.f)
+  {
+    // Calculate modulated angle (base + modulation offset)
+    float modulatedAngle = angle + modOffset;
+
+    // Ensure modulation stays within valid knob range (clamp if necessary)
+    modulatedAngle = std::clamp(modulatedAngle, cx, cy);
+
+    // Draw modulation offset overlay (use a different color for modulation visualization)
+    g.DrawArc(GetColor(kX2), // Use a different color (e.g., brighter for modulation)
+              cx, cy, radius,
+              angle,                  // Start from base angle
+              modulatedAngle,             // Extend to modulated angle
+              &mBlend, mTrackSize * 0.7); // Make modulation track slightly smaller
   }
 }
 

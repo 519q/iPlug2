@@ -8,7 +8,6 @@ FIR_HilbertTransform::FIR_HilbertTransform()
 
 void FIR_HilbertTransform::resize(int order)
 {
-  m_Order = order;
   firDelayLine.resize(m_Order);
   coefficients.resize(m_Order);
 }
@@ -33,6 +32,7 @@ double FIR_HilbertTransform::getImaginary(double input, int order)
 {
   if (m_Order != order)
   {
+    m_Order = order;
     resize(order);
     calculateCoefficients();
   }

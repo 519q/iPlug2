@@ -1,0 +1,23 @@
+Package: vcpkg-cmake-config
+Version: 2024-05-23
+Architecture: x64-windows
+Multi-Arch: same
+Abi: 0c23ef01e9fa5b132ff81d7bf24e18a31bd0479898ae8bddc77864d8bcb9eb19
+Status: install ok installed
+
+Package: vcpkg-cmake
+Version: 2024-04-23
+Architecture: x64-windows
+Multi-Arch: same
+Abi: 8273ad8f25c2429941d8f681016e22686adff21f5da64b2da411d8b96d51c06e
+Status: install ok installed
+
+Package: xsimd
+Version: 13.1.0
+Depends: vcpkg-cmake, vcpkg-cmake-config
+Architecture: x64-windows
+Multi-Arch: same
+Abi: 25c4c812d43108ea3748a223c582120c85a9bfd82a57900d3462182e761ad843
+Description: Modern, portable C++ wrappers for SIMD intrinsics
+Status: install ok installed
+

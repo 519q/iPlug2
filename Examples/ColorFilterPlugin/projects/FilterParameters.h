@@ -40,19 +40,6 @@ enum class FilterTypes
   MAX_FILTER_TYPES
 };
 
-enum class SpectralFilterTypes
-{
-  DF1_1P,
-  DF1_2P,
-  DF1_3P,
-  DF1_4P,
-  DF1_6P,
-  SVF1_2P,
-  SVF1_4P,
-  SVF1_6P,
-  MAX_SPECTRAL_FILTER_TYPES
-};
-
 enum class FilterAlgo
 {
   DF1,
@@ -66,13 +53,6 @@ enum class Spectral_IR
   FIR,
   IIR,
   MAX_IR
-};
-
-enum class SpectralFilterAlgo
-{
-  DF1,
-  SVF1,
-  MAX_ALGO
 };
 
 enum class FilterType
@@ -89,7 +69,6 @@ class FilterParameters
 public:
   int m_filterType{};
   int m_filterSelector{};
-  int m_spectralFilterSelector{};
 
   double m_cutoff{};
   double m_resonance{};
@@ -97,12 +76,17 @@ public:
   double m_drive{};
   double m_shape{};
   double m_bias{};
+  double m_spectralFilterDrive{};
   bool m_spectralFilter_IR{};
+  bool m_spectralFilter_Harder{};
 
   int m_spectralFilterFIR_Order{};
   int m_spectralShaperFIR_Order{};
 
-  double m_spectralShaperShape{};
+  int m_spectralFilterIIR_Order{};
+  int m_spectralShaperIIR_Order{};
+
+  double m_spectralShaperDrive{};
   bool m_spectralShaper_IR{};
   int m_spectralShaperSelector{};
   double m_sampleRate{};
@@ -110,7 +94,6 @@ public:
 
   void setFilterParameters(int filterType,
                            int filterSelector,
-                           int spectralFilterSelector,
                            bool spectralFilter_IR,
                            double cutoff,
                            double resonance,
@@ -118,19 +101,23 @@ public:
                            double drive,
                            double shape,
                            double bias,
-                           double spectralShaperShape,
+                           double spectralShaperDrive,
                            bool spectralShaper_IR,
+                           double spectralFilterDrive,
+                           bool spectralFilter_harder,
                            int spectralShaperSelector,
                            int spectralFilterFIR_Order,
                            int spectralShaperFIR_Order,
+                           int spectralFilterIIR_Order,
+                           int spectralShaperIIR_Order,
                            int overSampling,
                            double sampleRate)
   {
     m_filterType = filterType;
     m_filterSelector = filterSelector;
-    m_spectralFilterSelector = spectralFilterSelector;
+    m_spectralFilterDrive = spectralFilterDrive;
     m_spectralFilter_IR = spectralFilter_IR;
-
+    m_spectralFilter_Harder = spectralFilter_harder;
     m_cutoff = cutoff;
     m_resonance = resonance;
     m_bandwidth = bandwidth;
@@ -138,12 +125,15 @@ public:
     m_shape = shape;
     m_bias = bias;
 
-    m_spectralShaperShape = spectralShaperShape;
+    m_spectralShaperDrive = spectralShaperDrive;
     m_spectralShaper_IR = spectralShaper_IR;
     m_spectralShaperSelector = spectralShaperSelector;
 
     m_spectralFilterFIR_Order = spectralFilterFIR_Order;
     m_spectralShaperFIR_Order = spectralShaperFIR_Order;
+
+    m_spectralFilterIIR_Order = spectralFilterIIR_Order;
+    m_spectralShaperIIR_Order = spectralShaperIIR_Order;
 
     m_oversample = overSampling;
     m_sampleRate = sampleRate * std::pow(2, m_oversample);

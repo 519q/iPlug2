@@ -28,14 +28,14 @@ class CubicShaper : public Shapers
 public:
   double Process(double input, FilterParameters& params) override
   {
-    if (params.m_spectralShaperShape < processingFloor)
+    if (params.m_spectralShaperDrive < processingFloor)
       return input;
-    double t = params.m_spectralShaperShape;
+    double t = params.m_spectralShaperDrive;
     double a = 7; // Controls the curve
     double scaled_t = std::log1p(a * t) / std::log1p(a);
 
     double strength = 4.5;
-    double scaledInput = input * (1 + strength * params.m_spectralShaperShape);
+    double scaledInput = input * (1 + strength * params.m_spectralShaperDrive);
     // Cubic soft clipping
     double shaped = scaledInput - (1.0 / 3.0) * std::pow(scaledInput, 3);
     shaped = filnalTanh(shaped, params);
@@ -48,12 +48,12 @@ class PolynomialShaper : public Shapers
 public:
   double Process(double input, FilterParameters& params) override
   {
-    if (params.m_spectralShaperShape < processingFloor)
+    if (params.m_spectralShaperDrive < processingFloor)
       return input;
     // Polynomial shaping (adjust coefficients for different curves)
     else
     {
-      double shaped = (input - (6 * params.m_spectralShaperShape) * std::pow(input, 3) + (8 * params.m_spectralShaperShape) * std::pow(input, 5)) * (1 + 1 * params.m_spectralShaperShape);
+      double shaped = (input - (6 * params.m_spectralShaperDrive) * std::pow(input, 3) + (8 * params.m_spectralShaperDrive) * std::pow(input, 5)) * (1 + 1 * params.m_spectralShaperDrive);
       return filnalTanh(shaped, params);
     }
   }
@@ -65,7 +65,7 @@ public:
   double Process(double input, FilterParameters& params) override
   {
     double offset = 0.01;
-    double ceil = 1 - (params.m_spectralShaperShape - offset);
+    double ceil = 1 - (params.m_spectralShaperDrive - offset);
     if (input > ceil)
       input = ceil;
     return input;
@@ -98,15 +98,15 @@ class TanhShaper : public Shapers
 public:
   double Process(double input, FilterParameters& params) override
   {
-    if (params.m_spectralShaperShape < processingFloor)
+    if (params.m_spectralShaperDrive < processingFloor)
     {
       return input;
     }
-    double t = params.m_spectralShaperShape;
+    double t = params.m_spectralShaperDrive;
     double a = 9.0; // Controls the curve
     double scaled_t = std::log1p(a * t) / std::log1p(a);
     double strength = 25 * 0.4;
-    double inputProcess = input * (1 + strength * params.m_spectralShaperShape);
+    double inputProcess = input * (1 + strength * params.m_spectralShaperDrive);
     inputProcess = tanh(inputProcess);
     // if (inputProcess > 1 - drive)
     //   inputProcess = 1 - drive;
@@ -119,9 +119,9 @@ class FoldbackShaper : public Shapers
 public:
   double Process(double input, FilterParameters& params) override
   {
-    if (params.m_spectralShaperShape < processingFloor)
+    if (params.m_spectralShaperDrive < processingFloor)
       return input;
-    double threshold = params.m_spectralShaperShape;
+    double threshold = params.m_spectralShaperDrive;
     // Foldback distortion
     if (input > threshold || input < -threshold)
     {
@@ -136,7 +136,7 @@ class ReflectShaper : public Shapers
 public:
   double Process(double input, FilterParameters& params) override
   {
-    double threshold = params.m_spectralShaperShape;
+    double threshold = params.m_spectralShaperDrive;
 
     // If the knob is below the processing floor, return the input unchanged
     if (threshold < processingFloor)

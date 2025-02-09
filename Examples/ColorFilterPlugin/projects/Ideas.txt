@@ -289,147 +289,20 @@ SCALING
    };
 
 
-*****************************************************************************
+   **********************************************************************
 
 
-FFT PROCESSING                        
 
-// Working approaches for FFT manipulation:
+In addition to your existing FFT, all-pass IIR, and FIR Hilbert transformer implementations, you can explore:
 
-// 1. Magnitude/phase modification
-void manipulateSpectrum(std::vector<std::complex<float>>& spectrum) {
-    for(int i = 0; i < spectrum.size(); i++) {
-        float magnitude = std::abs(spectrum[i]);
-        float phase = std::arg(spectrum[i]);
-        
-        // These work well:
-        magnitude *= 2.0f;                    // Gain
-        magnitude = std::pow(magnitude, 1.5f); // Compression
-        phase += 0.1f;                        // Phase shift
-        
-        spectrum[i] = std::polar(magnitude, phase);
-    }
-}
-
-// 2. Frequency shifting/scaling
-void frequencyShift(std::vector<std::complex<float>>& spectrum) {
-    // Move bins up/down
-    int shift = 1;
-    std::rotate(spectrum.begin(), 
-                spectrum.begin() + shift, 
-                spectrum.end());
-}
-
-// 3. Spectral filtering
-void spectralFilter(std::vector<std::complex<float>>& spectrum) {
-    // Multiply by filter response
-    for(int i = 0; i < spectrum.size(); i++) {
-        float freq = i * sampleRate / fftSize;
-        float response = calculateFilterResponse(freq);
-        spectrum[i] *= response;
-    }
-}
+Block-wise FFT-based Hilbert transformers 9.
+Polyphase filter banks for multirate systems.
+Fractional delay filters combined with all-pass filters 1.
+Complex modulation techniques for generating analytic signals.
+Reconfigurable architectures for hardware-efficient designs 10.
+Adaptive Hilbert transformers for dynamic signals.
+Hybrid approaches combining FFT, FIR, and IIR techniques.
+Flexible multirate DSP structures 6.
 
 
-For more complex transformations, you might want to:
-
-// 1. Use analysis-synthesis approach
-class SpectralProcessor {
-    void process(const float* input, float* output) {
-        // 1. Analysis
-        std::vector<float> magnitude(fftSize/2);
-        std::vector<float> phase(fftSize/2);
-        analyzeFrame(input, magnitude, phase);
-        
-        // 2. Transform magnitude/phase separately
-        transformMagnitude(magnitude);  // This works well
-        transformPhase(phase);         // This works well
-        
-        // 3. Resynthesize
-        synthesizeFrame(magnitude, phase, output);
-    }
-};
-
-// 2. Use multiple parallel FFT streams
-class MultiStreamProcessor {
-    std::vector<FFTStream> streams;
-    
-    void process() {
-        // Process each stream separately
-        for(auto& stream : streams) {
-            stream.analyze();
-            stream.transform();
-            stream.synthesize();
-        }
-        
-        // Mix streams back together
-        mixStreams();
-    }
-};
-
-// 3. Use phase vocoder techniques
-class PhaseVocoder {
-    void process() {
-        // Track phase progression
-        analyzePhaseDerivative();
-        
-        // Modify time/pitch independently
-        stretchTime(2.0);    // This works
-        shiftPitch(1.5);     // This works
-        
-        // Preserve phase coherence
-        synthesizeWithPhaseCorrection();
-    }
-};
-
-
-For "Bitwig-like" effects, you might want:
-
-class SpectralEffects {
-    // 1. Frequency-dependent processing
-    void spectralShaper() {
-        for(int bin = 0; bin < numBins; bin++) {
-            float freq = binToFreq(bin);
-            float amount = shapeAmount * (freq / nyquist);
-            magnitudes[bin] = transform(magnitudes[bin], amount);
-        }
-    }
-    
-    // 2. Bin relationship processing
-    void spectralEnhancer() {
-        for(int bin = 0; bin < numBins-1; bin++) {
-            // Compare adjacent bins
-            float ratio = magnitudes[bin+1] / magnitudes[bin];
-            if(ratio > threshold) {
-                // Enhance spectral peaks
-                magnitudes[bin] *= emphasis;
-            }
-        }
-    }
-    
-    // 3. Time-coherent processing
-    void coherentTransform() {
-        // Track bin evolution over time
-        trackPeaks();
-        // Apply transformations that preserve motion
-        transformTrajectories();
-    }
-};
-
-
-Key points:
-1. Direct time-domain effects don't work well in FFT domain
-2. Focus on magnitude/phase relationships
-3. Consider using multiple processing streams
-4. Preserve phase coherence for natural sound
-5. Use frequency-dependent processing
-6. Track spectral evolution over time
-
-For your specific goals:
-1. If you want waveshaping-like effects, apply them to magnitude spectrum
-2. For harmonic manipulation, work with bin relationships
-3. Consider using phase vocoder for more complex transformations
-4. Multiple parallel FFT streams can help with time-varying effects
-
-Remember: FFT processing is about relationships between frequencies, not direct waveform manipulation. Think in terms of spectral transformations rather than time-domain effects.
-
+*************************************************************

@@ -14,13 +14,13 @@ public:
     double result = cos(phase) /* + params.m_SH_shape*/; // bias
     if (result > 0)
     {
-      if (result > params.m_spectralShaperShape)
-        result = params.m_spectralShaperShape;
+      if (result > params.m_spectralShaperDrive)
+        result = params.m_spectralShaperDrive;
     }
     if (result < 0)
     {
-      if (result < -params.m_spectralShaperShape)
-        result = -params.m_spectralShaperShape;
+      if (result < -params.m_spectralShaperDrive)
+        result = -params.m_spectralShaperDrive;
     }
     return result;
   }

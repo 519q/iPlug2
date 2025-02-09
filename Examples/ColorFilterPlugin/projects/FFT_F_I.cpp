@@ -4,7 +4,7 @@
 #include <sstream>
 #include <windows.h>
 
-void FFT_F_I::ProcessBuffer(std::array<double, RingBuffer::getChunkSize()>& ChunkBuffer, bool chunkRead, FilterParameters& params, double sampleRate)
+void FFT_F_I::ProcessBuffer(std::array<double, RingBuffer::getChunkSize()>& ChunkBuffer, bool chunkRead, FilterParameters& params)
 {
   if (chunkRead)
   {
@@ -13,7 +13,7 @@ void FFT_F_I::ProcessBuffer(std::array<double, RingBuffer::getChunkSize()>& Chun
     std::array<double, RingBuffer::getChunkSize()> magnitude{}, phase{};
     extractMagnitudeAndPhase(analyticSignal, magnitude, phase);
     // for a while all processing is here
-    reconstructSignal(magnitude, phase, ChunkBuffer, sampleRate, params);
+    reconstructSignal(magnitude, phase, ChunkBuffer, params);
   }
 }
 
@@ -55,9 +55,9 @@ void FFT_F_I::fwd_fft(std::vector<std::complex<double>>& data)
 
 std::vector<std::complex<double>> FFT_F_I::computeAnalyticSignal(const std::array<double, RingBuffer::getChunkSize()>& ringBuffer)
 {
-  // Copy input to fftIn (convert double to float)
+  constexpr size_t N = RingBuffer::getChunkSize();
 
-  for (int i = 0; i < RingBuffer::getChunkSize(); ++i)
+  for (size_t i = 0; i < N; ++i)
   {
     fft_in_data[i] = std::complex<double>(ringBuffer[i], 0.0);
   }
@@ -65,23 +65,19 @@ std::vector<std::complex<double>> FFT_F_I::computeAnalyticSignal(const std::arra
   // Perform forward FFT
   fwd_fft(fft_in_data);
 
-  // Construct analytic signal
-  std::vector<std::complex<double>> analyticSignal(RingBuffer::getChunkSize());
+  std::vector<std::complex<double>> analyticSignal(N);
 
-  // Positive frequencies (multiply by 2)
-  for (int i = 0; i <= N / 2; ++i)
+  // Keep DC and Nyquist frequency untouched
+  analyticSignal[0] = fft_in_data[0];
+  analyticSignal[N / 2] = fft_in_data[N / 2];
+
+  // Double positive frequencies and zero-out negative frequencies
+  for (size_t i = 1; i < N / 2; ++i)
   {
-    if (i == 0 || (i == N / 2 && N % 2 == 0))
-    {
-      // DC or Nyquist component (do not double)
-      analyticSignal[i] = fft_in_data[i];
-    }
-    else
-    {
-      // Positive frequencies (double)
-      analyticSignal[i] = 2.0 * fft_in_data[i];
-    }
+    analyticSignal[i] = 2.0 * fft_in_data[i];
+    analyticSignal[N - i] = {0.0, 0.0}; // Zeroing out negative frequencies
   }
+
   return analyticSignal;
 }
 
@@ -94,20 +90,14 @@ void FFT_F_I::extractMagnitudeAndPhase(const std::vector<std::complex<double>>& 
     magnitude[i] = std::abs(analyticSignal[i]);
     phase[i] = std::arg(analyticSignal[i]);
   }
-  // for (int k = 1; k < N / 2; ++k)
-  //{
-  //   magnitude[N - k] = magnitude[k];
-  //   phase[N - k] = -phase[k];
-  // }
 }
 
 void FFT_F_I::reconstructSignal(std::array<double, RingBuffer::getChunkSize()>& magnitude,
                                        std::array<double, RingBuffer::getChunkSize()>& phase,
                                        std::array<double, RingBuffer::getChunkSize()>& ringBuffer,
-                                       double sampleRate,
                                        FilterParameters& params) const
 {
-  const double deltaF = sampleRate / N; // Frequency resolution
+  const double deltaF = params.m_sampleRate / N; // Frequency resolution
 
   // Reconstruct the signal by summing custom sinusoidal components
   for (int k = 0; k <= N / 2; ++k)
@@ -115,7 +105,7 @@ void FFT_F_I::reconstructSignal(std::array<double, RingBuffer::getChunkSize()>& 
     double freq = k * deltaF;  // Frequency of the k-th component
     for (int t = 0; t < N; ++t)
     {
-      double time = static_cast<double>(t) / sampleRate;
+      double time = static_cast<double>(t) / params.m_sampleRate;
       ringBuffer[t] += magnitude[k] * std::cos(2.0 * iplug::PI * freq * time + phase[k]);
     }
   }

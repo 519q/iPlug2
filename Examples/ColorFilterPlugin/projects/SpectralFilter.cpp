@@ -11,15 +11,35 @@ double SpectralFilter::Process(double input, FilterParameters& params) // phase 
   }
   else
   {
-    auto output = IIR_hilbert.getMagintude_Phase(input);
+    auto output = IIR_hilbert.getMagintude_Phase(input, params.m_spectralFilterIIR_Order);
     magnitude = output.magnitude;
     phase = output.phase;
   }
   double a = 9.0; // Controls the curve
   double scaled_t = std::log1p(a * params.m_cutoff) / std::log1p(a);
   double ceil = scaled_t;
+  double output{};
+  magnitude += params.m_spectralFilterDrive;
   if (magnitude > ceil)
     magnitude = ceil;
-  phase = fitlerSelector.ProcessSpectral(phase, params);
-  return magnitude * std::cos(phase);
+  if (params.m_spectralFilter_Harder)
+  {
+    phase = fitlerSelector.Process(phase, params);
+    output = magnitude * std::cos(phase);
+    //output = magnitude * (std::cos(phase) + params.m_spectralFilterDrive);
+  }
+  else
+  {
+    phase = fitlerSelector.Process(std::cos(phase), params);
+    output = magnitude * phase;
+    //output = magnitude * (phase + params.m_spectralFilterDrive);
+  }
+  if (params.m_spectralFilterDrive > 0)
+  {
+    dcblock.Process(output, params);
+    double a = 16.0; // Controls the curve
+    double scaled_t = std::log1p(a * params.m_spectralFilterDrive) / std::log1p(a);
+    output *= (1 - (scaled_t * 0.68));
+  }
+  return output;
 }

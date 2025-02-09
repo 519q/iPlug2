@@ -3,7 +3,7 @@
 #include "IPlug_include_in_plug_hdr.h"
 #include "OverSampler.h"
 #include "Smoothers.h"
-#include "projects/FFT_F_I.h"
+#include "projects/FFT_F_I.h" 
 #include "projects/SpectralFilter.h"
 #include "projects/SpectralShaper.h"
 // #include "projects/FilterSwitcher.h"
@@ -14,13 +14,13 @@
 // #include "projects/aligned_memory.cpp"
 #include "projects/CustomGUI.h"
 #include "projects/DebugLogger.h"
-//#define PLUG_HAS_CLAP 1
 
 const int kNumPresets = 1;
 
-
+ISender<1> mModulationSender;
 enum EParams
 {
+  kDryWet,
   kGain,
   kFilterCutoff,
   kFilterResonance,
@@ -28,25 +28,30 @@ enum EParams
   kFilterAlgo,
   kFilterType,
   kFilterSelector,
-  kFilterSelector_BS,
+  kFilterSelector_BS, // bandstop wont work in 1p setup
   kSpectralFilterOn,
-  kSpectralFilterAlgo,
-  kSpectralFilterSelector,
+  //kSpectralFilterAlgo,
+  //kSpectralFilterSelector,
   kSpectralFilter_IR,
+  kSpectralFilter_Drive,
+  kSpectralFilter_Harder,
   kFilterBypass,
 
   kShaperDrive,
   kShaperShape,
   kShaperBias,
 
-  kSpectralShaperShape,
+  kSpectralShaperDrive,
   kSpectralShaper_IR,
   kSpectralShaperSelector,
 
-  kFilterFIR_O,
-  kFilterFIR_O_Plus1,
-  kShaperFIR_O,
-  kShaperFIR_O_Plus1,
+  kFilterFIR_Q,
+  kFilterFIR_Q_Plus1,
+  kShaperFIR_Q,
+  kShaperFIR_Q_Plus1,
+
+  kFilterIIR_Q,
+  kShaperIIR_Q,
 
   kOverSampling,
   kBypass,
@@ -60,38 +65,48 @@ using namespace igraphics;
 class ColorFilterPlugin final : public Plugin
 {
 private:
+
   //   ██████  ██    ██ ██      ██████  ██████  ███    ██ ████████ ██████   ██████  ██      ███████
   //  ██       ██    ██ ██     ██      ██    ██ ████   ██    ██    ██   ██ ██    ██ ██      ██
   //  ██   ███ ██    ██ ██     ██      ██    ██ ██ ██  ██    ██    ██████  ██    ██ ██      ███████
   //  ██    ██ ██    ██ ██     ██      ██    ██ ██  ██ ██    ██    ██   ██ ██    ██ ██           ██
   //   ██████   ██████  ██      ██████  ██████  ██   ████    ██    ██   ██  ██████  ███████ ███████
   const int columns = 5;
-  const int columns_BP = 4;
+  const int columns_Shaper = 5;
+  const int columns_BP = 5;
   const int rows = 1;
   const int padding = 25;
   const int buttonsPadding = 35;
-  const double getFromTopFilter = 65;
+  const double getFromTopFilter = 60;
   const double getFromTopShaper = 60;
+  double m_Plus1_Scale = 0.3;
+  
+    
+  IControl* mPostGain{};
   IControl* mCutoff_Knob{};
-  IControl* mCutoff_Knob_Spectral{};
   IControl* mReso_Knob{};
-  IControl* mReso_Knob_Spectral{};
   IControl* mF_BW_Knob{};
-  IControl* mFilter_Type_RB{};
+  IControl* mFilter_Type_RadioButton{};
   IControl* mFilterBypassSwitch{};
   IControl* mFilterSelectorSwitch_BS{};
-  IControl* mFilterBypassSwitch_Spectral{};
   IControl* mFilterAlgoSwitch{};
   IControl* mFilterSelectorSwitch{};
-  IControl* mSpectral_FilterAlgoSwitch{};
-  IControl* mSpectral_FilterSelectorSwitch{};
+  IVKnobControl* mSpectralFilterDrive{};
   IControl* mSpectralFilter_IR{};
+  IControl* mSpectralFilter_Harder{};
   IControl* mSpectralFilterOnToggle{};
+  IControl* mShaperShape{};
+  IControl* mShaperBias{};
   IVKnobControl* mFilterFirQ_Odd{};
   IVKnobControl* mFilterFirQ_Even{};
   IControl* mFilterFirQ_Plus1{};
-  IVKnobControl* mShaperFirQ{};
+  IVKnobControl* mFilterIirQ{};
+  IVKnobControl* mShaperFirQ_Odd{};
+  IVKnobControl* mShaperFirQ_Even{};
   IControl* mShaperFirQ_Plus1{};
+  IVKnobControl* mShaperIirQ{};
+  IControl* mSpectralShaper_IR{};
+  IVKnobControl* mSpectralShaperSelector{};
 
   bool mFactorChanged = true;
   int m_ovrsmpFactor{};
@@ -105,13 +120,12 @@ private:
   int m_df2retainer_BS{};
   int m_svf1retainer_BS{};
 
-  int m_spectral_FilterAlgo{};
-  int m_spectral_df1retainer{};
-  int m_spectral_svf1retainer{(int)SpectralFilterTypes::SVF1_2P};
-
   IRECT m_ButtonsPanel{};
   IRECT m_FilterPanel{};
   IRECT m_ShaperPanel{};
+
+  //std::unordered_map<clap_id, double> mModulationMap;
+  //static const clap_plugin_params s_clapParams;
 
 public:
   ColorFilterPlugin(const InstanceInfo& info);
@@ -127,9 +141,6 @@ public:
     chunk.Put(&m_df2retainer);
     chunk.Put(&m_svf1retainer);
     chunk.Put(&m_filterAlgo);
-    chunk.Put(&m_spectral_FilterAlgo);
-    chunk.Put(&m_spectral_df1retainer);
-    chunk.Put(&m_spectral_svf1retainer);
     return SerializeParams(chunk);
   }
   // Override UnserializeParams to restore plugin state
@@ -144,9 +155,6 @@ public:
     startPos = chunk.Get(&m_df2retainer, startPos);
     startPos = chunk.Get(&m_svf1retainer, startPos);
     startPos = chunk.Get(&m_filterAlgo, startPos);
-    startPos = chunk.Get(&m_spectral_FilterAlgo, startPos);
-    startPos = chunk.Get(&m_spectral_df1retainer, startPos);
-    startPos = chunk.Get(&m_spectral_svf1retainer, startPos);
 
     return UnserializeParams(chunk, startPos);
   }
@@ -171,20 +179,28 @@ public:
   Sigmoidal sigmoidalShaperL{};
   Sigmoidal sigmoidalShaperR{};
 
-  RingBuffer mRingBufferL{};
-  RingBuffer mRingBufferR{};
+  //RingBuffer mRingBufferL{};
+  //RingBuffer mRingBufferR{};
+
+  //FFT_F_I fftL{};
+  //FFT_F_I fftR{};
+
 
   SpectralShaper mSpectralShaperL{};
   SpectralShaper mSpectralShaperR{};
+  int m_OS_LatencySamples{};
+  //int m_RB_LatencySamples{};
 
   double knobSmoothing = 10;
   double buttonSmoothing = 30;
+  iplug::LogParamSmooth<double> mDryWetSmooth{knobSmoothing};
   iplug::LogParamSmooth<double> mGainSmooth{knobSmoothing};
   iplug::LogParamSmooth<double> mShaperDriveSmooth{knobSmoothing};
   iplug::LogParamSmooth<double> mShaperShapeSmooth{knobSmoothing};
   iplug::LogParamSmooth<double> mShaperBiasSmooth{knobSmoothing};
 
-  iplug::LogParamSmooth<double> mSpectralShaperShapeSmooth{knobSmoothing};
+  iplug::LogParamSmooth<double> mSpectralShaperDriveSmooth{knobSmoothing};
+  iplug::LogParamSmooth<double> mSpectralFilterDriveSmooth{knobSmoothing};
 
   iplug::LogParamSmooth<double> mFilterCutoffSmooth{knobSmoothing};
   iplug::LogParamSmooth<double> mFilterResonanceSmooth{knobSmoothing};
@@ -198,5 +214,7 @@ public:
   void DecideControlHideStatus(bool hideCondition, Args... controls);
   template <typename... Args>
   void DecideControlDisableStatus(bool disableCondition, Args... controls);
+  void CalculateLatency();
+  void DecideOnReset();
 #endif
 };
