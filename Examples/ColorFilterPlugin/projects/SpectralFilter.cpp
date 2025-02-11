@@ -36,10 +36,12 @@ double SpectralFilter::Process(double input, FilterParameters& params) // phase 
   }
   if (params.m_spectralFilterDrive > 0)
   {
-    dcblock.Process(output, params);
     double a = 16.0; // Controls the curve
     double scaled_t = std::log1p(a * params.m_spectralFilterDrive) / std::log1p(a);
-    output *= (1 - (scaled_t * 0.68));
+    output *= (1 - (scaled_t * 0.6));
   }
+  if ((params.m_spectralFilterDrive > 0) || (params.m_filterSelector >= 4 && params.m_filterSelector <= 5))
+    dcblock.Process(output, params);
+
   return output;
 }

@@ -20,6 +20,7 @@
 #include "IPlugAPIBase.h"
 #include "IPlugProcessor.h"
 #include "plugin.hh"
+#include "ISender.h"
 
 #include "config.h" // This is your plugin's config.h.
 
@@ -84,9 +85,7 @@ class IPlugCLAP : public IPlugAPIBase, public IPlugProcessor, public ClapPluginH
         return CLAP_EVENT_PARAM_VALUE;
       }
     }
-    // static bool impl_params_mod_get_mapping(const clap_plugin_t* plugin, clap_id param_id, bool* main_output, double* main_output_min, double* main_output_max);
 
-    // static const clap_plugin_params_mod params_mod_ext;
     Type mType;
     int mIdx;
     double mValue;
@@ -109,7 +108,6 @@ public:
 
   // Function to get the *modulated* parameter value
   double GetModulatedParamOffset(int paramIdx, int noteID = -1);
-
   std::unordered_map<int, double>& getMonophonicModulationBuffer() { return MonophonicModulationBuffer; };
   std::unordered_map<int, std::unordered_map<int, double>>& getPolyphonicModulationBuffer() { return PolyphonicModulationBuffer; };
 

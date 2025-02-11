@@ -3,7 +3,7 @@
 #include "IPlug_include_in_plug_hdr.h"
 #include "OverSampler.h"
 #include "Smoothers.h"
-#include "projects/FFT_F_I.h" 
+#include "projects/FFT_F_I.h"
 #include "projects/SpectralFilter.h"
 #include "projects/SpectralShaper.h"
 // #include "projects/FilterSwitcher.h"
@@ -17,7 +17,6 @@
 
 const int kNumPresets = 1;
 
-ISender<1> mModulationSender;
 enum EParams
 {
   kDryWet,
@@ -30,8 +29,8 @@ enum EParams
   kFilterSelector,
   kFilterSelector_BS, // bandstop wont work in 1p setup
   kSpectralFilterOn,
-  //kSpectralFilterAlgo,
-  //kSpectralFilterSelector,
+  // kSpectralFilterAlgo,
+  // kSpectralFilterSelector,
   kSpectralFilter_IR,
   kSpectralFilter_Drive,
   kSpectralFilter_Harder,
@@ -65,7 +64,6 @@ using namespace igraphics;
 class ColorFilterPlugin final : public Plugin
 {
 private:
-
   //   ██████  ██    ██ ██      ██████  ██████  ███    ██ ████████ ██████   ██████  ██      ███████
   //  ██       ██    ██ ██     ██      ██    ██ ████   ██    ██    ██   ██ ██    ██ ██      ██
   //  ██   ███ ██    ██ ██     ██      ██    ██ ██ ██  ██    ██    ██████  ██    ██ ██      ███████
@@ -80,10 +78,10 @@ private:
   const double getFromTopFilter = 60;
   const double getFromTopShaper = 60;
   double m_Plus1_Scale = 0.3;
-  
-    
+
+
   IControl* mPostGain{};
-  IControl* mCutoff_Knob{};
+  IVKnobControl* mCutoff_Knob{};
   IControl* mReso_Knob{};
   IControl* mF_BW_Knob{};
   IControl* mFilter_Type_RadioButton{};
@@ -97,12 +95,12 @@ private:
   IControl* mSpectralFilterOnToggle{};
   IControl* mShaperShape{};
   IControl* mShaperBias{};
-  IVKnobControl* mFilterFirQ_Odd{};
-  IVKnobControl* mFilterFirQ_Even{};
+  //IVKnobControl* mFilterFirQ_Odd{};
+  IVKnobControl* mFilterFirQ{};
   IControl* mFilterFirQ_Plus1{};
   IVKnobControl* mFilterIirQ{};
-  IVKnobControl* mShaperFirQ_Odd{};
-  IVKnobControl* mShaperFirQ_Even{};
+  //IVKnobControl* mShaperFirQ_Odd{};
+  IVKnobControl* mShaperFirQ{};
   IControl* mShaperFirQ_Plus1{};
   IVKnobControl* mShaperIirQ{};
   IControl* mSpectralShaper_IR{};
@@ -123,9 +121,6 @@ private:
   IRECT m_ButtonsPanel{};
   IRECT m_FilterPanel{};
   IRECT m_ShaperPanel{};
-
-  //std::unordered_map<clap_id, double> mModulationMap;
-  //static const clap_plugin_params s_clapParams;
 
 public:
   ColorFilterPlugin(const InstanceInfo& info);
@@ -167,9 +162,79 @@ public:
   }
 
   void OnUIClose() override { mDrawScaleRetainer = GetUI()->GetDrawScale(); }
-#if IPLUG_DSP // http://bit.ly/2S64BDd
-  FilterParameters fParams{};
+  void SetModData(int knobTag)
+  {
+    mModData.ctrlTag = knobTag; // The control tag that should receive this data
+    mModData.nChans = 1;        // We only have 1 value in .vals
+    mModData.chanOffset = 0;
+    float value = GetModulatedParamOffset(knobTag); // Usually 0 unless dealing with multi-channel offsets
+    mModData.vals[0] = value;
+    // Enqueue this data for the knob
+    mModValueSender.PushData(mModData);
+  }
+  template <typename... Tags>
+  void BatchSetModData(Tags... knobTag)
+  {
+    (SetModData(knobTag), ...);
+  }
 
+  void OnIdle() override
+  {
+    if (GetUI()) // Ensure UI exists before sending data
+    {
+      mModValueSender.TransmitData(*this); // Send modulation data to UI controls
+    }
+  }
+  double getFinalParamValue(int paramId)
+  {
+    double baseValue = GetParam(paramId)->Value() / 100.0;
+    double modValue = GetModulatedParamOffset(paramId);
+    double result = std::clamp(mSmoothers[paramId].Process(baseValue + modValue), 0., 1.);
+    return result;
+  }
+  int Map01To2_200_Stepped(double normalized, bool odd)
+  {
+    // Map [0..1] to [0..99] for the step index
+    double dblIndex = normalized * 99.0;    // 0..99
+    int stepIndex = (int)(dblIndex + 0.5); // round to nearest integer
+    int base = 2;
+    if (odd)
+      base -= 1;
+    return base + stepIndex * 2.0; // 2, 4, 6, ...
+  }
+  int Map01To1_40_Stepped(double normalized)
+  {
+    // Map [0..1] to [0..99] for the step index
+    double dblIndex = normalized * 39.0;    // 0..99
+    int stepIndex = (int)(dblIndex + 0.5); // round to nearest integer
+    int base = 1;
+    return base + stepIndex; // 2, 4, 6, ...
+  }
+  double mapGain(double gain)
+  {
+    if (gain <= 0.5)
+    {
+      gain *= 2; // log scaling below 0db
+      const double a = 3; // Controls the curve
+      gain = std::log1p(a * gain) / std::log1p(a);
+    }
+    else
+    {
+      gain *= 2;
+      double aboveOne = gain - 1.; // in [0..1]
+      // Now map that 0..1 to +0..+12 dB
+      // i.e. at x=1 => 0 dB => multiplier=1
+      // at x=2 => +12 dB => multiplier=10^(12/20)=~3.98
+      double dB = 12. * aboveOne;       // 0..12
+      gain = std::pow(10.f, dB / 20.f); // convert dB to linear
+    }
+    return gain;
+  }
+#if IPLUG_DSP // http://bit.ly/2S64BDd
+  ISender<1, 64, float> mModValueSender{};
+  ISenderData<1, float> mModData{};
+
+  FilterParameters fParams{};
   FilterSelector filterSelectorL{};
   FilterSelector filterSelectorR{};
 
@@ -179,32 +244,21 @@ public:
   Sigmoidal sigmoidalShaperL{};
   Sigmoidal sigmoidalShaperR{};
 
-  //RingBuffer mRingBufferL{};
-  //RingBuffer mRingBufferR{};
+  // RingBuffer mRingBufferL{};
+  // RingBuffer mRingBufferR{};
 
-  //FFT_F_I fftL{};
-  //FFT_F_I fftR{};
-
+  // FFT_F_I fftL{};
+  // FFT_F_I fftR{};
 
   SpectralShaper mSpectralShaperL{};
   SpectralShaper mSpectralShaperR{};
   int m_OS_LatencySamples{};
-  //int m_RB_LatencySamples{};
+  // int m_RB_LatencySamples{};
 
-  double knobSmoothing = 10;
+  double paramSmoothing = 10;
   double buttonSmoothing = 30;
-  iplug::LogParamSmooth<double> mDryWetSmooth{knobSmoothing};
-  iplug::LogParamSmooth<double> mGainSmooth{knobSmoothing};
-  iplug::LogParamSmooth<double> mShaperDriveSmooth{knobSmoothing};
-  iplug::LogParamSmooth<double> mShaperShapeSmooth{knobSmoothing};
-  iplug::LogParamSmooth<double> mShaperBiasSmooth{knobSmoothing};
+  std::array<iplug::LogParamSmooth<double>, kNumParams> mSmoothers;
 
-  iplug::LogParamSmooth<double> mSpectralShaperDriveSmooth{knobSmoothing};
-  iplug::LogParamSmooth<double> mSpectralFilterDriveSmooth{knobSmoothing};
-
-  iplug::LogParamSmooth<double> mFilterCutoffSmooth{knobSmoothing};
-  iplug::LogParamSmooth<double> mFilterResonanceSmooth{knobSmoothing};
-  iplug::LogParamSmooth<double> mFilterBandwidthSmooth{knobSmoothing};
   void DefineSelector(int selector) const;
   void ProcessBlock(sample** inputs, sample** outputs, int nFrames) override;
   void OnReset() override;

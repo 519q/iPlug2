@@ -196,7 +196,6 @@ static IVStyle ColorFilterStyle_Knob{true, // show label
                                 Colors::ColorFilterPatternSpec_FilterPanel,
                                 getStrokeOptions()};
 
-
 static IVStyle ColorFilterStyle_RadioButtons{true, // show label
                                 false, // show value
                                 Colors::ColorFilterColorSpec_FilterPanel_RB,
@@ -215,7 +214,7 @@ static IVStyle ColorFilterStyle_RadioButtons{true, // show label
                                 true, // using gradients
                                 false, // add background track
                                 Colors::ColorFilterPatternSpec_FilterPanel,
-                                getStrokeOptions()};
+                                             getStrokeOptions()};
 
 
 class RoundedPanelControl : public IControl

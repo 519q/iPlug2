@@ -2622,6 +2622,7 @@ static constexpr bool DEFAULT_DRAW_SHADOWS = true;
 static constexpr bool DEFAULT_EMBOSS = false;
 static constexpr bool DEFAULT_USING_GRADIENTS = false;
 static constexpr bool DEFAULT_ADD_BACKGROUND_TRACK = false;
+static constexpr bool DEFAULT_DRAW_MOD_VALUE = false;
 static constexpr float DEFAULT_ROUNDNESS = 0.f;
 static constexpr float DEFAULT_FRAME_THICKNESS = 1.f;
 static constexpr float DEFAULT_SHADOW_OFFSET = 3.f;
@@ -2642,6 +2643,7 @@ struct IVStyle
   bool emboss = DEFAULT_EMBOSS;
   bool usingGradients = DEFAULT_USING_GRADIENTS;
   bool addBackgroundTrack = DEFAULT_ADD_BACKGROUND_TRACK;
+  bool drawModValue = DEFAULT_DRAW_MOD_VALUE;
   float roundness = DEFAULT_ROUNDNESS;
   float frameThickness = DEFAULT_FRAME_THICKNESS;
   float shadowOffset = DEFAULT_SHADOW_OFFSET;
@@ -2827,6 +2829,12 @@ struct IVStyle
   {
     IVStyle newStyle = *this;
     newStyle.addBackgroundTrack = status;
+    return newStyle;
+  }
+  IVStyle WithDrawModValue(bool status = 1) const
+  {
+    IVStyle newStyle = *this;
+    newStyle.drawModValue = status;
     return newStyle;
   }
   IVStyle SetLineCap(ELineCap cap)

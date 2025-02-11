@@ -6,8 +6,9 @@
     <LocalDebuggerCommandArguments>$(CLAP_64_COMMAND_ARGS)</LocalDebuggerCommandArguments>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <LocalDebuggerCommand>$(CLAP_64_HOST_PATH)</LocalDebuggerCommand>
-    <LocalDebuggerCommandArguments>$(CLAP_64_COMMAND_ARGS)</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommand>C:\Program Files\Bitwig Studio 5.3 Beta 8\Bitwig Studio.exe</LocalDebuggerCommand>
+    <LocalDebuggerCommandArguments>
+    </LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Tracer|x64'">
