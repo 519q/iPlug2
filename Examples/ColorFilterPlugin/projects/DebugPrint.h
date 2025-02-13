@@ -5,7 +5,7 @@ Recieve msgs in:
 
 // Usage Example: .cpp
 
-#include "DebugLogger.h"
+#include "DebugPrint.h"
 DebugPrint(value);
 */
 #pragma once

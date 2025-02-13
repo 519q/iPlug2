@@ -3,34 +3,32 @@
 #include "IPlug_include_in_plug_hdr.h"
 #include "OverSampler.h"
 #include "Smoothers.h"
+#include "projects/DelayLine.h"
 #include "projects/FFT_F_I.h"
-#include "projects/SpectralFilter.h"
-#include "projects/SpectralShaper.h"
-// #include "projects/FilterSwitcher.h"
 #include "projects/FilterSelector.h"
 #include "projects/Filters.h"
 #include "projects/Shapers.h"
 #include "projects/SmoothTools.h"
+#include "projects/SpectralFilter.h"
+#include "projects/SpectralShaper.h"
 // #include "projects/aligned_memory.cpp"
 #include "projects/CustomGUI.h"
-#include "projects/DebugLogger.h"
+#include "projects/DebugPrint.h"
 
 const int kNumPresets = 1;
+DelayLine delayLineL(44100);
 
 enum EParams
 {
-  kDryWet,
-  kGain,
+  kGainIn,
+  kGainOut,
   kFilterCutoff,
   kFilterResonance,
   kFilterBandwidth,
   kFilterAlgo,
   kFilterType,
   kFilterSelector,
-  kFilterSelector_BS, // bandstop wont work in 1p setup
   kSpectralFilterOn,
-  // kSpectralFilterAlgo,
-  // kSpectralFilterSelector,
   kSpectralFilter_IR,
   kSpectralFilter_Drive,
   kSpectralFilter_Harder,
@@ -52,14 +50,16 @@ enum EParams
   kFilterIIR_Q,
   kShaperIIR_Q,
 
+  kSoftClip,
+
   kOverSampling,
+  kDryWet,
   kBypass,
   kNumParams
 };
 
 using namespace iplug;
 using namespace igraphics;
-
 
 class ColorFilterPlugin final : public Plugin
 {
@@ -74,19 +74,20 @@ private:
   const int columns_BP = 5;
   const int rows = 1;
   const int padding = 25;
+  const int smallKnobPadding = 12;
   const int buttonsPadding = 35;
   const double getFromTopFilter = 60;
   const double getFromTopShaper = 60;
   double m_Plus1_Scale = 0.3;
 
 
-  IControl* mPostGain{};
+  IVKnobControl* mPreGain{};
+  IVKnobControl* mPostGain{};
   IVKnobControl* mCutoff_Knob{};
   IControl* mReso_Knob{};
   IControl* mF_BW_Knob{};
   IControl* mFilter_Type_RadioButton{};
   IControl* mFilterBypassSwitch{};
-  IControl* mFilterSelectorSwitch_BS{};
   IControl* mFilterAlgoSwitch{};
   IControl* mFilterSelectorSwitch{};
   IVKnobControl* mSpectralFilterDrive{};
@@ -95,28 +96,40 @@ private:
   IControl* mSpectralFilterOnToggle{};
   IControl* mShaperShape{};
   IControl* mShaperBias{};
-  //IVKnobControl* mFilterFirQ_Odd{};
   IVKnobControl* mFilterFirQ{};
   IControl* mFilterFirQ_Plus1{};
   IVKnobControl* mFilterIirQ{};
-  //IVKnobControl* mShaperFirQ_Odd{};
   IVKnobControl* mShaperFirQ{};
   IControl* mShaperFirQ_Plus1{};
   IVKnobControl* mShaperIirQ{};
   IControl* mSpectralShaper_IR{};
   IVKnobControl* mSpectralShaperSelector{};
 
+
+  bool g_Bypass{};
+  bool m_spectralFilterOn{};
+  bool spectralFilter_IR{};
+  bool spectralFilter_Harder{};
+  bool m_filterBypass{};
+  bool spectralShaperOn{};
+  int m_filterSelector{};
+  int m_filterType{};
+  bool spectralShaper_IR{};
+  int spectralShaperSelector{};
+  int filterFIR_Q{};
+  int shaperFIR_Q{};
+  int filterIIR_Q{};
+  int shaperIIR_Q{};
+
   bool mFactorChanged = true;
+  bool mSelectorIsDirty{};
   int m_ovrsmpFactor{};
   OverSampler<sample> mOverSampler{kNone, true, 2, 2};
   int m_filterAlgo{};
   int m_df1retainer{};
   int m_df2retainer{(int)FilterTypes::DF2_2P};
-  int m_svf1retainer{(int)FilterTypes::SVF1_2P};
-
-  int m_df1retainer_BS{};
-  int m_df2retainer_BS{};
-  int m_svf1retainer_BS{};
+  int m_svf1retainer{(int)FilterTypes::SVF1_1P};
+  int m_zdf1retainer{(int)FilterTypes::ZDF1_1P};
 
   IRECT m_ButtonsPanel{};
   IRECT m_FilterPanel{};
@@ -135,6 +148,7 @@ public:
     chunk.Put(&m_df1retainer);
     chunk.Put(&m_df2retainer);
     chunk.Put(&m_svf1retainer);
+    chunk.Put(&m_zdf1retainer);
     chunk.Put(&m_filterAlgo);
     return SerializeParams(chunk);
   }
@@ -149,6 +163,7 @@ public:
     startPos = chunk.Get(&m_df1retainer, startPos);
     startPos = chunk.Get(&m_df2retainer, startPos);
     startPos = chunk.Get(&m_svf1retainer, startPos);
+    startPos = chunk.Get(&m_zdf1retainer, startPos);
     startPos = chunk.Get(&m_filterAlgo, startPos);
 
     return UnserializeParams(chunk, startPos);
@@ -184,6 +199,48 @@ public:
     {
       mModValueSender.TransmitData(*this); // Send modulation data to UI controls
     }
+    if (mSelectorIsDirty)
+    {
+      mSelectorIsDirty = false;
+      int min_value{};
+      int max_value{};
+      double default_value{};
+      if (m_filterAlgo == (int)FilterAlgo::DF1)
+      {
+        default_value = m_df1retainer;
+        min_value = 0;
+        max_value = (int)FiltersCounts::df1 - 1;
+      }
+      else if (m_filterAlgo == (int)FilterAlgo::DF2)
+      {
+        default_value = m_df2retainer;
+        min_value = (int)FiltersCounts::df1;
+        max_value = (int)FiltersCounts::df1 + (int)FiltersCounts::df2 - 1;
+      }
+      else if (m_filterAlgo == (int)FilterAlgo::SVF1)
+      {
+        default_value = m_svf1retainer;
+        min_value = (int)FiltersCounts::df1 + (int)FiltersCounts::df2;
+        max_value = (int)FiltersCounts::df1 + (int)FiltersCounts::df2 + (int)FiltersCounts::svf - 1;
+      }
+      else if (m_filterAlgo == (int)FilterAlgo::ZDF1)
+      {
+        default_value = m_zdf1retainer;
+        min_value = (int)FiltersCounts::df1 + (int)FiltersCounts::df2 + (int)FiltersCounts::svf;
+        max_value = (int)FiltersCounts::df1 + (int)FiltersCounts::df2 + (int)FiltersCounts::svf + (int)FiltersCounts::zdf - 1;
+      }
+      m_filterSelector = default_value;
+      GetParam(kFilterSelector)->InitInt("FilterSelector", default_value, min_value, max_value, "", IParam::kFlagStepped, "");
+      if (GetUI())
+      {
+        RemoveControl(kFilterSelector);
+        GetUI()->AttachControl(new IVRadioButtonControl(m_ButtonsPanel.GetGridCell(1, 3, rows, columns_BP).GetFromTop(75).GetMidHPadded(buttonsPadding), kFilterSelector,
+                                                        FilterSelector::getInitList(m_filterAlgo), "FilterSelector", ColorFilterStyle_RadioButtons.WithLabelText(false), EVShape::Ellipse,
+                                                        EDirection::Vertical));
+        SendParameterValueFromDelegate(kFilterSelector, default_value, 0);
+      }
+      DecideOnReset();
+    }
   }
   double getFinalParamValue(int paramId)
   {
@@ -195,7 +252,7 @@ public:
   int Map01To2_200_Stepped(double normalized, bool odd)
   {
     // Map [0..1] to [0..99] for the step index
-    double dblIndex = normalized * 99.0;    // 0..99
+    double dblIndex = normalized * 99.0;   // 0..99
     int stepIndex = (int)(dblIndex + 0.5); // round to nearest integer
     int base = 2;
     if (odd)
@@ -205,7 +262,7 @@ public:
   int Map01To1_40_Stepped(double normalized)
   {
     // Map [0..1] to [0..99] for the step index
-    double dblIndex = normalized * 39.0;    // 0..99
+    double dblIndex = normalized * 39.0;   // 0..99
     int stepIndex = (int)(dblIndex + 0.5); // round to nearest integer
     int base = 1;
     return base + stepIndex; // 2, 4, 6, ...
@@ -213,8 +270,8 @@ public:
   double mapGain(double gain)
   {
     if (gain <= 0.5)
-    {
-      gain *= 2; // log scaling below 0db
+    { // log scaling below 0db
+      gain *= 2;
       const double a = 3; // Controls the curve
       gain = std::log1p(a * gain) / std::log1p(a);
     }
@@ -230,6 +287,20 @@ public:
     }
     return gain;
   }
+  void mapParamToDB(int paramIdx)
+  {
+    GetParam(paramIdx)->SetDisplayFunc([this](double value, WDL_String& str) {
+      double gainLinear = mapGain(value / 100);
+      double gainDB = 20.0 * std::log10(gainLinear); // Convert to dB
+
+      // Avoid log(0) errors
+      if (gainLinear <= 0.0001)
+        str.Set("-∞ dB");
+      else
+        str.SetFormatted(32, "%.1f dB", gainDB);
+    });
+  }
+
 #if IPLUG_DSP // http://bit.ly/2S64BDd
   ISender<1, 64, float> mModValueSender{};
   ISenderData<1, float> mModData{};
@@ -243,7 +314,6 @@ public:
 
   Sigmoidal sigmoidalShaperL{};
   Sigmoidal sigmoidalShaperR{};
-
   // RingBuffer mRingBufferL{};
   // RingBuffer mRingBufferR{};
 
@@ -259,7 +329,7 @@ public:
   double buttonSmoothing = 30;
   std::array<iplug::LogParamSmooth<double>, kNumParams> mSmoothers;
 
-  void DefineSelector(int selector) const;
+  void DefineSelector();
   void ProcessBlock(sample** inputs, sample** outputs, int nFrames) override;
   void OnReset() override;
   void OnParamChange(int paramIdx, EParamSource, int sampleOffset) override;

@@ -25,7 +25,7 @@ public:
 class DF1_1P_LP_Vintage : public VintageProcessor, public Filters
 {
 private:
-  int m_state{0};
+  int m_poles{0};
 
 protected:
   double m_alpha{};

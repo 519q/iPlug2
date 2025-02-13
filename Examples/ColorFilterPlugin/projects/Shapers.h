@@ -28,8 +28,6 @@ class CubicShaper : public Shapers
 public:
   double Process(double input, FilterParameters& params) override
   {
-    if (params.m_spectralShaperDrive < processingFloor)
-      return input;
     double t = params.m_spectralShaperDrive;
     double a = 7; // Controls the curve
     double scaled_t = std::log1p(a * t) / std::log1p(a);
@@ -48,10 +46,7 @@ class PolynomialShaper : public Shapers
 public:
   double Process(double input, FilterParameters& params) override
   {
-    if (params.m_spectralShaperDrive < processingFloor)
-      return input;
     // Polynomial shaping (adjust coefficients for different curves)
-    else
     {
       double shaped = (input - (6 * params.m_spectralShaperDrive) * std::pow(input, 3) + (8 * params.m_spectralShaperDrive) * std::pow(input, 5)) * (1 + 1 * params.m_spectralShaperDrive);
       return filnalTanh(shaped, params);
@@ -98,10 +93,6 @@ class TanhShaper : public Shapers
 public:
   double Process(double input, FilterParameters& params) override
   {
-    if (params.m_spectralShaperDrive < processingFloor)
-    {
-      return input;
-    }
     double t = params.m_spectralShaperDrive;
     double a = 9.0; // Controls the curve
     double scaled_t = std::log1p(a * t) / std::log1p(a);
@@ -119,8 +110,6 @@ class FoldbackShaper : public Shapers
 public:
   double Process(double input, FilterParameters& params) override
   {
-    if (params.m_spectralShaperDrive < processingFloor)
-      return input;
     double threshold = params.m_spectralShaperDrive;
     // Foldback distortion
     if (input > threshold || input < -threshold)
@@ -183,11 +172,11 @@ private:
 public:
   double Process(double input, FilterParameters& params)
   {
-    if (params.m_drive > 0)
+    if (params.m_drive)
     {
       const double t = 0.4 - ((0.4 - 0.01) * params.m_shape);
-      const double z = 0.7 - ((0.7 - 0.24) * params.m_shape);
-      double shaped = (input / (t + std::abs(input))) * z;
+      const double m_poles = 0.7 - ((0.7 - 0.24) * params.m_shape);
+      double shaped = (input / (t + std::abs(input))) * m_poles;
       if (params.m_bias > 0)
       {
         shaped = asym.Process(shaped, params);

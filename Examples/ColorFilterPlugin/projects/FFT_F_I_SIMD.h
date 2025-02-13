@@ -2,7 +2,7 @@
 #include "FilterParameters.h"
 #include "RingBuffer.h"
 
-#include "DebugLogger.h"
+#include "DebugPrint.h"
 #include <complex>
 #include <map>
 #include <vector>

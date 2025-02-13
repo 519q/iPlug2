@@ -1,5 +1,5 @@
 #include "SpectralShaper.h"
-#include "projects/DebugLogger.h"
+//#include "projects/DebugPrint.h"
 
 SpectralShaper::SpectralShaper() {}
 

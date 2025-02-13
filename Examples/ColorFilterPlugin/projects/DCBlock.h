@@ -2,7 +2,7 @@
 #include "Filters.h"
 class DCBlock
 {
-  double m_state{};
+  double m_poles{};
   double m_alpha{};
   double m_sampleRate{};
   double m_cutoff{0.0001};
@@ -10,8 +10,8 @@ class DCBlock
 public:
   void processPoleHP(double& input)
   {
-    m_state = (1 - m_alpha) * input + m_alpha * m_state;
-    double shaped = -m_state;
+    m_poles = (1 - m_alpha) * input + m_alpha * m_poles;
+    double shaped = -m_poles;
     input += shaped;
   }
   void getCoefficients(double sampleRate)

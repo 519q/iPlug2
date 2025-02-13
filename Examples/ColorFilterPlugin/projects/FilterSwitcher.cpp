@@ -1,11 +1,11 @@
 #include "FilterSwitcher.h"
 
 
-void FilterSwitcher::Process(double& input, int filterSelector, FilterParameters& fParams)
+void FilterSwitcher::Process(double& input, int m_filterSelector, FilterParameters& fParams)
 {
-  if (filterSelector != (int)m_currentFilter && filterSelector < (int)FilterTypes::MAX_FILTER_TYPES)
+  if (m_filterSelector != (int)m_currentFilter && m_filterSelector < (int)FilterTypes::MAX_FILTER_TYPES)
   {
-    m_currentFilter = (FilterTypes)filterSelector;
+    m_currentFilter = (FilterTypes)m_filterSelector;
   }
   if (m_filters[static_cast<size_t>(m_currentFilter)])
   {

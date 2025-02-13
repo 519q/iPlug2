@@ -659,9 +659,24 @@ void IVKnobControl::DrawWidget(IGraphics& g)
   DrawHandle(g, knobHandleBounds);
   DrawPointer(g, angle, cx, cy, knobHandleBounds.W() / 2.f);
 }
-
 void IVKnobControl::DrawHandle(IGraphics& g, const IRECT& bounds) { DrawPressableShape(g, mShape, bounds, mMouseDown, mMouseIsOver, IsDisabled()); }
-
+#include "IGraphicsSkia.h"
+#include "SKBlurTypes.h"
+#include "include/core/SkMaskFilter.h"
+static SkColor IColorToSkColor(const IColor& color, int alpha = 255) { return SkColorSetARGB(/*color.A*/ alpha, color.R, color.G, color.B); }
+static SkColor IColorToSkColor(const IPattern& pattern, int alpha = 255)
+{
+  if (pattern.NStops() > 0) // If it's a gradient pattern
+  {
+    const IColor stopColor = pattern.GetStop(0).mColor; // Get the first gradient stop
+    return SkColorSetARGB(alpha, stopColor.R, stopColor.G, stopColor.B);
+  }
+  else // If it's a solid color
+  {
+    IColor color = pattern.GetStop(0).mColor; // Solid color patterns should have 1 stop
+    return SkColorSetARGB(alpha, color.R, color.G, color.B);
+  }
+}
 void IVKnobControl::DrawIndicatorTrack(IGraphics& g, float angle, float cx, float cy, float radius)
 {
   if (mTrackSize > 0.f)
@@ -671,6 +686,32 @@ void IVKnobControl::DrawIndicatorTrack(IGraphics& g, float angle, float cx, floa
       double angleMod = mModValue.load() * 270;
       angle = std::clamp(angleMod + angle, -135., 135.);
     }
+#if defined IGRAPHICS_SKIA
+    // 1) Attempt to grab the raw SkCanvas so we can do a custom Skia draw
+    if (auto pSkia = dynamic_cast<IGraphicsSkia*>(&g))
+    {
+      SkCanvas* canvas = static_cast<SkCanvas*>(pSkia->GetDrawContext());
+      if (canvas)
+      {
+        // Define Skia paint for glow
+        SkPaint glowPaint;
+        glowPaint.setAntiAlias(true);
+        glowPaint.setColor(IColorToSkColor(mStyle.usingGradients ? GetPattern(kX1) : GetColor(kX1), 80)); 
+        glowPaint.setStyle(SkPaint::kStroke_Style);
+        glowPaint.setStrokeWidth(mTrackSize * 2.0);                                 // Make glow wider than track
+        glowPaint.setMaskFilter(SkMaskFilter::MakeBlur(kNormal_SkBlurStyle, 1.)); // Apply blur
+        // Calculate arc angles (Skia expects degrees)
+        float rotatedAngle = angle - 90;
+        float rotatedAnchorAngle = mAnchorAngle - 90;
+        float a1 = (rotatedAngle >= rotatedAnchorAngle) ? rotatedAnchorAngle : rotatedAnchorAngle - (rotatedAnchorAngle - rotatedAngle);
+        float a2 = (rotatedAngle >= rotatedAnchorAngle) ? rotatedAngle : rotatedAnchorAngle;
+        // Draw glow arc
+        SkPath glowPath;
+        glowPath.addArc(SkRect::MakeLTRB(cx - radius, cy - radius, cx + radius, cy + radius), a1, a2 - a1);
+        canvas->drawPath(glowPath, glowPaint);
+      }
+    }
+#endif
     g.DrawArc(mStyle.usingGradients ? GetPattern(kX1) : GetColor(kX1), cx, cy, radius, angle >= mAnchorAngle ? mAnchorAngle : mAnchorAngle - (mAnchorAngle - angle),
               angle >= mAnchorAngle ? angle : mAnchorAngle, &mBlend, mTrackSize);
   }

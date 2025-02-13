@@ -2,133 +2,182 @@
 #include "Filters.h"
 #include "HighPassFilters.h"
 
-
-class DF1_1P_BP : public Filters
+class BandpassFilters : public Filters
 {
 private:
-  DF1_1P_LP lph{};
-  DF1_1P_LP lpl{};
+  std::unique_ptr<Filters> lpl;
+  std::unique_ptr<Filters> lph;
   double m_stateL{};
   double m_stateH{};
   double m_bandwidth{bandwidthHighestLimit};
 
 public:
-  void Process(double& input, FilterParameters& params);
+  BandpassFilters(std::unique_ptr<Filters> lplFilter, std::unique_ptr<Filters> lphFilter)
+    : lpl(std::move(lplFilter))
+    , lph(std::move(lphFilter))
+  {
+  }
+  virtual void Process(double& input, FilterParameters& params) override;
 };
 
-class DF1_2P_BP : public Filters
+class DF1_1P_BP : public BandpassFilters
 {
-private:
-  DF1_2P_LP lpl{};
-  DF1_2P_LP lph{};
-  double m_stateL{};
-  double m_stateH{};
-  double m_bandwidth{bandwidthHighestLimit};
-
 public:
-  void Process(double& input, FilterParameters& params);
+  DF1_1P_BP()
+    : BandpassFilters(std::make_unique<DF1_1P_LP>(), std::make_unique<DF1_1P_LP>())
+  {
+  }
 };
 
-class DF1_3P_BP : public Filters
+class DF1_2P_BP : public BandpassFilters
 {
-private:
-  DF1_3P_LP lpl{};
-  DF1_3P_LP lph{};
-  double m_stateL{};
-  double m_stateH{};
-  double m_bandwidth{bandwidthHighestLimit};
-
 public:
-  void Process(double& input, FilterParameters& params);
+  DF1_2P_BP()
+    : BandpassFilters(std::make_unique<DF1_2P_LP>(), std::make_unique<DF1_2P_LP>())
+  {
+  }
 };
 
-class DF1_4P_BP : public Filters
+class DF1_3P_BP : public BandpassFilters
 {
-private:
-  DF1_4P_LP lpl{};
-  DF1_4P_LP lph{};
-  double m_stateL{};
-  double m_stateH{};
-  double m_bandwidth{bandwidthHighestLimit};
-
 public:
-  void Process(double& input, FilterParameters& params);
+  DF1_3P_BP()
+    : BandpassFilters(std::make_unique<DF1_3P_LP>(), std::make_unique<DF1_3P_LP>())
+  {
+  }
 };
 
-class DF1_6P_BP : public Filters
+class DF1_4P_BP : public BandpassFilters
 {
-private:
-  DF1_6P_LP lpl{};
-  DF1_6P_LP lph{};
-  double m_stateL{};
-  double m_stateH{};
-  double m_bandwidth{bandwidthHighestLimit};
-
 public:
-  void Process(double& input, FilterParameters& params);
+  DF1_4P_BP()
+    : BandpassFilters(std::make_unique<DF1_4P_LP>(), std::make_unique<DF1_4P_LP>())
+  {
+  }
 };
 
-class DF2_2P_BP : public Filters
+class DF1_6P_BP : public BandpassFilters
 {
-private:
-  DF2_2P_LP lpl{};
-  DF2_2P_LP lph{};
-  double m_stateL{};
-  double m_stateH{};
-  double m_bandwidth{bandwidthHighestLimit};
-
 public:
-  void Process(double& input, FilterParameters& params);
+  DF1_6P_BP()
+    : BandpassFilters(std::make_unique<DF1_6P_LP>(), std::make_unique<DF1_6P_LP>())
+  {
+  }
 };
 
-class DF2_4P_BP : public Filters
+class DF2_2P_BP : public BandpassFilters
 {
-private:
-  DF2_4P_LP lpl{};
-  DF2_4P_LP lph{};
-  double m_stateL{};
-  double m_stateH{};
-  double m_bandwidth{bandwidthHighestLimit};
-
 public:
-  void Process(double& input, FilterParameters& params);
+  DF2_2P_BP()
+    : BandpassFilters(std::make_unique<DF2_2P_LP>(), std::make_unique<DF2_2P_LP>())
+  {
+  }
 };
 
-class SVF1_2P_BP : public Filters
+class DF2_4P_BP : public BandpassFilters
 {
-private:
-  SVF1_2P_LP lpl{};
-  SVF1_2P_LP lph{};
-  double m_stateL{};
-  double m_stateH{};
-  double m_bandwidth{bandwidthHighestLimit};
-
 public:
-  void Process(double& input, FilterParameters& params);
+  DF2_4P_BP()
+    : BandpassFilters(std::make_unique<DF2_4P_LP>(), std::make_unique<DF2_4P_LP>())
+  {
+  }
 };
 
-class SVF1_4P_BP : public Filters
+class DF2_6P_BP : public BandpassFilters
 {
-private:
-  SVF1_4P_LP lpl{};
-  SVF1_4P_LP lph{};
-  double m_stateL{};
-  double m_stateH{};
-  double m_bandwidth{bandwidthHighestLimit};
-
 public:
-  void Process(double& input, FilterParameters& params);
+  DF2_6P_BP()
+    : BandpassFilters(std::make_unique<DF2_6P_LP>(), std::make_unique<DF2_6P_LP>())
+  {
+  }
 };
 
-class SVF1_6P_BP : public Filters
+class SVF1_1P_BP : public BandpassFilters
 {
-private:
-  SVF1_6P_LP lpl{};
-  SVF1_6P_LP lph{};
-  double m_stateL{};
-  double m_stateH{};
-  double m_bandwidth{bandwidthHighestLimit};
-
 public:
-  void Process(double& input, FilterParameters& params);
+  SVF1_1P_BP()
+    : BandpassFilters(std::make_unique<SVF1_1P_LP>(), std::make_unique<SVF1_1P_LP>())
+  {
+  }
+};
+
+class SVF1_2P_BP : public BandpassFilters
+{
+public:
+  SVF1_2P_BP()
+    : BandpassFilters(std::make_unique<SVF1_2P_LP>(), std::make_unique<SVF1_2P_LP>())
+  {
+  }
+};
+
+class SVF1_3P_BP : public BandpassFilters
+{
+public:
+  SVF1_3P_BP()
+    : BandpassFilters(std::make_unique<SVF1_3P_LP>(), std::make_unique<SVF1_3P_LP>())
+  {
+  }
+};
+
+class SVF1_4P_BP : public BandpassFilters
+{
+public:
+  SVF1_4P_BP()
+    : BandpassFilters(std::make_unique<SVF1_4P_LP>(), std::make_unique<SVF1_4P_LP>())
+  {
+  }
+};
+
+class SVF1_6P_BP : public BandpassFilters
+{
+public:
+  SVF1_6P_BP()
+    : BandpassFilters(std::make_unique<SVF1_6P_LP>(), std::make_unique<SVF1_6P_LP>())
+  {
+  }
+};
+
+class ZDF_1P_BP : public BandpassFilters
+{
+public:
+  ZDF_1P_BP()
+    : BandpassFilters(std::make_unique<ZDF_1P_LP>(), std::make_unique<ZDF_1P_LP>())
+  {
+  }
+};
+
+class ZDF_2P_BP : public BandpassFilters
+{
+public:
+  ZDF_2P_BP()
+    : BandpassFilters(std::make_unique<ZDF_2P_LP>(), std::make_unique<ZDF_2P_LP>())
+  {
+  }
+};
+
+class ZDF_3P_BP : public BandpassFilters
+{
+public:
+  ZDF_3P_BP()
+    : BandpassFilters(std::make_unique<ZDF_3P_LP>(), std::make_unique<ZDF_3P_LP>())
+  {
+  }
+};
+
+class ZDF_4P_BP : public BandpassFilters
+{
+public:
+  ZDF_4P_BP()
+    : BandpassFilters(std::make_unique<ZDF_4P_LP>(), std::make_unique<ZDF_4P_LP>())
+  {
+  }
+};
+
+class ZDF_6P_BP : public BandpassFilters
+{
+public:
+  ZDF_6P_BP()
+    : BandpassFilters(std::make_unique<ZDF_6P_LP>(), std::make_unique<ZDF_6P_LP>())
+  {
+  }
 };

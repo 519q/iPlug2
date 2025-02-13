@@ -344,7 +344,7 @@
     <ClInclude Include="CustomGui.h" />
     <ClInclude Include="DCBlock.h" />
     <ClInclude Include="DCBlocker_FIR.h" />
-    <ClInclude Include="DebugLogger.h" />
+    <ClInclude Include="DebugPrint.h" />
     <ClInclude Include="DelayLine.h" />
     <ClInclude Include="FFT_F_I.h" />
     <ClInclude Include="FilterParameters.h" />

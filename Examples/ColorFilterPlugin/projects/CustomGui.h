@@ -1,6 +1,6 @@
 #pragma once
 #include "IControls.h"
-#include "projects/DebugLogger.h"
+#include "projects/DebugPrint.h"
 static double mDrawScaleRetainer{1};
 
 BEGIN_IPLUG_NAMESPACE

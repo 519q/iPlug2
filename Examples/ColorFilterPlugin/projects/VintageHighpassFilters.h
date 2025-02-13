@@ -5,7 +5,7 @@
 class DF1_1P_HP_Vintage : public DF1_1P_LP_Vintage
 {
 protected:
-  int m_state{};
+  int m_poles{};
   int m_resonance{};
   //DCStop dcstop{};
 

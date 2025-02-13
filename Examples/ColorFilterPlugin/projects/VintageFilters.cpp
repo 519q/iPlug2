@@ -111,7 +111,7 @@ void DF1_1P_LP_Vintage::Process(double& input, FilterParameters& params)
 {
   getAlpha(params);
   int fixedPointInput = (double)input * m_scale;
-  processPoleLP(fixedPointInput, m_state, params);
+  processPoleLP(fixedPointInput, m_poles, params);
   input = (double)fixedPointInput / m_scale;
 }
 
@@ -220,7 +220,7 @@ void SVF1_2P_LP_Vintage::Process(double& input, FilterParameters& params)
   inputScaled += resonate(inputScaled, params, m_poles[0], m_poles[1], 2);
   for (int& pole : m_poles)
   {
-    processPoleLP(inputScaled, pole, params);
+    processPole(inputScaled, pole, params);
   }
   input = (double)inputScaled / m_scale;
 };
@@ -232,7 +232,7 @@ void SVF1_4P_LP_Vintage::Process(double& input, FilterParameters& params)
   inputScaled += resonate(inputScaled, params, m_poles[1], m_poles[3], 1.55);
   for (int& pole : m_poles)
   {
-    processPoleLP(inputScaled, pole, params);
+    processPole(inputScaled, pole, params);
   }
   input = (double)inputScaled / m_scale;
 };
@@ -244,7 +244,7 @@ void SVF1_6P_LP_Vintage::Process(double& input, FilterParameters& params)
   inputScaled += resonate(inputScaled, params, m_poles[1], m_poles[5], 0.95);
   for (int& pole : m_poles)
   {
-    processPoleLP(inputScaled, pole, params);
+    processPole(inputScaled, pole, params);
   }
   input = (double)inputScaled / m_scale;
 };

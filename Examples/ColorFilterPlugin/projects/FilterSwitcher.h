@@ -19,7 +19,7 @@ public:
   {
   }
 
-  void Process(double& input, int filterSelector, FilterParameters& fParams);
+  void Process(double& input, int m_filterSelector, FilterParameters& fParams);
 };
 
 namespace FilterPresets

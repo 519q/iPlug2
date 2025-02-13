@@ -313,7 +313,6 @@ public:
 private:
   IVButtonControl* mButtonControl = nullptr;
 };
-#include "projects/DebugLogger.h"
 
 /** A vector knob control drawn using graphics primitives */
 class IVKnobControl : public IKnobControlBase, public IVectorBase

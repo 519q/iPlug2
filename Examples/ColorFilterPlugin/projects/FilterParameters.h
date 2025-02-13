@@ -17,13 +17,28 @@ static constexpr double DF1_6P_ResoScaling = 0.9;
 
 static constexpr double DF2_2P_ResoScaling = 6;
 static constexpr double DF2_4P_ResoScaling = 4;
+static constexpr double DF2_6P_ResoScaling = 3;
 
 static constexpr double SVF1_2P_ResoScaling = 1.9;
+static constexpr double SVF1_3P_ResoScaling = 1.19;
 static constexpr double SVF1_4P_ResoScaling = 1.4;
 static constexpr double SVF1_6P_ResoScaling = 0.95;
 
+static constexpr double ZDF1_2P_ResoScaling = 2;
+static constexpr double ZDF1_3P_ResoScaling = 1.2;
+static constexpr double ZDF1_4P_ResoScaling = 0.94;
+static constexpr double ZDF1_6P_ResoScaling = 0.76;
+
 #pragma endregion
 
+
+enum class FiltersCounts
+{
+  df1 = 5,
+  df2 = 3,
+  svf = 5,
+  zdf = 5
+};
 
 enum class FilterTypes
 {
@@ -31,12 +46,20 @@ enum class FilterTypes
   DF1_2P,
   DF1_3P,
   DF1_4P,
-  DF1_6P,
+  DF1_6P, // 5
   DF2_2P,
   DF2_4P,
+  DF2_6P, // 3
+  SVF1_1P,
   SVF1_2P,
+  SVF1_3P,
   SVF1_4P,
-  SVF1_6P,
+  SVF1_6P, // 5
+  ZDF1_1P,
+  ZDF1_2P,
+  ZDF1_3P,
+  ZDF1_4P,
+  ZDF1_6P, // 5
   MAX_FILTER_TYPES
 };
 
@@ -45,6 +68,7 @@ enum class FilterAlgo
   DF1,
   DF2,
   SVF1,
+  ZDF1,
   MAX_ALGO
 };
 

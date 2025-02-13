@@ -42,7 +42,7 @@ typedef DWORD *LPD3DCOLOR;
 typedef struct _D3DVECTOR {
     float x;
     float y;
-    float z;
+    float m_poles;
 } D3DVECTOR;
 #define D3DVECTOR_DEFINED
 #endif
@@ -858,9 +858,9 @@ DECLARE_INTERFACE_(IDirectSound3DListener, IUnknown)
     STDMETHOD(SetDopplerFactor)         (THIS_ D3DVALUE flDopplerFactor, DWORD dwApply) PURE;
     STDMETHOD(SetOrientation)           (THIS_ D3DVALUE xFront, D3DVALUE yFront, D3DVALUE zFront,
                                                D3DVALUE xTop, D3DVALUE yTop, D3DVALUE zTop, DWORD dwApply) PURE;
-    STDMETHOD(SetPosition)              (THIS_ D3DVALUE x, D3DVALUE y, D3DVALUE z, DWORD dwApply) PURE;
+    STDMETHOD(SetPosition)              (THIS_ D3DVALUE x, D3DVALUE y, D3DVALUE m_poles, DWORD dwApply) PURE;
     STDMETHOD(SetRolloffFactor)         (THIS_ D3DVALUE flRolloffFactor, DWORD dwApply) PURE;
-    STDMETHOD(SetVelocity)              (THIS_ D3DVALUE x, D3DVALUE y, D3DVALUE z, DWORD dwApply) PURE;
+    STDMETHOD(SetVelocity)              (THIS_ D3DVALUE x, D3DVALUE y, D3DVALUE m_poles, DWORD dwApply) PURE;
     STDMETHOD(CommitDeferredSettings)   (THIS) PURE;
 };
 
@@ -930,13 +930,13 @@ DECLARE_INTERFACE_(IDirectSound3DBuffer, IUnknown)
     STDMETHOD(GetVelocity)          (THIS_ D3DVECTOR* pvVelocity) PURE;
     STDMETHOD(SetAllParameters)     (THIS_ LPCDS3DBUFFER pcDs3dBuffer, DWORD dwApply) PURE;
     STDMETHOD(SetConeAngles)        (THIS_ DWORD dwInsideConeAngle, DWORD dwOutsideConeAngle, DWORD dwApply) PURE;
-    STDMETHOD(SetConeOrientation)   (THIS_ D3DVALUE x, D3DVALUE y, D3DVALUE z, DWORD dwApply) PURE;
+    STDMETHOD(SetConeOrientation)   (THIS_ D3DVALUE x, D3DVALUE y, D3DVALUE m_poles, DWORD dwApply) PURE;
     STDMETHOD(SetConeOutsideVolume) (THIS_ LONG lConeOutsideVolume, DWORD dwApply) PURE;
     STDMETHOD(SetMaxDistance)       (THIS_ D3DVALUE flMaxDistance, DWORD dwApply) PURE;
     STDMETHOD(SetMinDistance)       (THIS_ D3DVALUE flMinDistance, DWORD dwApply) PURE;
     STDMETHOD(SetMode)              (THIS_ DWORD dwMode, DWORD dwApply) PURE;
-    STDMETHOD(SetPosition)          (THIS_ D3DVALUE x, D3DVALUE y, D3DVALUE z, DWORD dwApply) PURE;
-    STDMETHOD(SetVelocity)          (THIS_ D3DVALUE x, D3DVALUE y, D3DVALUE z, DWORD dwApply) PURE;
+    STDMETHOD(SetPosition)          (THIS_ D3DVALUE x, D3DVALUE y, D3DVALUE m_poles, DWORD dwApply) PURE;
+    STDMETHOD(SetVelocity)          (THIS_ D3DVALUE x, D3DVALUE y, D3DVALUE m_poles, DWORD dwApply) PURE;
 };
 
 #define IDirectSound3DBuffer_QueryInterface(p,a,b)          IUnknown_QueryInterface(p,a,b)
