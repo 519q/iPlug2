@@ -54,6 +54,11 @@ public:
   }
 };
 
+class SoftClipper : public Shapers
+{
+public:
+  double softclip(double x) { return x / (1.0 + fabs(x)); }
+};
 class Clipper : public Shapers
 {
 public:

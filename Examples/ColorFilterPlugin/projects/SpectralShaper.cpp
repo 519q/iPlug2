@@ -1,5 +1,5 @@
 #include "SpectralShaper.h"
-//#include "projects/DebugPrint.h"
+// #include "projects/DebugPrint.h"
 
 SpectralShaper::SpectralShaper() {}
 
@@ -10,11 +10,17 @@ void SpectralShaper::Process(double& input, FilterParameters& params)
 
   if (params.m_spectralShaper_IR == (int)Spectral_IR::IIR)
   {
-    auto output = IIR_hilbert.getMagintude_Phase(input, params.m_spectralShaperIIR_Order);
+    auto output = IIR_hilbert.getMagnitude_Phase(input, params.m_spectralShaperIIR_Order);
     magnitude = output.magnitude;
     phase = output.phase;
   }
-  else
+  else if (params.m_spectralShaper_IR == (int)Spectral_IR::LATTICE)
+  {
+    auto output = Lattice_hilbert.getMagnPhase(input, params.m_spectralShaperIIR_Order);
+    magnitude = output.magnitude;
+    phase = output.phase;
+  }
+  else if (params.m_spectralShaper_IR == (int)Spectral_IR::FIR)
   {
     magnitude = FIR_hilbert.getMagnitude(input, params.m_spectralShaperFIR_Order);
     phase = FIR_hilbert.getPhase(input, params.m_spectralShaperFIR_Order);
@@ -22,12 +28,12 @@ void SpectralShaper::Process(double& input, FilterParameters& params)
 
   // double real = hilbert.getReal(input);
   // double imag = hilbert.getImag(input);
-   magnitude = shaperSelector.Process(magnitude, params);
+  magnitude = shaperSelector.Process(magnitude, params);
   // double shapedMagnitude = magnitude;
   // input = magnitude * cosWave(phase);
   // input = magnitude * triangleWave(phase);
   // input = magnitude * waveShaper.process(phase, params);
-   //input = magnitude * morphSine(phase, params);
+  // input = magnitude * morphSine(phase, params);
   input = magnitude * cosWave(phase);
   // input = magnitude;
 }

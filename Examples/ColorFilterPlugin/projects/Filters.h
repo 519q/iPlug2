@@ -24,8 +24,8 @@ protected:
 public:
   Filters() {}
   virtual ~Filters() = default;
-  bool isDirty(FilterParameters& params);
-  double getCutoffFreq(FilterParameters& params);
+  virtual bool isDirty(FilterParameters& params);
+  double getCutoffFreq(FilterParameters& params, double cutoff);
   double getOmega(FilterParameters& params);
 
   double resonate(FilterParameters& params, double bpPole1, double minusbpPole2, double resoScl = 1);
@@ -201,9 +201,9 @@ public:
   {
     m_poles.resize(1, 0.0);
   }
-  void setCutoff(FilterParameters& params);
+  virtual void setCutoff(FilterParameters& params);
   void processOnePole(double& input, double& state, bool HP = false) const;
-  void Process(double& input, FilterParameters& params) override;
+  virtual void Process(double& input, FilterParameters& params) override;
 };
 
 class ZDF_2P_LP : public ZDF_1P_LP
@@ -215,7 +215,6 @@ public:
     m_poles.resize(2, 0.0);
     ResoScaling = ZDF1_2P_ResoScaling;
   }
-  void Process(double& input, FilterParameters& params) override;
 };
 
 class ZDF_3P_LP : public ZDF_1P_LP
@@ -227,7 +226,6 @@ public:
     m_poles.resize(3, 0.0);
     ResoScaling = ZDF1_3P_ResoScaling;
   }
-  void Process(double& input, FilterParameters& params) override;
 };
 
 class ZDF_4P_LP : public ZDF_1P_LP
@@ -239,7 +237,6 @@ public:
     m_poles.resize(4, 0.0);
     ResoScaling = ZDF1_4P_ResoScaling;
   }
-  void Process(double& input, FilterParameters& params) override;
 };
 
 class ZDF_6P_LP : public ZDF_1P_LP
@@ -251,5 +248,5 @@ public:
     m_poles.resize(6, 0.0);
     ResoScaling = ZDF1_6P_ResoScaling;
   }
-  void Process(double& input, FilterParameters& params) override;
 };
+

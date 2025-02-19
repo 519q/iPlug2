@@ -36,11 +36,11 @@ bool Filters::isDirty(FilterParameters& params)
   return false;
 }
 
-double Filters::getOmega(FilterParameters& params) { return 2.0 * iplug::PI * getCutoffFreq(params) / params.m_sampleRate; }
+double Filters::getOmega(FilterParameters& params) { return 2.0 * iplug::PI * getCutoffFreq(params, params.m_cutoff) / params.m_sampleRate; }
 
-double Filters::getCutoffFreq(FilterParameters& params)
+double Filters::getCutoffFreq(FilterParameters& params, double cutoff)
 {
-  double cutoffFreq = 20.0 * std::pow(1000.0, params.m_cutoff);
+  double cutoffFreq = 20.0 * std::pow(1000.0, cutoff);
   double maxCutoff = 0.499 * params.m_sampleRate;
   if (cutoffFreq > maxCutoff)
     cutoffFreq = maxCutoff;
@@ -58,16 +58,13 @@ void DF1_1P_LP::getCoefficients(FilterParameters& params)
 void DF1_1P_LP::processPole(double& input, double& state, FilterParameters& params, bool HP) const
 {
   state = (1 - m_alpha) * input + m_alpha * state;
-  double shaped{};
   if (!HP)
   {
-    shaped = state;
-    input = shaped;
+    input = state;
   }
   else
   {
-    shaped = -state;
-    input += shaped;
+    input += -state;
   }
 }
 
@@ -116,7 +113,7 @@ void DF2_2P_LP::getCoefficients(FilterParameters& params, double resoScaling, bo
       a2 = (1.0 - alpha) / a0;
     }
 
-    feedback_amount = 0.4 * (1.0 - (getCutoffFreq(params) / 20000.0));
+    feedback_amount = 0.4 * (1.0 - (getCutoffFreq(params, params.m_cutoff) / 20000.0));
   }
 }
 
@@ -143,7 +140,7 @@ void SVF1_1P_LP::getCoefficients(FilterParameters& params)
 {
   if (isDirty(params))
   {
-    double w0 = 2.0 * iplug::PI * getCutoffFreq(params) / params.m_sampleRate;
+    double w0 = 2.0 * iplug::PI * getCutoffFreq(params, params.m_cutoff) / params.m_sampleRate;
     m_alpha = 2.0 * sin(getOmega(params) / 2.0); // bilinear transform coefficient
     m_alpha = std::clamp(m_alpha, 0.0, 1.0);     // for stability
   }
@@ -184,7 +181,7 @@ void ZDF_1P_LP::setCutoff(FilterParameters& params)
 {
   if (isDirty(params))
   {
-    double cutoffFreq = getCutoffFreq(params);
+    double cutoffFreq = getCutoffFreq(params, params.m_cutoff);
     m_alpha = std::tan(iplug::PI * (cutoffFreq / params.m_sampleRate));
   }
 }
@@ -201,39 +198,17 @@ void ZDF_1P_LP::processOnePole(double& input, double& state, bool HP) const
 
 void ZDF_1P_LP::Process(double& input, FilterParameters& params)
 {
+  int length = m_poles.size();
   setCutoff(params);
-  for (double& pole : m_poles)
-    processOnePole(input, pole);
-}
+  if (length > 1)
+  {
+    int bpPole1 = 0;
+    if (length > 3)
+      bpPole1 = 1;
+    int minusbpPole2 = length - 1;
+    input += resonate(params, m_poles[bpPole1], m_poles[minusbpPole2], ResoScaling);
+  }
 
-void ZDF_2P_LP::Process(double& input, FilterParameters& params)
-{
-  setCutoff(params);
-  input += resonate(params, m_poles[0], m_poles[1], ZDF1_2P_ResoScaling);
-  for (double& pole : m_poles)
-    processOnePole(input, pole);
-}
-
-void ZDF_3P_LP::Process(double& input, FilterParameters& params)
-{
-  setCutoff(params);
-  input += resonate(params, m_poles[0], m_poles[2], ZDF1_3P_ResoScaling);
-  for (double& pole : m_poles)
-    processOnePole(input, pole);
-}
-
-void ZDF_4P_LP::Process(double& input, FilterParameters& params)
-{
-  setCutoff(params);
-  input += resonate(params, m_poles[0], m_poles[3], ZDF1_4P_ResoScaling);
-  for (double& pole : m_poles)
-    processOnePole(input, pole);
-}
-
-void ZDF_6P_LP::Process(double& input, FilterParameters& params)
-{
-  setCutoff(params);
-  input += resonate(params, m_poles[0], m_poles[5], ZDF1_6P_ResoScaling);
   for (double& pole : m_poles)
     processOnePole(input, pole);
 }

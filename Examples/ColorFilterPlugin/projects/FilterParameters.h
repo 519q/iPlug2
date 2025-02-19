@@ -75,6 +75,7 @@ enum class FilterAlgo
 enum class Spectral_IR
 {
   FIR,
+  LATTICE,
   IIR,
   MAX_IR
 };
@@ -101,7 +102,7 @@ public:
   double m_shape{};
   double m_bias{};
   double m_spectralFilterDrive{};
-  bool m_spectralFilter_IR{};
+  int m_spectralFilter_IR{};
   bool m_spectralFilter_Harder{};
 
   int m_spectralFilterFIR_Order{};
@@ -111,29 +112,55 @@ public:
   int m_spectralShaperIIR_Order{};
 
   double m_spectralShaperDrive{};
-  bool m_spectralShaper_IR{};
+  int m_spectralShaper_IR{};
   int m_spectralShaperSelector{};
+
+  double m_phaserMix{};
+  double m_phaserFreq{};
+  double m_phaserDepth{};
+  int m_phaserSelector{};
+
+  double m_delayMix{};
+  double m_delayTime{};
+  double m_delayFeedback{};
+  double m_dampFilterCutoff{};
+
   double m_sampleRate{};
   int m_oversample{};
 
   void setFilterParameters(int filterType,
                            int filterSelector,
-                           bool spectralFilter_IR,
+
                            double cutoff,
                            double resonance,
                            double bandwidth,
+
                            double drive,
                            double shape,
                            double bias,
-                           double spectralShaperDrive,
-                           bool spectralShaper_IR,
+
                            double spectralFilterDrive,
+                           int spectralFilterFIR_Q,
+                           int spectralFilterIIR_Q,
+                           int spectralFilter_IR,
                            bool spectralFilter_harder,
+
+                           double spectralShaperDrive,
+                           int spectralShaperFIR_Q,
+                           int spectralShaperIIR_Q,
+                           int spectralShaper_IR,
                            int spectralShaperSelector,
-                           int spectralFilterFIR_Order,
-                           int spectralShaperFIR_Order,
-                           int spectralFilterIIR_Order,
-                           int spectralShaperIIR_Order,
+
+                           double phaserMix,
+                           double phaserFreq,
+                           double phaserDepth,
+                           int phaserSelector,
+
+                           double delayMix,
+                           double delayTime,
+                           double delayFeedback,
+                           double dampFilterCutoff,
+
                            int overSampling,
                            double sampleRate)
   {
@@ -153,11 +180,21 @@ public:
     m_spectralShaper_IR = spectralShaper_IR;
     m_spectralShaperSelector = spectralShaperSelector;
 
-    m_spectralFilterFIR_Order = spectralFilterFIR_Order;
-    m_spectralShaperFIR_Order = spectralShaperFIR_Order;
+    m_spectralFilterFIR_Order = spectralFilterFIR_Q;
+    m_spectralShaperFIR_Order = spectralShaperFIR_Q;
 
-    m_spectralFilterIIR_Order = spectralFilterIIR_Order;
-    m_spectralShaperIIR_Order = spectralShaperIIR_Order;
+    m_spectralFilterIIR_Order = spectralFilterIIR_Q;
+    m_spectralShaperIIR_Order = spectralShaperIIR_Q;
+
+    m_phaserMix = phaserMix;
+    m_phaserFreq = phaserFreq;
+    m_phaserDepth = phaserDepth;
+    m_phaserSelector = phaserSelector;
+
+    m_delayMix = delayMix;
+    m_delayTime = delayTime;
+    m_delayFeedback = delayFeedback;
+    m_dampFilterCutoff = dampFilterCutoff;
 
     m_oversample = overSampling;
     m_sampleRate = sampleRate * std::pow(2, m_oversample);

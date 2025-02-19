@@ -1,10 +1,10 @@
 #pragma once
 #include "ShaperSelector.h"
-#include "projects/FIR_HilbertTransform.h"
 #include "projects/FilterParameters.h"
 #include "projects/Filters.h"
-#include "projects/IIR_HilbertTransform.h"
+#include "projects/HilbertTransformers.h"
 #include "projects/Shapers.h"
+#include "Phaser.h"
 
 class WaveShaper
 {
@@ -34,6 +34,7 @@ class SpectralShaper
 private:
   IIR_HilbertTransform IIR_hilbert{};
   FIR_HilbertTransform FIR_hilbert{};
+  LatticeHilbertTransform Lattice_hilbert{};
   ShaperSelector shaperSelector{};
   WaveShaper waveShaper;
 

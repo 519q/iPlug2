@@ -339,6 +339,7 @@
     <ClInclude Include="..\..\..\IPlug\IPlug_include_in_plug_src.h" />
     <ClInclude Include="..\ColorFilterPlugin.h" />
     <ClInclude Include="..\resources\resource.h" />
+    <ClInclude Include="AllpassFilters.h" />
     <ClInclude Include="BandPassFilters.h" />
     <ClInclude Include="BandStopFilters.h" />
     <ClInclude Include="CustomGui.h" />
@@ -350,9 +351,9 @@
     <ClInclude Include="FilterParameters.h" />
     <ClInclude Include="Filters.h" />
     <ClInclude Include="FilterSelector.h" />
-    <ClInclude Include="FIR_HilbertTransform.h" />
     <ClInclude Include="HighPassFilters.h" />
-    <ClInclude Include="IIR_HilbertTransform.h" />
+    <ClInclude Include="HilbertTransformers.h" />
+    <ClInclude Include="Phaser.h" />
     <ClInclude Include="RingBuffer.h" />
     <ClInclude Include="Shapers.h" />
     <ClInclude Include="ShaperSelector.h" />
@@ -392,6 +393,7 @@
     <ClCompile Include="..\..\..\IPlug\IPlugProcessor.cpp" />
     <ClCompile Include="..\..\..\IPlug\IPlugTimer.cpp" />
     <ClCompile Include="..\ColorFilterPlugin.cpp" />
+    <ClCompile Include="AllpassFilters.cpp" />
     <ClCompile Include="BandPassFilters.cpp" />
     <ClCompile Include="BandStopFilters.cpp" />
     <ClCompile Include="CustomGui.cpp" />
@@ -401,9 +403,9 @@
     <ClCompile Include="FFT_F_I.cpp" />
     <ClCompile Include="Filters.cpp" />
     <ClCompile Include="FilterSelector.cpp" />
-    <ClCompile Include="FIR_HilbertTransform.cpp" />
     <ClCompile Include="HighPassFilters.cpp" />
-    <ClCompile Include="IIR_HilbertTransform.cpp" />
+    <ClCompile Include="HilbertTransformers.cpp" />
+    <ClCompile Include="Phaser.cpp" />
     <ClCompile Include="RingBuffer.cpp" />
     <ClCompile Include="Shapers.cpp" />
     <ClCompile Include="ShaperSelector.cpp" />

@@ -17,6 +17,19 @@ inline auto interpolateLog(double drySignal, double wetSignal, double control, d
   return (drySignal * (1.0 - logControl)) + (wetSignal * logControl);
 }
 
+inline double scaleLog(double controlParam, double scalingFactor)
+{
+  double a = scalingFactor; // Controls the curve
+  double scaled_t = std::log1p(a * controlParam) / std::log1p(a);
+  return scaled_t;
+}
+inline double scaleExponential(double controlParam, double scalingFactor)
+{
+  double k = scalingFactor; // Steepness factor
+  double scaled_t = (std::exp(k * controlParam) - 1.0) / (std::exp(k) - 1.0);
+  return scaled_t;
+}
+
 inline double mapRange(double value, double min, double max) { return min + (value * (max - min)); }
 
 class SmoothBypass

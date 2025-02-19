@@ -8,6 +8,7 @@
 #include "projects/FilterSelector.h"
 #include "projects/Filters.h"
 #include "projects/Shapers.h"
+#include "projects/Phaser.h"
 #include "projects/SmoothTools.h"
 #include "projects/SpectralFilter.h"
 #include "projects/SpectralShaper.h"
@@ -16,7 +17,6 @@
 #include "projects/DebugPrint.h"
 
 const int kNumPresets = 1;
-DelayLine delayLineL(44100);
 
 enum EParams
 {
@@ -50,6 +50,17 @@ enum EParams
   kFilterIIR_Q,
   kShaperIIR_Q,
 
+  kPhaserFreq,
+  kPhaserDepth,
+  kPhaserSelector,
+  kPhaserMix,
+
+  kDelayMix,
+  kDelayTime,
+  kDelayFeedback,
+  kDelayIR,
+  kDelayDampFilterCutoff,
+
   kSoftClip,
 
   kOverSampling,
@@ -76,9 +87,10 @@ private:
   const int padding = 25;
   const int smallKnobPadding = 12;
   const int buttonsPadding = 35;
+  const double SmallKnobScale = 0.6;
   const double getFromTopFilter = 60;
   const double getFromTopShaper = 60;
-  double m_Plus1_Scale = 0.3;
+  const double m_Plus1_Scale = 0.3;
 
 
   IVKnobControl* mPreGain{};
@@ -91,7 +103,7 @@ private:
   IControl* mFilterAlgoSwitch{};
   IControl* mFilterSelectorSwitch{};
   IVKnobControl* mSpectralFilterDrive{};
-  IControl* mSpectralFilter_IR{};
+  IVKnobControl* mSpectralFilter_IR{};
   IControl* mSpectralFilter_Harder{};
   IControl* mSpectralFilterOnToggle{};
   IControl* mShaperShape{};
@@ -102,28 +114,29 @@ private:
   IVKnobControl* mShaperFirQ{};
   IControl* mShaperFirQ_Plus1{};
   IVKnobControl* mShaperIirQ{};
-  IControl* mSpectralShaper_IR{};
+  IVKnobControl* mSpectralShaper_IR{};
   IVKnobControl* mSpectralShaperSelector{};
 
 
   bool g_Bypass{};
   bool m_spectralFilterOn{};
-  bool spectralFilter_IR{};
+  int spectralFilter_IR{};
   bool spectralFilter_Harder{};
   bool m_filterBypass{};
   bool spectralShaperOn{};
   int m_filterSelector{};
   int m_filterType{};
-  bool spectralShaper_IR{};
+  int spectralShaper_IR{};
   int spectralShaperSelector{};
   int filterFIR_Q{};
   int shaperFIR_Q{};
   int filterIIR_Q{};
   int shaperIIR_Q{};
-
-  bool mFactorChanged = true;
-  bool mSelectorIsDirty{};
+  int m_phaserSelector{};
   int m_ovrsmpFactor{};
+
+  bool mSelectorIsDirty{};
+  bool mOversamplingFactorChanged{};
   OverSampler<sample> mOverSampler{kNone, true, 2, 2};
   int m_filterAlgo{};
   int m_df1retainer{};
@@ -239,14 +252,23 @@ public:
                                                         EDirection::Vertical));
         SendParameterValueFromDelegate(kFilterSelector, default_value, 0);
       }
+ 
       DecideOnReset();
     }
+
   }
-  double getFinalParamValue(int paramId)
+  double getFinalParamValue(int paramId, bool bipolar = false, bool scaleDown100 = true)
   {
-    double baseValue = GetParam(paramId)->Value() / 100.0;
+    double baseValue = GetParam(paramId)->Value();
+    if (scaleDown100)
+      baseValue /= 100.0;
     double modValue = GetModulatedParamOffset(paramId);
-    double result = std::clamp(mSmoothers[paramId].Process(baseValue + modValue), 0., 1.);
+    double result{};
+    if (!bipolar)
+      result = std::clamp(mSmoothers[paramId].Process(baseValue + modValue), 0., 1.);
+    else
+      result = std::clamp(mSmoothers[paramId].Process(baseValue + modValue), -1., 1.);
+
     return result;
   }
   int Map01To2_200_Stepped(double normalized, bool odd)
@@ -314,9 +336,15 @@ public:
 
   Sigmoidal sigmoidalShaperL{};
   Sigmoidal sigmoidalShaperR{};
+
+  DelayLine delayLineL{};
+  DelayLine delayLineR{};
+
+  Phaser phaserL{};
+  Phaser phaserR{};
+
   // RingBuffer mRingBufferL{};
   // RingBuffer mRingBufferR{};
-
   // FFT_F_I fftL{};
   // FFT_F_I fftR{};
 
@@ -325,7 +353,7 @@ public:
   int m_OS_LatencySamples{};
   // int m_RB_LatencySamples{};
 
-  double paramSmoothing = 10;
+  double paramSmoothing = 5;
   double buttonSmoothing = 30;
   std::array<iplug::LogParamSmooth<double>, kNumParams> mSmoothers;
 

@@ -22,8 +22,8 @@ void FIR_HilbertTransform::calculateCoefficients()
     }
     else
     {
-      double n = i - m_Order / 2.f;
-      coefficients[i] = 2.0f / (iplug::PI * n) * (1.0f - std::cos(iplug::PI * n)); // Window function
+      double n = i - m_Order / 2.;
+      coefficients[i] = 2.0 / (iplug::PI * n) * (1.0 - std::cos(iplug::PI * n)); // Window function
     }
   }
 }
@@ -37,7 +37,7 @@ double FIR_HilbertTransform::getImaginary(double input, int order)
     calculateCoefficients();
   }
   firDelayLine[position] = input;
-  double output = 0.0f;
+  double output = 0.0;
 
   int index = position;
   for (size_t i = 0; i < coefficients.size(); i++)

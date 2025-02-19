@@ -371,7 +371,7 @@ public:
     {
       mDown2x.Get()[mWritePos] = (T) input;
 
-      mWritePos = !mWritePos;
+      mWritePos = ~mWritePos;
 
       if (mWritePos == 0)
       {

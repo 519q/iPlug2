@@ -1,56 +1,95 @@
 #pragma once
-#include <cmath>
 #include <algorithm>
+#include <cmath>
 #include <vector>
+#include "projects/FilterParameters.h"
+#include "projects/DCBlock.h"
 
 class DelayLine
 {
-public:
-
-
-  void setUpDelayLine(size_t maxDelay)
-  {
-    mBuffer.resize(maxDelay, 0.0);
-    setDelay((double)maxDelay / 2); // Default delay at half max size}
-  }
-  // Set delay time (fractional values allowed)
-  void setDelay(double delayTime) { mDelayTime = std::clamp(delayTime, 1.0, static_cast<double>(mMaxDelay - 1)); }
-
-  // Set feedback amount
-  void setFeedback(double feedback)
-  {
-    mFeedback = std::clamp(feedback, 0.0, 0.99); // Prevent runaway feedback
-  }
-
-  // Process a single sample with feedback and interpolation
-  double process(double input)
-  {
-    // Compute floating-point read position
-    double readPos = mWritePos - mDelayTime;
-    if (readPos < 0)
-      readPos += mMaxDelay;
-
-    // Get integer and fractional part of read position
-    int index1 = static_cast<int>(readPos);
-    int index2 = (index1 + 1) % mMaxDelay;
-    double frac = readPos - index1;
-
-    // **Allpass interpolation**
-    double output = mBuffer[index1] + frac * (mBuffer[index2] - mBuffer[index1]);
-
-    // Write to delay buffer with feedback
-    mBuffer[mWritePos] = input + (output * mFeedback);
-
-    // Increment write position (circular buffer)
-    mWritePos = (mWritePos + 1) % mMaxDelay;
-
-    return output;
-  }
-
 private:
-  std::vector<double> mBuffer; // Delay buffer
-  size_t mMaxDelay;            // Maximum delay length (samples)
-  double mDelayTime = 1.0;     // Current delay time (fractional allowed)
-  double mFeedback = 0.0;      // Feedback amount
-  size_t mWritePos = 0;        // Write position in buffer
+  std::vector<double> mBuffer{};
+  size_t mMaxDelaySamples{};
+  size_t mWriteIndex{};
+  double mDelayTime{};
+  double mDelayTimeSeconds{};
+  double mFeedback{};
+  double mLastOutput{};
+  bool mIIR{};
+  DampFilter dampFilter{};
+
+public:
+  void SetUpDelayLine(size_t maxDelaySamples, double sampleRate)
+  {
+    mMaxDelaySamples = maxDelaySamples;
+    mBuffer.resize(maxDelaySamples, 0.0);
+    //mDelayTime = std::clamp(mDelayTimeSeconds * mSampleRate, 2.0, (double)mMaxDelaySamples - 1);
+  }
+
+  void SetDelayTime(double delayValue, FilterParameters& params)
+  {
+    //mDelayTimeSeconds = 1 / delayHz;
+    mDelayTimeSeconds = delayValue; // Store time in seconds
+    mDelayTime = std::clamp(mDelayTimeSeconds * params.m_sampleRate, 2.0, (double)mMaxDelaySamples - 1);
+  }
+
+  double Process(double input, FilterParameters& params)
+  {
+    if (params.m_delayMix)
+    {
+      if (mBuffer.empty())
+        return input;
+      double fb = params.m_delayFeedback;
+      fb = std::clamp(fb, -.99, .99);
+      SetDelayTime(params.m_delayTime, params);
+      if (!mIIR)
+      {
+        // Write to delay buffer
+        mBuffer[mWriteIndex] = input + fb * mLastOutput;
+      }
+
+      // Calculate read index with sub-sample precision
+      double readIndex = mWriteIndex - mDelayTime;
+      if (readIndex < 0)
+        readIndex += mMaxDelaySamples;
+
+      int indexInt = (int)readIndex;
+      double frac = readIndex - indexInt;
+
+      // All-pass interpolation for high-quality fractional delay
+      double delayedSample = mBuffer[indexInt];
+      double nextSample = mBuffer[(indexInt + 1) % mMaxDelaySamples];
+
+      double interpolatedSample = delayedSample + frac * (nextSample - delayedSample);
+      dampFilter.Process(interpolatedSample, params);
+      double returnValue{};
+      if (!mIIR)
+      {
+        // Update buffer index
+        mWriteIndex = (mWriteIndex + 1) % mMaxDelaySamples;
+
+        mLastOutput = interpolatedSample;
+        returnValue = interpolatedSample;
+      }
+      else
+      {
+        // Compute new output with feedback
+        double output = input + fb * interpolatedSample;
+
+        // Store new output in buffer (mixing into itself)
+        mBuffer[mWriteIndex] = output;
+
+        // Update buffer index
+        mWriteIndex = (mWriteIndex + 1) % mMaxDelaySamples;
+
+        mLastOutput = output; // Save for next cycle
+        returnValue = output;
+      }
+      return interpolateLin(input, returnValue, params.m_delayMix);
+    }
+    else
+      return input;
+  }
+
+  void SetIIR(bool IIR) { mIIR = IIR; }
 };

@@ -1,33 +1,65 @@
 #pragma once
 #include "Filters.h"
-class DCBlock
-{
-  double m_poles{};
-  double m_alpha{};
-  double m_sampleRate{};
-  double m_cutoff{0.0001};
 
+class DampFilter : public ZDF_1P_LP // 1pole zdf
+{
 public:
-  void processPoleHP(double& input)
+  DampFilter()
+    : ZDF_1P_LP{}
   {
-    m_poles = (1 - m_alpha) * input + m_alpha * m_poles;
-    double shaped = -m_poles;
-    input += shaped;
   }
-  void getCoefficients(double sampleRate)
+  void setCutoff(FilterParameters& params) override
   {
-    if (m_sampleRate != sampleRate)
+    if (isDirty(params))
     {
-      m_sampleRate = sampleRate;
-      m_alpha = std::exp(-getOmega(m_cutoff));
+      double cutoffFreq = getCutoffFreq(params, params.m_dampFilterCutoff);
+      m_alpha = std::tan(iplug::PI * (cutoffFreq / params.m_sampleRate));
     }
   }
-  double getOmega(double cutoff) { return 2.0 * iplug::PI * getCutoffFreq(cutoff) / m_sampleRate; }
-  double getCutoffFreq(double cutoff) { return 20.0 * std::pow(1000.0, cutoff); }
-
-  void Process(double& input, FilterParameters& params)
+  bool isDirty(FilterParameters& params) override
   {
-    getCoefficients(params.m_sampleRate);
-    processPoleHP(input);
+    if ((m_cutoff != params.m_dampFilterCutoff) || (m_sampleRate != params.m_sampleRate))
+    {
+      m_cutoff = params.m_dampFilterCutoff;
+      m_sampleRate = params.m_sampleRate;
+      return true;
+    }
+    return false;
+  }
+};
+
+class DCBlock : public DampFilter // 1pole zdf
+{
+private:
+  double mCutoff{};
+
+public:
+  DCBlock(double cutoffHz = 5)
+    : DampFilter{}
+    , mCutoff(cutoffHz)
+  {
+  }
+  void setCutoff(FilterParameters& params) override
+  {
+    if (isDirty(params))
+    {
+      double cutoffFreq = mCutoff;
+      m_alpha = std::tan(iplug::PI * (cutoffFreq / params.m_sampleRate));
+    }
+  }
+  bool isDirty(FilterParameters& params) override
+  {
+    if (m_sampleRate != params.m_sampleRate)
+    {
+      m_sampleRate = params.m_sampleRate;
+      return true;
+    }
+    return false;
+  }
+  void Process(double& input, FilterParameters& params) override
+  {
+    double proc = input;
+    ZDF_1P_LP::Process(proc, params);
+    input -= proc;
   }
 };

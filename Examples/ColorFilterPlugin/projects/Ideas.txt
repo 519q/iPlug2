@@ -306,3 +306,129 @@ Flexible multirate DSP structures 6.
 
 
 *************************************************************
+
+double softclip(double x)
+{
+    return x / (1.0 + fabs(x));  // Simple soft clip (approximates diode behavior)
+}
+
+inline double diodeNonlinearity(double x)
+{
+  // For positive input, use a more aggressive exponential compression.
+  if (x >= 0)
+  {
+    return 1.0 - exp(-x);
+  }
+  else // For negative input, reduce the conduction (e.g., by scaling x)
+  {
+    return - (1.0 - exp(x * 0.5)); // 0.5 scaling factor introduces asymmetry.
+  }
+}
+
+
+
+************************************************
+
+#include <iostream>
+#include <vector>
+#include <complex>
+#include <fftw3.h>
+
+class PhaseVocoder
+{
+public:
+  PhaseVocoder(int frameSize, int hopSize, double sampleRate)
+    : mFrameSize(frameSize)
+    , mHopSize(hopSize)
+    , mSampleRate(sampleRate)
+  {
+    mInputBuffer.resize(frameSize);
+    mOutputBuffer.resize(frameSize);
+    mFFTInput = (fftw_complex*)fftw_malloc(sizeof(fftw_complex) * frameSize);
+    mFFTOutput = (fftw_complex*)fftw_malloc(sizeof(fftw_complex) * frameSize);
+    mPlan = fftw_plan_dft_1d(frameSize, mFFTInput, mFFTOutput, FFTW_FORWARD, FFTW_ESTIMATE);
+    mIPlan = fftw_plan_dft_1d(frameSize, mFFTOutput, mFFTInput, FFTW_BACKWARD, FFTW_ESTIMATE);
+  }
+
+  ~PhaseVocoder()
+  {
+    fftw_destroy_plan(mPlan);
+    fftw_destroy_plan(mIPlan);
+    fftw_free(mFFTInput);
+    fftw_free(mFFTOutput);
+  }
+
+  void process(const std::vector<double>& input, std::vector<double>& output, double stretchFactor)
+  {
+    int numFrames = input.size() / mHopSize;
+    output.resize(numFrames * mHopSize * stretchFactor);
+
+    for (int i = 0; i < numFrames; ++i)
+    {
+      for (int j = 0; j < mFrameSize; ++j)
+      {
+        mInputBuffer[j] = input[i * mHopSize + j];
+      }
+
+      fftw_execute_dft(mPlan, mFFTInput, mFFTOutput);
+
+      for (int j = 0; j < mFrameSize; ++j)
+      {
+        double magnitude = std::abs(mFFTOutput[j][0] + mFFTOutput[j][1] * I);
+        double phase = std::arg(mFFTOutput[j][0] + mFFTOutput[j][1] * I);
+
+        phase += 2.0 * M_PI * j * (stretchFactor - 1.0) / mFrameSize;
+
+        mFFTOutput[j][0] = magnitude * std::cos(phase);
+        mFFTOutput[j][1] = magnitude * std::sin(phase);
+      }
+
+      fftw_execute_dft(mIPlan, mFFTOutput, mFFTInput);
+
+      for (int j = 0; j < mFrameSize; ++j)
+      {
+        output[i * mHopSize * stretchFactor + j] = mFFTInput[j][0] / mFrameSize;
+      }
+    }
+  }
+
+private:
+  int mFrameSize;
+  int mHopSize;
+  double mSampleRate;
+  std::vector<double> mInputBuffer;
+  std::vector<double> mOutputBuffer;
+  fftw_complex* mFFTInput;
+  fftw_complex* mFFTOutput;
+  fftw_plan mPlan;
+  fftw_plan mIPlan;
+};
+
+int main()
+{
+  const int frameSize = 1024;
+  const int hopSize = 512;
+  const double sampleRate = 44100.0;
+  const double stretchFactor = 1.5;
+
+  PhaseVocoder vocoder(frameSize, hopSize, sampleRate);
+
+  std::vector<double> input(sampleRate * 2); // 2 seconds of audio
+  std::vector<double> output;
+
+  // Fill input with a test signal (e.g., sine wave)
+  for (int i = 0; i < input.size(); ++i)
+  {
+    input[i] = std::sin(2.0 * M_PI * 440.0 * i / sampleRate);
+  }
+
+  vocoder.process(input, output, stretchFactor);
+
+  // Output the processed signal (for demonstration purposes)
+  for (int i = 0; i < output.size(); ++i)
+  {
+    std::cout << output[i] << std::endl;
+  }
+
+  return 0;
+}

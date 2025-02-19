@@ -5,12 +5,10 @@ void IIR_HilbertTransform::calculateCoefficients()
 {
   allpassCoeffs.resize(m_Order);
   // Example: Simple heuristic to initialize coefficients
-  //allpassCoeffs[0] = 0.6923878;
   for (int i = 0; i < m_Order; ++i)
   {
     allpassCoeffs[i] = 0.9 + 0.1 * (i / static_cast<double>(m_Order));
   }
-  // TODO: Implement optimization to find the best coefficients
 }
 
 void IIR_HilbertTransform::initializeStates()
@@ -40,15 +38,6 @@ IIR_HilbertTransform::IIR_HilbertTransform()
 {
   calculateCoefficients();
   initializeStates();
-  // Coefficients for 90° phase shift
-  //allpassCoeffs = {0.6923878, 0.9360654322959, 0.9882295226860, 0.9971486762419, 0.9992646999119, 0.9998117571563};
-  // Initialize states
-  //for (int i = 0; i < 6; ++i)
-  //{
-  //  x1[i] = x2[i] = y1[i] = y2[i] = 0.0;
-  //}
-
-
 }
 
 //double IIR_HilbertTransform::getDelay() const
@@ -63,7 +52,7 @@ IIR_HilbertTransform::IIR_HilbertTransform()
 //  return totalDelay;
 //}
 
-IIR_HilbertTransform::Magn_Phas_Output IIR_HilbertTransform::getMagintude_Phase(double input, int order)
+IIR_HilbertTransform::Magn_Phas_Output IIR_HilbertTransform::getMagnitude_Phase(double input, int order)
 {
   auto r_i_out = getReal_Imag(input, order);
   double magnitude = std::sqrt(r_i_out.real * r_i_out.real + r_i_out.imag * r_i_out.imag);

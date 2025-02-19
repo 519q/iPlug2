@@ -22,7 +22,7 @@ public:
 
   IIR_HilbertTransform();
 
-  Magn_Phas_Output getMagintude_Phase(double input, int order);
+  Magn_Phas_Output getMagnitude_Phase(double input, int order);
 
   Real_Imag_Output getReal_Imag(double input, int order);
 
