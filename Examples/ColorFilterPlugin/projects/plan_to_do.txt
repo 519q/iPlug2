@@ -1,7 +1,3 @@
-
-
-spectral clipper with same softening as on magn clipper
-
 trying anything with fft 1st audio 2nd visual
 
 VISUALS: 
@@ -9,17 +5,9 @@ shader reacting more to high freqs
 ----------------
 show values and parameter names
 
-shaper bias softer in transition?? 
-
-fix oversampler??
-
 hilbert transform comp--
-
-
-zoom state retainer!
 feedback network mix tool
-in out gain link
-add saturator(s)
-allpass filters -> phaser
 
 group knobs UI
+
+Delay FB loop saturation

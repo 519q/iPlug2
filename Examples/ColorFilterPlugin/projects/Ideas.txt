@@ -55,7 +55,23 @@ double SpectralShaper::morphSine(double phase, FilterParameters& params)
     return shaped;
 }
 SHAPERS
+float polynomialClip(float x, float morph)
+{
+    return x / (pow(fabs(x), morph) + 1.0f);
+}
+morph = 1.0 → Soft
+morph = 5.0 → Hard
 
+float variableClip(float x, float shape)
+{
+    float absX = fabs(x);
+    float clipped = pow(absX, shape); // Exponentially shape the curve
+    return copysign(clipped, x); // Restore original sign
+}
+shape = 1.0 → Linear (No distortion)
+shape = 2.0 → Soft saturation
+shape = 10.0 → Harder saturation
+shape = ∞ → Full hard clip
 
 Example: Cubic Shaping
 cpp
@@ -307,27 +323,7 @@ Flexible multirate DSP structures 6.
 
 *************************************************************
 
-double softclip(double x)
-{
-    return x / (1.0 + fabs(x));  // Simple soft clip (approximates diode behavior)
-}
 
-inline double diodeNonlinearity(double x)
-{
-  // For positive input, use a more aggressive exponential compression.
-  if (x >= 0)
-  {
-    return 1.0 - exp(-x);
-  }
-  else // For negative input, reduce the conduction (e.g., by scaling x)
-  {
-    return - (1.0 - exp(x * 0.5)); // 0.5 scaling factor introduces asymmetry.
-  }
-}
-
-
-
-************************************************
 
 #include <iostream>
 #include <vector>
@@ -432,3 +428,99 @@ int main()
 
   return 0;
 }
+
+
+
+Techniques Similar to Hilbert Transform for Signal Decomposition & Reconstruction
+✅ 1. Quadrature Mirror Filters (QMF) & Wavelet Transform
+What It Does:
+Splits the signal into low-frequency (approximation) and high-frequency (detail) parts.
+Common in multiband distortion, wavelet-based reverb, and transient shaping.
+Example:
+Process low & high parts differently (e.g., apply saturation to highs, keep lows clean).
+Reconstruct using inverse QMF filters.
+Implementation:
+Use Daubechies Wavelets or Haar wavelets for fast, reversible decomposition.
+✅ 2. Empirical Mode Decomposition (EMD) – Adaptive Signal Splitting
+What It Does:
+Breaks down a signal into Intrinsic Mode Functions (IMFs)—wave-like components.
+Works without predefined filters (adaptive to the signal itself).
+Example:
+Modify IMFs separately (e.g., distort only dominant modes, leave low-level modes clean).
+Used in speech processing, adaptive denoising, and granular synthesis.
+✅ 3. Short-Time Fourier Transform (STFT) / Phase Vocoder
+What It Does:
+Splits signal into time-frequency components using a moving windowed FFT.
+Can manipulate phase & magnitude independently.
+Example:
+Stretch or warp transients while keeping harmonics intact.
+Apply frequency-dependent distortion before resynthesizing the signal.
+✅ 4. Variational Mode Decomposition (VMD) – More Controlled than EMD
+What It Does:
+Separates the signal into n band-limited modes using an optimization process.
+Unlike EMD, it does not produce overlapping modes.
+Example:
+Modify selected frequency bands without affecting phase coherence.
+Used in advanced dynamics processing & transient shaping.
+✅ 5. Instantaneous Frequency Analysis – Similar to Hilbert
+What It Does:
+Hilbert transform gives you the analytic signal, but you can also extract instantaneous frequency components directly.
+Example:
+Modify the frequency shift dynamically to create nonlinear pitch shifts or phase distortion effects.
+✅ 6. Adaptive Filter Banks – Generalized Multiband Processing
+What It Does:
+Similar to QMF, but allows real-time adaptive changes.
+Useful for dynamic distortion, EQ morphing, and multiband transient processing.
+Example:
+Use dynamic filter banks to process transient vs. sustained energy separately.
+
+
+UI PLAN:
+
+parts:
+1.1: filter
+    - cutoff knob
+    - reso knob
+    - bw knob
+    - switch button
+1.2: spectral filter
+    - switch button
+    - drive knob
+    - spectral harder switch
+    - spectral IR switch-knob
+    - spectral order knob
+    - spectral order odd switch (only with fir)
+1.3: buttons panel
+    - type radioButtons
+    - algo radioButtons
+    - selector radioButtons
+2.1: shaper
+    - drive/mix knob
+    - shape knob
+    - bias knob
+2.2: spectral shaper
+    - drive/mix knob
+    - interp selector knob
+    - spectral IR switch-knob
+    - spectral order knob
+    - spectral order odd switch (only with fir)
+3.1: delay
+    - mix knob
+    - time knob
+    - feedback knob
+    - filter knob
+    - ir switch
+3.2: phaser
+    - mix knob
+    - freq knob
+    - depth knob
+    - selector switch-knob
+4.1: out block/ clipper
+    - drive/mix knob
+    - interp selector knob
+    - out gain knob
+    - dry wet/global mix knob
+    - bypass switch
+    - oversampling factor radioButtons
+4.2: in block
+    - input gain

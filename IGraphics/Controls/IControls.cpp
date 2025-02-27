@@ -656,6 +656,8 @@ void IVKnobControl::DrawWidget(IGraphics& g)
   if (mStyle.addBackgroundTrack)
     DrawBackgroundTrack(g, cx, cy, widgetRadius);
   DrawIndicatorTrack(g, angle, cx, cy, widgetRadius);
+  if (mTickCount > 0)
+    DrawTicks(g, cx, cy, widgetRadius);
   DrawHandle(g, knobHandleBounds);
   DrawPointer(g, angle, cx, cy, knobHandleBounds.W() / 2.f);
 }
@@ -686,6 +688,8 @@ void IVKnobControl::DrawIndicatorTrack(IGraphics& g, float angle, float cx, floa
       double angleMod = mModValue.load() * 270;
       angle = std::clamp(angleMod + angle, -135., 135.);
     }
+    double arcSizeScale = radius * 0.025;
+
 #if defined IGRAPHICS_SKIA
     // 1) Attempt to grab the raw SkCanvas so we can do a custom Skia draw
     if (auto pSkia = dynamic_cast<IGraphicsSkia*>(&g))
@@ -698,7 +702,7 @@ void IVKnobControl::DrawIndicatorTrack(IGraphics& g, float angle, float cx, floa
         glowPaint.setAntiAlias(true);
         glowPaint.setColor(IColorToSkColor(mStyle.usingGradients ? GetPattern(kX1) : GetColor(kX1), 80)); 
         glowPaint.setStyle(SkPaint::kStroke_Style);
-        glowPaint.setStrokeWidth(mTrackSize * 2.0);                                 // Make glow wider than track
+        glowPaint.setStrokeWidth(mTrackSize * 3.0 * arcSizeScale);                // Make glow wider than track
         glowPaint.setMaskFilter(SkMaskFilter::MakeBlur(kNormal_SkBlurStyle, 1.)); // Apply blur
         // Calculate arc angles (Skia expects degrees)
         float rotatedAngle = angle - 90;
@@ -713,21 +717,82 @@ void IVKnobControl::DrawIndicatorTrack(IGraphics& g, float angle, float cx, floa
     }
 #endif
     g.DrawArc(mStyle.usingGradients ? GetPattern(kX1) : GetColor(kX1), cx, cy, radius, angle >= mAnchorAngle ? mAnchorAngle : mAnchorAngle - (mAnchorAngle - angle),
-              angle >= mAnchorAngle ? angle : mAnchorAngle, &mBlend, mTrackSize);
+              angle >= mAnchorAngle ? angle : mAnchorAngle, &mBlend, mTrackSize * arcSizeScale);
   }
 }
 
 void IVKnobControl::DrawBackgroundTrack(IGraphics& g, float cx, float cy, float radius)
 {
+  double arcSizeScale = radius * 0.053;
+
   float startAngle = -135.f; // -135 degrees
   float endAngle = 135.f;    // 135 degrees
 
-  g.DrawArc(mStyle.usingGradients ? GetPattern(kX3) : GetColor(kX3), cx, cy, radius, startAngle, endAngle, &mBlend, mTrackSize);
+  g.DrawArc(mStyle.usingGradients ? GetPattern(kX3) : GetColor(kX3), cx, cy, radius, startAngle, endAngle, &mBlend, mTrackSize * arcSizeScale);
+}
+
+void IVKnobControl::DrawTicks(IGraphics& g, float cx, float cy, float radius)
+{
+  if (mTickCount <= 0)
+    return; // No ticks to draw
+
+  float startAngle = -135.f; // Left edge of the knob arc
+  float endAngle = 135.f;    // Right edge of the knob arc
+  float angleRange = endAngle - startAngle;
+
+  SkCanvas* canvas = (SkCanvas*)g.GetDrawContext();
+  SkPaint paint;
+  paint.setColor(IColorToSkColor(GetColor(kX3), 125)); // White tick marks
+  paint.setStrokeWidth(mTrackSize * 0.7);
+  paint.setStyle(SkPaint::kStroke_Style);
+  paint.setStrokeCap(SkPaint::Cap::kRound_Cap);
+
+  for (int i = 0; i < mTickCount; i++)
+  {
+    float angle = startAngle + (angleRange * (float(i) / (mTickCount - 1))) - 90; // Spread over arc // -90 to convert into skia angles
+    float radians = angle * (iplug::PI / 180.0);
+    double length = mTrackSize * 0.2;
+    float x1 = cx + (radius - length) * cos(radians);
+    float y1 = cy + (radius - length) * sin(radians);
+    float x2 = cx + (radius + length) * cos(radians);
+    float y2 = cy + (radius + length) * sin(radians);
+
+    canvas->drawLine(x1, y1, x2, y2, paint);
+  }
 }
 
 void IVKnobControl::DrawPointer(IGraphics& g, float angle, float cx, float cy, float radius)
 {
-  g.DrawRadialLine(GetColor(kX2), cx, cy, angle, mInnerPointerFrac * radius, mOuterPointerFrac * radius, &mBlend, mPointerThickness, mStyle.strokeOptions);
+  double arcSizeScale = radius * 0.050;
+  double translatedAngle = angle - 90;
+  // Calculate the end point of the pointer
+  float pointerLength = mOuterPointerFrac * radius * 0.49;
+  float pointerEndX = cx + (pointerLength* 1.57) * cos(translatedAngle * M_PI / 180.0); // Convert angle to radians
+  float pointerEndY = cy + (pointerLength * 1.57) * sin(translatedAngle * M_PI / 180.0);
+
+  if (auto pSkia = dynamic_cast<IGraphicsSkia*>(&g))
+  {
+    SkCanvas* canvas = static_cast<SkCanvas*>(pSkia->GetDrawContext());
+    if (canvas)
+    {
+      // Define Skia paint for pointer glow
+      SkPaint glowPaint;
+      glowPaint.setAntiAlias(true);
+      glowPaint.setColor(IColorToSkColor(mStyle.usingGradients ? GetPattern(kX2) : GetColor(kX2), 80));
+      glowPaint.setStyle(SkPaint::kStroke_Style);
+      glowPaint.setStrokeWidth(mTrackSize * 2.45 * arcSizeScale); // Make glow wider
+
+      // Apply blur for glow effect
+      glowPaint.setMaskFilter(SkMaskFilter::MakeBlur(kNormal_SkBlurStyle, 1.4)); // Adjust the blur intensity
+
+      // Draw glow line
+      SkPath glowPath;
+      glowPath.moveTo(cx + (pointerLength * 1.9) * cos(translatedAngle * M_PI / 180.0), cy + (pointerLength * 1.9) * sin(translatedAngle * M_PI / 180.0)); // Start at the center
+      glowPath.lineTo(pointerEndX, pointerEndY); // End at the calculated end points
+      canvas->drawPath(glowPath, glowPaint);
+    }
+  }
+  g.DrawRadialLine(GetColor(kX2), cx, cy, angle, mInnerPointerFrac * radius * 8, mOuterPointerFrac * radius * .89, &mBlend, mPointerThickness * arcSizeScale, mStyle.strokeOptions);
 }
 void IVKnobControl::OnMouseDown(float x, float y, const IMouseMod& mod)
 {

@@ -1,53 +1,52 @@
 #include "ColorFilterPlugin.h"
 #include "IPlugConstants.h"
 #include "IPlug_include_in_plug_src.h"
+#include <filesystem>
+#include <fstream>
 #ifndef CLAP_API
 static double GetModulatedParamOffset(int i) { return 0; }
   #define CLAP_PARAM_IS_MODULATABLE IParam::kFlagsNone
 #endif // !CLAP
-#define ColorFilterStyle_Knob ColorFilterStyle_Knob.WithDrawModValue()
 
 
 ColorFilterPlugin::ColorFilterPlugin(const InstanceInfo& info)
   : iplug::Plugin(info, MakeConfig(kNumParams, kNumPresets))
 {
+  LoadGlobalSettings();
+
   GetParam(kDryWet)->InitDouble("Mix", 100., 0., 100.0, 0.01, "", CLAP_PARAM_IS_MODULATABLE);
-  GetParam(kGainIn)->InitDouble("PreGain", 50., 0., 100.0, 0.01, "", CLAP_PARAM_IS_MODULATABLE);
-  mapParamToDB(kGainIn);
-  GetParam(kGainOut)->InitDouble("PostGain", 50., 0., 100.0, 0.01, "%", CLAP_PARAM_IS_MODULATABLE);
-  mapParamToDB(kGainOut);
+  GetParam(kGainIn)->InitDouble("PreGain", 0., -24., 24.0, 0.01, "dB", CLAP_PARAM_IS_MODULATABLE);
+  // mapParamToDB(kGainIn);
+  GetParam(kGainOut)->InitDouble("PostGain", 0., -24., 24.0, 0.01, "dB", CLAP_PARAM_IS_MODULATABLE);
+  // mapParamToDB(kGainOut);
   GetParam(kFilterCutoff)->InitDouble("Cutoff", 100., 0., 100.0, 0.01, "%", CLAP_PARAM_IS_MODULATABLE);
   GetParam(kFilterResonance)->InitDouble("Resonance", 0., 0., 100.0, 0.01, "%", CLAP_PARAM_IS_MODULATABLE);
   GetParam(kFilterBandwidth)->InitDouble("Bandwidth", 0., 0., 100.0, 0.01, "%", CLAP_PARAM_IS_MODULATABLE);
-  GetParam(kFilterSelector)->InitInt("FilterSelector", 0, 0, (int)FilterTypes::MAX_FILTER_TYPES - 1, "", IParam::kFlagStepped, "");
+  GetParam(kFilterSelector)->InitInt("FilterSelector", 0, 0, 4 /*(int)FilterTypes::MAX_FILTER_TYPES - 1*/, "", IParam::kFlagStepped, "");
   GetParam(kFilterType)->InitInt("FilterType", 0, 0, 3, "", IParam::kFlagStepped, "");
   GetParam(kFilterAlgo)->InitInt("FilterAlgo", 0, 0, 3, "", IParam::kFlagStepped, "");
-  GetParam(kSpectralFilterOn)->InitBool("Spectral Toggle", false, "", IParam::kFlagStepped, "", "Off", "On");
+  GetParam(kSpectralFilterOn)->InitBool("Spectral Toggle", false, "", IParam::kFlagStepped, "", "", "");
   GetParam(kSpectralFilter_Drive)->InitDouble("SpectralFitlerDrive", 0., 0., 20.0, 0.01, "%", CLAP_PARAM_IS_MODULATABLE);
   GetParam(kSpectralFilter_IR)->InitInt("SpectralFilterIR", 0, 0, 2, "", IParam::kFlagStepped, "");
   GetParam(kSpectralFilter_Harder)->InitBool("SpectralFilterHarder", false, "", IParam::kFlagStepped, "", "Soft", "Hard");
   GetParam(kFilterBypass)->InitBool("FilterBypass", true, "", IParam::kFlagStepped, "", "Off", "On");
   GetParam(kShaperDrive)->InitDouble("ShaperDrive", 0., 0., 100.0, 0.01, "%", CLAP_PARAM_IS_MODULATABLE);
   GetParam(kShaperShape)->InitDouble("ShaperShape", 0., 0., 100.0, 0.01, "%", CLAP_PARAM_IS_MODULATABLE);
-  GetParam(kShaperBias)->InitDouble("ShaperBias", 0., 0., 100.0, 0.01, "%", CLAP_PARAM_IS_MODULATABLE);
+  GetParam(kShaperBias)->InitDouble("ShaperBias", 0., -100., 100.0, 0.01, "%", CLAP_PARAM_IS_MODULATABLE);
   GetParam(kSpectralShaperDrive)->InitDouble("SpectralDrive", 0., 0., 100.0, 0.01, "%", CLAP_PARAM_IS_MODULATABLE);
   GetParam(kSpectralShaper_IR)->InitInt("SpectralShaperIR", 0, 0, 2, "", IParam::kFlagStepped, "");
-  GetParam(kSpectralShaperSelector)->InitInt("ShaperSelector", 0, 0, (int)ShaperTypes::MAX_SHAPER_TYPES - 1, "", IParam::kFlagStepped, "");
+  GetParam(kSpectralShaperSelector)->InitDouble("ShaperSelector", 1, 1, (int)SpectralShaperTypes::MAX_SHAPER_TYPES, 0.0001, "", CLAP_PARAM_IS_MODULATABLE, "");
 
-  GetParam(kFilterFIR_Q)->InitDouble("FilterFIR", 0, 0, 100, 0.01, "", IParam::kFlagStepped | CLAP_PARAM_IS_MODULATABLE, "");
-  GetParam(kFilterFIR_Q_Plus1)->InitBool("FilterFIR Even", false, "", IParam::kFlagStepped | CLAP_PARAM_IS_MODULATABLE, "", "Odd", "Even");
+  GetParam(kFilterHilbertOrder)->InitDouble("FilterOrder", 0, 0, 100, 0.01, "", IParam::kFlagStepped | CLAP_PARAM_IS_MODULATABLE, "");
+  GetParam(kFilterOddOrder)->InitBool("FilterOrderOdd", false, "", IParam::kFlagStepped | CLAP_PARAM_IS_MODULATABLE, "", "Even", "Odd");
 
-  GetParam(kShaperFIR_Q)->InitDouble("ShaperFIR", 0, 0, 100, 0.01, "", IParam::kFlagStepped | CLAP_PARAM_IS_MODULATABLE, "");
-  GetParam(kShaperFIR_Q_Plus1)->InitBool("ShaperFIR Even", false, "", IParam::kFlagStepped, "", "Odd", "Even");
-
-  GetParam(kFilterIIR_Q)->InitDouble("FilterIIR", 0, 0, 100, 0.01, "", IParam::kFlagStepped | CLAP_PARAM_IS_MODULATABLE, "");
-
-  GetParam(kShaperIIR_Q)->InitDouble("ShaperIIR", 0, 0, 100, 0.01, "", IParam::kFlagStepped | CLAP_PARAM_IS_MODULATABLE, "");
+  GetParam(kShaperHilbertOrder)->InitDouble("ShaperOrder", 0, 0, 100, 0.01, "", IParam::kFlagStepped | CLAP_PARAM_IS_MODULATABLE, "");
+  GetParam(kShaperOddOrder)->InitBool("ShaperOrderOdd", false, "", IParam::kFlagStepped, "", "Even", "Odd");
 
 
   GetParam(kPhaserFreq)->InitDouble("PhaserFreq", 0., 0., 100.0, 0.0001, "%", CLAP_PARAM_IS_MODULATABLE);
   GetParam(kPhaserDepth)->InitDouble("PhaserDepth", 0., 0., 100.0, 0.01, "%", CLAP_PARAM_IS_MODULATABLE);
-  GetParam(kPhaserSelector)->InitInt("PhaserSelector", 0, 0, 3, "", IParam::kFlagStepped, "");
+  GetParam(kPhaserSelector)->InitInt("PhaserSelector", 0, 0, 2, "", IParam::kFlagStepped, "");
   GetParam(kPhaserMix)->InitDouble("PhaserMix", 0., 0., 100.0, 0.01, "%", CLAP_PARAM_IS_MODULATABLE);
 
 
@@ -58,523 +57,207 @@ ColorFilterPlugin::ColorFilterPlugin(const InstanceInfo& info)
   GetParam(kDelayDampFilterCutoff)->InitDouble("DampFilter", 100., 0., 100.0, 0.01, "", CLAP_PARAM_IS_MODULATABLE);
 
 
-  GetParam(kSoftClip)->InitDouble("SoftClip", 100, 0, 100, 0.01, "%", IParam::kFlagStepped | CLAP_PARAM_IS_MODULATABLE, "");
+  GetParam(kClipMix)->InitDouble("SoftClip", 100, 0, 100, 0.01, "%", CLAP_PARAM_IS_MODULATABLE, "");
+  GetParam(kClipSelector)->InitDouble("ClipSelector", 2, 1, 3, 0.0001);
 
   GetParam(kOverSampling)->InitInt("Oversampler", 0, 0, 4, "OverSampler", IParam::kFlagStepped, "");
   GetParam(kBypass)->InitBool("Bypass", true, "", IParam::kFlagStepped, "", "Off", "On");
 
 #if IPLUG_EDITOR // http://bit.ly/2S64BDd
+  #define ColorFilterStyle_SVG_KnobOver                                                                                                                                                                \
+    ColorFilterStyle_SVG_KnobOver.WithDrawModValue().WithColor(kX1, IColor(255, 0x00, 0x8d, 0xcc)).WithColor(kFG, IColor(125, 0x00, 0x8d, 0xcc)).WithShowValue(false)
   mMakeGraphicsFunc = [&]() { return MakeGraphics(*this, PLUG_WIDTH, PLUG_HEIGHT, PLUG_FPS, GetScaleForScreen(PLUG_WIDTH, PLUG_HEIGHT)); };
   mLayoutFunc = [&](IGraphics* pGraphics) {
+    double buttonSize{};
     pGraphics->AttachCornerResizer(EUIResizerMode::Scale, false);
     pGraphics->AttachPanelBackground(Colors::FG_DIM);
     pGraphics->LoadFont("Roboto-Regular", ROBOTO_FN);
+    b = pGraphics->GetBounds();
+    // m_FilterPanel = b.GetFromLeft(PLUG_WIDTH).GetFromTop(PLUG_HEIGHT);
+    pGraphics->AttachControl(new ISVGControl(b, pGraphics->LoadSVG("C:/Users/salva/Documents/GitHub/iPlug2/Examples/ColorFilterPlugin/resources/Skins/Frame 3.svg")));
 
-    const IRECT b = pGraphics->GetBounds();
-    const double getFromLeftControlPanels{300};
-    m_FilterPanel = b.GetFromLeft(getFromLeftControlPanels).GetFromTop(30);
-    m_ShaperPanel = b.GetFromLeft(getFromLeftControlPanels).GetFromTop(110);
-    m_ButtonsPanel = b.GetFromLeft(getFromLeftControlPanels).GetFromTop(190) /*.GetTranslated(-10, 0)*/;
+    //  ██╗███╗   ██╗    ██╗ ██████╗ ██╗   ██╗████████╗
+    //  ██║████╗  ██║   ██╔╝██╔═══██╗██║   ██║╚══██╔══╝
+    //  ██║██╔██╗ ██║  ██╔╝ ██║   ██║██║   ██║   ██║
+    //  ██║██║╚██╗██║ ██╔╝  ██║   ██║██║   ██║   ██║
+    //  ██║██║ ╚████║██╔╝   ╚██████╔╝╚██████╔╝   ██║
+    //  ╚═╝╚═╝  ╚═══╝╚═╝     ╚═════╝  ╚═════╝    ╚═╝
+    // gain in
+    mPreGain =
+      pGraphics->AttachControl(new TransluscentKnobWithValueBarMED(b.GetFromLeft(medKnobSize).GetFromTop(medKnobSize).GetTranslated(40.14, 40.4), kGainIn, "", ColorFilterStyle_SVG_KnobOver), kGainIn);
+    // gain out
+    mPostGain = pGraphics->AttachControl(
+      new TransluscentKnobWithValueBarMED(b.GetFromLeft(medKnobSize).GetFromTop(medKnobSize).GetTranslated(40.14, 85.6), kGainOut, "", ColorFilterStyle_SVG_KnobOver), kGainOut);
+    //  ███████╗██╗██╗  ████████╗███████╗██████╗
+    //  ██╔════╝██║██║  ╚══██╔══╝██╔════╝██╔══██╗
+    //  █████╗  ██║██║     ██║   █████╗  ██████╔╝
+    //  ██╔══╝  ██║██║     ██║   ██╔══╝  ██╔══██╗
+    //  ██║     ██║███████╗██║   ███████╗██║  ██║
+    //  ╚═╝     ╚═╝╚══════╝╚═╝   ╚══════╝╚═╝  ╚═╝
+    // filter cutoff
+    mCutoff = pGraphics->AttachControl(
+      new TransluscentKnobWithValueBar(b.GetFromLeft(bigKnobSize).GetFromTop(bigKnobSize).GetTranslated(130.95, 47.8), kFilterCutoff, "", ColorFilterStyle_SVG_KnobOver), kFilterCutoff);
+    // filter reso
+    mReso = pGraphics->AttachControl(
+      new TransluscentKnobWithValueBarMED(b.GetFromLeft(medKnobSize).GetFromTop(medKnobSize).GetTranslated(209.75, 40.8), kFilterResonance, "", ColorFilterStyle_SVG_KnobOver), kFilterResonance);
+    // filter b/w
+    mF_BW = pGraphics->AttachControl(
+      new TransluscentKnobWithValueBarMED(b.GetFromLeft(medKnobSize).GetFromTop(medKnobSize).GetTranslated(209.75, 86.), kFilterBandwidth, "", ColorFilterStyle_SVG_KnobOver), kFilterBandwidth);
+    // FilterSelector (Q)
+    mFilterSelector = new IVRadioButtonControl_SVG(
+      b.GetFromLeft(24).GetFromTop(96).GetTranslated(271.5, 47.2), kFilterSelector, {"6", "12", "18", "24", "36"}, "", ColorFilterStyle_SVG_KnobOver, EVShape::Ellipse, EDirection::Vertical);
+    pGraphics->AttachControl(mFilterSelector, kFilterSelector);
+    //  filter algo selector
+    mFilterAlgo = pGraphics->AttachControl(
+      new IVRadioButtonControl_SVG(b.GetFromLeft(120.7).GetFromTop(10).GetTranslated(113.85, 32.75), kFilterAlgo, {}, "", ColorFilterStyle_SVG_KnobOver, EVShape::Ellipse, EDirection::Horizontal),
+      kFilterAlgo);
+    // filter type
+    mFilterType =
+      new IVRadioButtonControl_SVG(b.GetFromLeft(120.7).GetFromTop(10).GetTranslated(113.85, 123.), kFilterType, {}, "", ColorFilterStyle_SVG_KnobOver, EVShape::Ellipse, EDirection::Horizontal);
+    pGraphics->AttachControl(mFilterType, kFilterType);
 
-    const double topSpaceSize = 20;
-    const double filterPanelSize = 80;
-    const double shaperPanelSize = 80;
-    const double buttonsPanelSize = 80;
-    const double panelRoundness{3};
-    const double translatedByX{40};
-    const double getFromLeftRoundedPanel{340};
-    // ██████   ██████  ██    ██ ███    ██ ██████  ███████ ██████      ██████   █████  ███    ██ ███████ ██      ███████
-    // ██   ██ ██    ██ ██    ██ ████   ██ ██   ██ ██      ██   ██     ██   ██ ██   ██ ████   ██ ██      ██      ██
-    // ██████  ██    ██ ██    ██ ██ ██  ██ ██   ██ █████   ██   ██     ██████  ███████ ██ ██  ██ █████   ██      ███████
-    // ██   ██ ██    ██ ██    ██ ██  ██ ██ ██   ██ ██      ██   ██     ██      ██   ██ ██  ██ ██ ██      ██           ██
-    // ██   ██  ██████   ██████  ██   ████ ██████  ███████ ██████      ██      ██   ██ ██   ████ ███████ ███████ ███████
-    // One color panel
-    pGraphics->AttachControl(new RoundedPanelControl(b.GetFromTop(PLUG_HEIGHT).GetFromLeft(PLUG_WIDTH), Colors::BW_LIGHT_BG, panelRoundness));
-    pGraphics->AttachControl(
-      new RoundedPanelControl(m_FilterPanel.GetFromTop(filterPanelSize).GetFromLeft(getFromLeftRoundedPanel).GetTranslated(translatedByX, topSpaceSize), Colors::BW_DARK_BG, panelRoundness));
-    pGraphics->AttachControl(new RoundedPanelControl(
-      m_FilterPanel.GetFromTop(shaperPanelSize).GetFromLeft(getFromLeftRoundedPanel).GetTranslated(translatedByX, topSpaceSize + filterPanelSize + 5), Colors::BW_DARK_BG, panelRoundness));
-    pGraphics->AttachControl(
-      new RoundedPanelControl(m_FilterPanel.GetFromTop(buttonsPanelSize).GetFromLeft(getFromLeftRoundedPanel).GetTranslated(translatedByX, topSpaceSize + filterPanelSize + shaperPanelSize + 10),
-                              Colors::BW_DARK_BG, panelRoundness));
-    // CONTROLS:
-    // padding = width
-    // ███████╗██╗██╗  ████████╗███████╗██████╗
-    // ██╔════╝██║██║  ╚══██╔══╝██╔════╝██╔══██╗
-    // █████╗  ██║██║     ██║   █████╗  ██████╔╝
-    // ██╔══╝  ██║██║     ██║   ██╔══╝  ██╔══██╗
-    // ██║     ██║███████╗██║   ███████╗██║  ██║
-    // ╚═╝     ╚═╝╚══════╝╚═╝   ╚══════╝╚═╝  ╚═╝
-
-    //  ██████ ██    ██ ████████  ██████  ███████ ███████
-    // ██      ██    ██    ██    ██    ██ ██      ██
-    // ██      ██    ██    ██    ██    ██ █████   █████
-    // ██      ██    ██    ██    ██    ██ ██      ██
-    //  ██████  ██████     ██     ██████  ██      ██
-
-    IRECT mCutoffKnobBounds = m_FilterPanel.GetGridCell(1, 1, rows, columns).GetFromTop(getFromTopFilter) /*.GetTranslated(0, -10)*/.GetMidHPadded(padding) /*GetFromLeft(180).*/;
-    IVStyle mFilterCutoffStyle = ColorFilterStyle_Knob
-                                   .WithGradient(kFG, IPattern::CreateLinearGradient(mCutoffKnobBounds.L, mCutoffKnobBounds.T, mCutoffKnobBounds.L, mCutoffKnobBounds.B,
-                                                                                     {{Colors::BW_DARK_KNOB_TOP, 0.55f}, {Colors::BW_DARK_KNOB_BOTTOM, 1.f}}))
-                                   .WithGradient(kPR, IPattern::CreateLinearGradient(mCutoffKnobBounds.L, mCutoffKnobBounds.T, mCutoffKnobBounds.L, mCutoffKnobBounds.B,
-                                                                                     {{Colors::BW_DARK_KNOB_TOP_HL, 0.55f}, {Colors::BW_DARK_KNOB_BOTTOM_HL, 1.f}}));
-
-    mCutoff_Knob = new IVKnobControl(mCutoffKnobBounds, kFilterCutoff, "Cutoff", mFilterCutoffStyle, false, false, -135.f, 135.f, -135.f, EDirection::Vertical, DEFAULT_GEARING, 2.3);
-    pGraphics->AttachControl(mCutoff_Knob, kFilterCutoff);
-    // ██████  ███████ ███████  ██████
-    // ██   ██ ██      ██      ██    ██
-    // ██████  █████   ███████ ██    ██
-    // ██   ██ ██           ██ ██    ██
-    // ██   ██ ███████ ███████  ██████
-    IRECT mResoKnobBounds = m_FilterPanel.GetGridCell(1, 2, rows, columns).GetFromTop(getFromTopFilter).GetMidHPadded(padding);
-    IVStyle mFilterResoStyle = ColorFilterStyle_Knob
-                                 .WithGradient(kFG, IPattern::CreateLinearGradient(mResoKnobBounds.L, mResoKnobBounds.T, mResoKnobBounds.L, mResoKnobBounds.B,
-                                                                                   {{Colors::BW_DARK_KNOB_TOP, 0.55f}, {Colors::BW_DARK_KNOB_BOTTOM, 1.f}}))
-                                 .WithGradient(kPR, IPattern::CreateLinearGradient(mResoKnobBounds.L, mResoKnobBounds.T, mResoKnobBounds.L, mResoKnobBounds.B,
-                                                                                   {{Colors::BW_DARK_KNOB_TOP_HL, 0.55f}, {Colors::BW_DARK_KNOB_BOTTOM_HL, 1.f}}))
-      /*.WithLabelText(labelText12)*/;
-
-    mReso_Knob = pGraphics->AttachControl(new IVKnobControl(mResoKnobBounds, kFilterResonance, "Reso", mFilterResoStyle), kFilterResonance);
-
-    // ██████   █████  ███    ██ ██████  ██     ██ ██ ██████  ████████ ██   ██
-    // ██   ██ ██   ██ ████   ██ ██   ██ ██     ██ ██ ██   ██    ██    ██   ██
-    // ██████  ███████ ██ ██  ██ ██   ██ ██  █  ██ ██ ██   ██    ██    ███████
-    // ██   ██ ██   ██ ██  ██ ██ ██   ██ ██ ███ ██ ██ ██   ██    ██    ██   ██
-    // ██████  ██   ██ ██   ████ ██████   ███ ███  ██ ██████     ██    ██   ██
-
-    IRECT bwBounds = m_FilterPanel.GetGridCell(1, 3, rows, columns).GetFromTop(getFromTopFilter).GetMidHPadded(padding);
-    mF_BW_Knob = pGraphics->AttachControl(
-      new IVKnobControl(
-        bwBounds, kFilterBandwidth, "Band",
-        ColorFilterStyle_Knob.WithGradient(kFG, IPattern::CreateLinearGradient(bwBounds.L, bwBounds.T, bwBounds.L, bwBounds.B, {{Colors::BW_DARK_KNOB_TOP, 0.55f}, {Colors::BW_DARK_KNOB_BOTTOM, 1.f}}))
-          .WithGradient(kPR, IPattern::CreateLinearGradient(
-                               bwBounds.L, bwBounds.T, bwBounds.L, bwBounds.B, {{Colors::BW_DARK_KNOB_TOP_HL, 0.55f}, {Colors::BW_DARK_KNOB_BOTTOM_HL, 1.f}})) /*, false, false, -135, 135, 0*/),
-      kFilterBandwidth);
-
-    //  ███████ ██████  ███████ ████████ ██████   █████  ██          ████████  ██████   ██████   ██████  ██      ███████
-    //  ██      ██   ██ ██         ██    ██   ██ ██   ██ ██             ██    ██    ██ ██       ██       ██      ██
-    //  ███████ ██████  █████      ██    ██████  ███████ ██             ██    ██    ██ ██   ███ ██   ███ ██      █████
-    //       ██ ██      ██         ██    ██   ██ ██   ██ ██             ██    ██    ██ ██    ██ ██    ██ ██      ██
-    //  ███████ ██      ███████    ██    ██   ██ ██   ██ ███████        ██     ██████   ██████   ██████  ███████ ███████
-
-    mSpectralFilterOnToggle = pGraphics->AttachControl(new IVToggleControl(m_FilterPanel.GetGridCell(1, 4, rows, columns).GetFromTop(45).GetMidHPadded(25).GetTranslated(0, 5), kSpectralFilterOn,
-                                                                           "SpectralToggle", ColorFilterStyle_Knob.WithGradient(kPR, Colors::ACCENT_YELLOW).WithRoundness(0.1), "Off", "On"));
-
-    IRECT F_FIR_Q_Bounds = m_FilterPanel.GetGridCell(1, 4, rows, columns).GetFromTop(21 * SmallKnobScale).GetMidHPadded(9.45 * SmallKnobScale).GetTranslated(-17, 54);
-    mSpectralFilter_IR = new IVKnobControl(
-      m_FilterPanel.GetGridCell(1, 4, rows, columns).GetFromTop(21 * SmallKnobScale).GetMidHPadded(9.45 * SmallKnobScale).GetTranslated(0, 54), kSpectralFilter_IR, "SpectralIR",
-      ColorFilterStyle_Knob.WithLabelText(false)
-        .WithGradient(
-          kFG, IPattern::CreateLinearGradient(F_FIR_Q_Bounds.L, F_FIR_Q_Bounds.T, F_FIR_Q_Bounds.L, F_FIR_Q_Bounds.B, {{Colors::BW_DARK_KNOB_TOP, 0.55f}, {Colors::BW_DARK_KNOB_BOTTOM, 1.f}}))
-        .WithGradient(
-          kPR, IPattern::CreateLinearGradient(F_FIR_Q_Bounds.L, F_FIR_Q_Bounds.T, F_FIR_Q_Bounds.L, F_FIR_Q_Bounds.B, {{Colors::BW_DARK_KNOB_TOP_HL, 0.55f}, {Colors::BW_DARK_KNOB_BOTTOM_HL, 1.f}}))
-        .WithGradient(kX1, Colors::ACCENT_YELLOW),
-      false, false, -135, 135, -135, EDirection::Vertical, 10, 1.);
-    pGraphics->AttachControl(mSpectralFilter_IR, kSpectralFilter_IR);
-    mSpectralFilter_IR->SetPointerThickness(1.2);
-
-    mSpectralFilter_Harder = pGraphics->AttachControl(
-      new IVToggleControl(m_FilterPanel.GetGridCell(1, 4, rows, columns).GetFromTop(21 * 0.5).GetMidHPadded(9.45 * 0.5).GetTranslated(17, 50 + 5), kSpectralFilter_Harder, "SpectralSofter",
-                          ColorFilterStyle_Knob.WithGradient(kPR, Colors::BW_ORANGE).WithGradient(kFG, Colors::ACCENT_YELLOW).WithRoundness(1).WithLabelText(false), "", ""));
-    mFilterFirQ = new IVKnobControl(F_FIR_Q_Bounds, kFilterFIR_Q, "FilterFirQ",
-                                    ColorFilterStyle_Knob.WithLabelText(false)
-                                      .WithGradient(kFG, IPattern::CreateLinearGradient(F_FIR_Q_Bounds.L, F_FIR_Q_Bounds.T, F_FIR_Q_Bounds.L, F_FIR_Q_Bounds.B,
-                                                                                        {{Colors::BW_DARK_KNOB_TOP, 0.55f}, {Colors::BW_DARK_KNOB_BOTTOM, 1.f}}))
-                                      .WithGradient(kPR, IPattern::CreateLinearGradient(F_FIR_Q_Bounds.L, F_FIR_Q_Bounds.T, F_FIR_Q_Bounds.L, F_FIR_Q_Bounds.B,
-                                                                                        {{Colors::BW_DARK_KNOB_TOP_HL, 0.55f}, {Colors::BW_DARK_KNOB_BOTTOM_HL, 1.f}}))
-                                      .WithGradient(kX1, Colors::ACCENT_YELLOW),
-                                    false, false, -135, 135, -135, EDirection::Vertical, 10, 1.);
-    pGraphics->AttachControl(mFilterFirQ, kFilterFIR_Q);
-    mFilterFirQ->SetPointerThickness(1.2);
-
-    mFilterFirQ_Plus1 = pGraphics->AttachControl(
-      new IVToggleControl(m_FilterPanel.GetGridCell(1, 4, rows, columns).GetFromTop(21 * m_Plus1_Scale).GetMidHPadded(9.45 * m_Plus1_Scale).GetTranslated(-26, 57), kFilterFIR_Q_Plus1, "odd/even",
-                          ColorFilterStyle_Knob.WithGradient(kPR, Colors::MONOKAI_STRING_ORANGE).WithGradient(kFG, Colors::ACCENT_YELLOW).WithRoundness(1).WithLabelText(false), "", ""));
-
-
-    mFilterIirQ = new IVKnobControl(F_FIR_Q_Bounds, kFilterIIR_Q, "FilterIirQ",
-                                    ColorFilterStyle_Knob.WithLabelText(false)
-                                      .WithGradient(kFG, IPattern::CreateLinearGradient(F_FIR_Q_Bounds.L, F_FIR_Q_Bounds.T, F_FIR_Q_Bounds.L, F_FIR_Q_Bounds.B,
-                                                                                        {{Colors::BW_DARK_KNOB_TOP, 0.55f}, {Colors::BW_DARK_KNOB_BOTTOM, 1.f}}))
-                                      .WithGradient(kPR, IPattern::CreateLinearGradient(F_FIR_Q_Bounds.L, F_FIR_Q_Bounds.T, F_FIR_Q_Bounds.L, F_FIR_Q_Bounds.B,
-                                                                                        {{Colors::BW_DARK_KNOB_TOP_HL, 0.55f}, {Colors::BW_DARK_KNOB_BOTTOM_HL, 1.f}}))
-                                      .WithGradient(kX1, Colors::BW_ORANGE),
-                                    false, false, -135, 135, -135, EDirection::Vertical, 10, 1.);
-    pGraphics->AttachControl(mFilterIirQ, kFilterIIR_Q);
-    mFilterIirQ->SetPointerThickness(1.2);
-
-    //  ███████╗██████╗  ██████╗████████╗    ███████╗    ██████╗ ██████╗ ██╗   ██╗███████╗
-    //  ██╔════╝██╔══██╗██╔════╝╚══██╔══╝    ██╔════╝    ██╔══██╗██╔══██╗██║   ██║██╔════╝
-    //  ███████╗██████╔╝██║        ██║       █████╗      ██║  ██║██████╔╝██║   ██║█████╗
-    //  ╚════██║██╔═══╝ ██║        ██║       ██╔══╝      ██║  ██║██╔══██╗╚██╗ ██╔╝██╔══╝
-    //  ███████║██║     ╚██████╗   ██║       ██║         ██████╔╝██║  ██║ ╚████╔╝ ███████╗
-    //  ╚══════╝╚═╝      ╚═════╝   ╚═╝       ╚═╝         ╚═════╝ ╚═╝  ╚═╝  ╚═══╝  ╚══════╝
-
-    mSpectralFilterDrive = (new IVKnobControl(
-      m_FilterPanel.GetGridCell(1, 2, rows, columns) /*.GetFromTop(20)*/.GetMidHPadded(padding).GetTranslated(-30, 53).GetFromTop(21 * SmallKnobScale).GetMidHPadded(9.45 * SmallKnobScale),
-      kSpectralFilter_Drive, "Drive",
-      ColorFilterStyle_Knob.WithGradient(kFG, IPattern::CreateLinearGradient(bwBounds.L, bwBounds.T, bwBounds.L, bwBounds.B, {{Colors::BW_DARK_KNOB_TOP, 0.55f}, {Colors::BW_DARK_KNOB_BOTTOM, 1.f}}))
-        .WithGradient(kPR, IPattern::CreateLinearGradient(bwBounds.L, bwBounds.T, bwBounds.L, bwBounds.B, {{Colors::BW_DARK_KNOB_TOP_HL, 0.55f}, {Colors::BW_DARK_KNOB_BOTTOM_HL, 1.f}}))
-        .WithGradient(kX1, Colors::ACCENT_YELLOW)
-        .WithLabelText(false),
-      false, false, -135, 135, -135, EDirection::Vertical, 10, 1.));
-    pGraphics->AttachControl(mSpectralFilterDrive, kSpectralFilter_Drive);
-    mSpectralFilterDrive->SetPointerThickness(1.2);
-
-    // ███████ ██ ██      ████████    ██████  ██    ██ ██████   █████  ███████ ███████
-    // ██      ██ ██         ██       ██   ██  ██  ██  ██   ██ ██   ██ ██      ██
-    // █████   ██ ██         ██       ██████    ████   ██████  ███████ ███████ ███████
-    // ██      ██ ██         ██       ██   ██    ██    ██      ██   ██      ██      ██
-    // ██      ██ ███████    ██    ██ ██████     ██    ██      ██   ██ ███████ ███████
-    IVStyle mFilterBypassStyle = ColorFilterStyle_Knob.WithGradient(kPR, Colors::MONOKAI_TYPE_GREEN).WithRoundness(0.1);
-    IRECT mFilterBypass_Bounds = m_FilterPanel.GetGridCell(1, 5, rows, columns).GetFromTop(45).GetMidHPadded(25).GetTranslated(0, 5);
-
-    mFilterBypassSwitch = pGraphics->AttachControl(new IVToggleControl(mFilterBypass_Bounds, kFilterBypass, "Filter Bypass", mFilterBypassStyle, "Off", "On"));
-
-    // ███████╗██╗  ██╗ █████╗ ██████╗ ███████╗██████╗
-    // ██╔════╝██║  ██║██╔══██╗██╔══██╗██╔════╝██╔══██╗
-    // ███████╗███████║███████║██████╔╝█████╗  ██████╔╝
-    // ╚════██║██╔══██║██╔══██║██╔═══╝ ██╔══╝  ██╔══██╗
-    // ███████║██║  ██║██║  ██║██║     ███████╗██║  ██║
-    // ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝     ╚══════╝╚═╝  ╚═╝
-
-    // ██████  ██████  ██ ██    ██ ███████
-    // ██   ██ ██   ██ ██ ██    ██ ██
-    // ██   ██ ██████  ██ ██    ██ █████
-    // ██   ██ ██   ██ ██  ██  ██  ██
-    // ██████  ██   ██ ██   ████   ███████
-    IRECT shaperShapeKnobBounds = m_ShaperPanel.GetGridCell(1, 1, rows, columns_Shaper).GetFromTop(getFromTopShaper).GetMidHPadded(padding);
-    pGraphics->AttachControl(new IVKnobControl(shaperShapeKnobBounds, kShaperDrive, "Drive",
-                                               ColorFilterStyle_Knob
-                                                 .WithGradient(kFG, IPattern::CreateLinearGradient(shaperShapeKnobBounds.L, shaperShapeKnobBounds.T, shaperShapeKnobBounds.L, shaperShapeKnobBounds.B,
-                                                                                                   {{Colors::BW_DARK_KNOB_TOP, 0.55f}, {Colors::BW_DARK_KNOB_BOTTOM, 1.f}}))
-                                                 .WithGradient(kPR, IPattern::CreateLinearGradient(shaperShapeKnobBounds.L, shaperShapeKnobBounds.T, shaperShapeKnobBounds.L, shaperShapeKnobBounds.B,
-                                                                                                   {{Colors::BW_DARK_KNOB_TOP_HL, 0.55f}, {Colors::BW_DARK_KNOB_BOTTOM_HL, 1.f}}))
-                                                 .WithGradient(kX1, Colors::SHAPER_COLOR)),
-                             kShaperDrive);
-
-    // ███████ ██   ██  █████  ██████  ███████
-    // ██      ██   ██ ██   ██ ██   ██ ██
-    // ███████ ███████ ███████ ██████  █████
-    //      ██ ██   ██ ██   ██ ██      ██
-    // ███████ ██   ██ ██   ██ ██      ███████
-
-    mShaperShape =
-      pGraphics->AttachControl(new IVKnobControl(m_ShaperPanel.GetGridCell(1, 2, rows, columns_Shaper).GetFromTop(getFromTopShaper).GetMidHPadded(padding), kShaperShape, "Shape",
-                                                 ColorFilterStyle_Knob
-                                                   .WithGradient(kFG, IPattern::CreateLinearGradient(shaperShapeKnobBounds.L, shaperShapeKnobBounds.T, shaperShapeKnobBounds.L, shaperShapeKnobBounds.B,
-                                                                                                     {{Colors::BW_DARK_KNOB_TOP, 0.55f}, {Colors::BW_DARK_KNOB_BOTTOM, 1.f}}))
-                                                   .WithGradient(kPR, IPattern::CreateLinearGradient(shaperShapeKnobBounds.L, shaperShapeKnobBounds.T, shaperShapeKnobBounds.L, shaperShapeKnobBounds.B,
-                                                                                                     {{Colors::BW_DARK_KNOB_TOP_HL, 0.55f}, {Colors::BW_DARK_KNOB_BOTTOM_HL, 1.f}}))
-                                                   .WithGradient(kX1, Colors::SHAPER_COLOR)),
-                               kShaperShape);
-
-    // ██████  ██  █████  ███████
-    // ██   ██ ██ ██   ██ ██
-    // ██████  ██ ███████ ███████
-    // ██   ██ ██ ██   ██      ██
-    // ██████  ██ ██   ██ ███████
-
-    mShaperBias =
-      pGraphics->AttachControl(new IVKnobControl(m_ShaperPanel.GetGridCell(1, 3, rows, columns_Shaper).GetFromTop(getFromTopShaper).GetMidHPadded(padding), kShaperBias, "Bias",
-                                                 ColorFilterStyle_Knob
-                                                   .WithGradient(kFG, IPattern::CreateLinearGradient(shaperShapeKnobBounds.L, shaperShapeKnobBounds.T, shaperShapeKnobBounds.L, shaperShapeKnobBounds.B,
-                                                                                                     {{Colors::BW_DARK_KNOB_TOP, 0.55f}, {Colors::BW_DARK_KNOB_BOTTOM, 1.f}}))
-                                                   .WithGradient(kPR, IPattern::CreateLinearGradient(shaperShapeKnobBounds.L, shaperShapeKnobBounds.T, shaperShapeKnobBounds.L, shaperShapeKnobBounds.B,
-                                                                                                     {{Colors::BW_DARK_KNOB_TOP_HL, 0.55f}, {Colors::BW_DARK_KNOB_BOTTOM_HL, 1.f}}))
-                                                   .WithGradient(kX1, Colors::SHAPER_COLOR)),
-                               kShaperBias);
-
-    // ███████╗██████╗ ███████╗ ██████╗████████╗██████╗  █████╗ ██╗         ███████╗██╗  ██╗██████╗ ██████╗
-    // ██╔════╝██╔══██╗██╔════╝██╔════╝╚══██╔══╝██╔══██╗██╔══██╗██║         ██╔════╝██║  ██║██╔══██╗██╔══██╗
-    // ███████╗██████╔╝█████╗  ██║        ██║   ██████╔╝███████║██║         ███████╗███████║██████╔╝██████╔╝
-    // ╚════██║██╔═══╝ ██╔══╝  ██║        ██║   ██╔══██╗██╔══██║██║         ╚════██║██╔══██║██╔═══╝ ██╔══██╗
-    // ███████║██║     ███████╗╚██████╗   ██║   ██║  ██║██║  ██║███████╗    ███████║██║  ██║██║     ██║  ██║
-    // ╚══════╝╚═╝     ╚══════╝ ╚═════╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝    ╚══════╝╚═╝  ╚═╝╚═╝     ╚═╝  ╚═╝
-    //
-    // ███████ ██   ██  █████  ██████  ███████
-    // ██      ██   ██ ██   ██ ██   ██ ██
-    // ███████ ███████ ███████ ██████  █████
-    //      ██ ██   ██ ██   ██ ██      ██
-    // ███████ ██   ██ ██   ██ ██      ███████
-
-    pGraphics->AttachControl(new IVKnobControl(m_ShaperPanel.GetGridCell(1, 4, rows, columns_Shaper).GetFromTop(getFromTopShaper).GetMidHPadded(padding), kSpectralShaperDrive, "SpectralDrive",
-                                               ColorFilterStyle_Knob
-                                                 .WithGradient(kFG, IPattern::CreateLinearGradient(shaperShapeKnobBounds.L, shaperShapeKnobBounds.T, shaperShapeKnobBounds.L, shaperShapeKnobBounds.B,
-                                                                                                   {{Colors::BW_DARK_KNOB_TOP, 0.55f}, {Colors::BW_DARK_KNOB_BOTTOM, 1.f}}))
-                                                 .WithGradient(kPR, IPattern::CreateLinearGradient(shaperShapeKnobBounds.L, shaperShapeKnobBounds.T, shaperShapeKnobBounds.L, shaperShapeKnobBounds.B,
-                                                                                                   {{Colors::BW_DARK_KNOB_TOP_HL, 0.55f}, {Colors::BW_DARK_KNOB_BOTTOM_HL, 1.f}}))
-                                                 .WithGradient(kX1, Colors::JET_BRAINS_PINK)),
-                             kSpectralShaperDrive);
-
-    double S_FIR_Q_Scale = 0.6;
-    IRECT S_FIR_Q_Bounds = m_ShaperPanel.GetGridCell(1, 4, rows, columns_Shaper).GetFromTop(21 * S_FIR_Q_Scale).GetMidHPadded(9.45 * S_FIR_Q_Scale).GetTranslated(-17, 58.5);
-
-    mShaperFirQ = new IVKnobControl(S_FIR_Q_Bounds, kShaperFIR_Q, "ShaperFirQ",
-                                    ColorFilterStyle_Knob.WithLabelText(false)
-                                      .WithGradient(kFG, IPattern::CreateLinearGradient(S_FIR_Q_Bounds.L, S_FIR_Q_Bounds.T, S_FIR_Q_Bounds.L, S_FIR_Q_Bounds.B,
-                                                                                        {{Colors::BW_DARK_KNOB_TOP, 0.55f}, {Colors::BW_DARK_KNOB_BOTTOM, 1.f}}))
-                                      .WithGradient(kPR, IPattern::CreateLinearGradient(S_FIR_Q_Bounds.L, S_FIR_Q_Bounds.T, S_FIR_Q_Bounds.L, S_FIR_Q_Bounds.B,
-                                                                                        {{Colors::BW_DARK_KNOB_TOP_HL, 0.55f}, {Colors::BW_DARK_KNOB_BOTTOM_HL, 1.f}}))
-                                      .WithGradient(kX1, Colors::JET_BRAINS_PINK /*Colors::MONOKAI_STRING_ORANGE*/),
-                                    false, false, -135, 135, -135, EDirection::Vertical, 10, 1.);
-    pGraphics->AttachControl(mShaperFirQ, kShaperFIR_Q);
-    mShaperFirQ->SetPointerThickness(1.2);
-
-    mShaperFirQ_Plus1 = pGraphics->AttachControl(
-      new IVToggleControl(m_ShaperPanel.GetGridCell(1, 4, rows, columns_Shaper).GetFromTop(21 * m_Plus1_Scale).GetMidHPadded(9.45 * m_Plus1_Scale).GetTranslated(-26, 61.5), kShaperFIR_Q_Plus1,
-                          "odd/even", ColorFilterStyle_Knob.WithGradient(kPR, Colors::MONOKAI_STRING_ORANGE).WithGradient(kFG, Colors::JET_BRAINS_PINK).WithRoundness(1).WithLabelText(false), "", ""));
-
-    mShaperIirQ = new IVKnobControl(S_FIR_Q_Bounds, kShaperIIR_Q, "ShaperIirQ",
-                                    ColorFilterStyle_Knob.WithLabelText(false)
-                                      .WithGradient(kFG, IPattern::CreateLinearGradient(S_FIR_Q_Bounds.L, S_FIR_Q_Bounds.T, S_FIR_Q_Bounds.L, S_FIR_Q_Bounds.B,
-                                                                                        {{Colors::BW_DARK_KNOB_TOP, 0.55f}, {Colors::BW_DARK_KNOB_BOTTOM, 1.f}}))
-                                      .WithGradient(kPR, IPattern::CreateLinearGradient(S_FIR_Q_Bounds.L, S_FIR_Q_Bounds.T, S_FIR_Q_Bounds.L, S_FIR_Q_Bounds.B,
-                                                                                        {{Colors::BW_DARK_KNOB_TOP_HL, 0.55f}, {Colors::BW_DARK_KNOB_BOTTOM_HL, 1.f}}))
-                                      .WithGradient(kX1, Colors::BW_ORANGE),
-                                    false, false, -135, 135, -135, EDirection::Vertical, 10, 1.);
-    pGraphics->AttachControl(mShaperIirQ, kShaperIIR_Q);
-    mShaperIirQ->SetPointerThickness(1.2);
-    //  ██ ██████
-    //  ██ ██   ██
-    //  ██ ██████
-    //  ██ ██   ██
-    //  ██ ██   ██
-
-    mSpectralShaper_IR = new IVKnobControl(
-      m_ShaperPanel.GetGridCell(1, 4, rows, columns_Shaper).GetFromTop(21 * SmallKnobScale).GetMidHPadded(9.45 * SmallKnobScale).GetTranslated(0, 58.5), kSpectralShaper_IR, "SpectralShaperIR",
-      ColorFilterStyle_Knob.WithLabelText(false)
-        .WithGradient(
-          kFG, IPattern::CreateLinearGradient(S_FIR_Q_Bounds.L, S_FIR_Q_Bounds.T, S_FIR_Q_Bounds.L, S_FIR_Q_Bounds.B, {{Colors::BW_DARK_KNOB_TOP, 0.55f}, {Colors::BW_DARK_KNOB_BOTTOM, 1.f}}))
-        .WithGradient(
-          kPR, IPattern::CreateLinearGradient(S_FIR_Q_Bounds.L, S_FIR_Q_Bounds.T, S_FIR_Q_Bounds.L, S_FIR_Q_Bounds.B, {{Colors::BW_DARK_KNOB_TOP_HL, 0.55f}, {Colors::BW_DARK_KNOB_BOTTOM_HL, 1.f}}))
-        .WithGradient(kX1, Colors::BW_ORANGE),
-      false, false, -135, 135, -135, EDirection::Vertical, 10, 1.);
-    pGraphics->AttachControl(mSpectralShaper_IR, kSpectralShaper_IR);
-    mSpectralShaper_IR->SetPointerThickness(1.2);
-
-    //  ███████ ██   ██  █████  ██████  ██████      ███████ ███████ ██       ██████ ████████ ██████
-    //  ██      ██   ██ ██   ██ ██   ██ ██   ██     ██      ██      ██      ██         ██    ██   ██
-    //  ███████ ███████ ███████ ██████  ██████      ███████ █████   ██      ██         ██    ██████
-    //       ██ ██   ██ ██   ██ ██      ██   ██          ██ ██      ██      ██         ██    ██   ██
-    //  ███████ ██   ██ ██   ██ ██      ██   ██     ███████ ███████ ███████  ██████    ██    ██   ██
-    IRECT ssKnobBounds = m_ShaperPanel.GetGridCell(1, 4, rows, columns_Shaper).GetFromTop(21 * SmallKnobScale).GetMidHPadded(9.45 * SmallKnobScale).GetTranslated(17, 58.5);
-    mSpectralShaperSelector = new IVKnobControl(
-      ssKnobBounds, kSpectralShaperSelector, "SpectralShaperSelector",
-      ColorFilterStyle_Knob.WithLabelText(false)
-        .WithGradient(kFG, IPattern::CreateLinearGradient(ssKnobBounds.L, ssKnobBounds.T, ssKnobBounds.L, ssKnobBounds.B, {{Colors::BW_DARK_KNOB_TOP, 0.55f}, {Colors::BW_DARK_KNOB_BOTTOM, 1.f}}))
-        .WithGradient(
-          kPR, IPattern::CreateLinearGradient(ssKnobBounds.L, ssKnobBounds.T, ssKnobBounds.L, ssKnobBounds.B, {{Colors::BW_DARK_KNOB_TOP_HL, 0.55f}, {Colors::BW_DARK_KNOB_BOTTOM_HL, 1.f}}))
-        .WithGradient(kX1, Colors::JET_BRAINS_PINK),
-      false, false, -135, 135, -135, EDirection::Vertical, 6, 1.);
-    mSpectralShaperSelector->SetPointerThickness(1.2);
-    pGraphics->AttachControl(mSpectralShaperSelector);
+    // kFilterBypass
+    mFilterBypass =
+      pGraphics->AttachControl(new IVToggleControl_SVG(b.GetFromTop(13.5).GetMidHPadded(13.5).GetTranslated(60.2, 30.84), kFilterBypass, "", ColorFilterStyle_SVG_KnobOver), kFilterBypass);
+    //  ███████╗██████╗ ███████╗ ██████╗████████╗    ███████╗██╗██╗  ████████╗██████╗
+    //  ██╔════╝██╔══██╗██╔════╝██╔════╝╚══██╔══╝    ██╔════╝██║██║  ╚══██╔══╝██╔══██╗
+    //  ███████╗██████╔╝█████╗  ██║        ██║       █████╗  ██║██║     ██║   ██████╔╝
+    //  ╚════██║██╔═══╝ ██╔══╝  ██║        ██║       ██╔══╝  ██║██║     ██║   ██╔══██╗
+    //  ███████║██║     ███████╗╚██████╗   ██║       ██║     ██║███████╗██║   ██║  ██║
+    //  ╚══════╝╚═╝     ╚══════╝ ╚═════╝   ╚═╝       ╚═╝     ╚═╝╚══════╝╚═╝   ╚═╝  ╚═╝
+    // spectral filter order
+    mSpectralFilterOrder = pGraphics->AttachControl(
+      new TransluscentKnobWithValueBarMED(b.GetFromLeft(medKnobSize).GetFromTop(medKnobSize).GetTranslated(331.2, 40.4), kFilterHilbertOrder, "", ColorFilterStyle_SVG_KnobOver), kFilterHilbertOrder);
+    // spectral filter drive
+    mSpectralFilterDrive = pGraphics->AttachControl(
+      new TransluscentKnobWithValueBarMED(b.GetFromLeft(medKnobSize).GetFromTop(medKnobSize).GetTranslated(331.2, 85.6), kSpectralFilter_Drive, "", ColorFilterStyle_SVG_KnobOver),
+      kSpectralFilter_Drive);
+    // spectral filter ir
+    mSpectralFilterIR = pGraphics->AttachControl(
+      new IVRadioButtonControl_SVG(b.GetFromLeft(24).GetFromTop(90.1).GetTranslated(431.2, 52.95), kSpectralFilter_IR, {}, "", ColorFilterStyle_SVG_KnobOver, EVShape::Ellipse, EDirection::Vertical),
+      kSpectralFilter_IR);
+    // kSpectralFilterHarder
+    mSpectralFilterHarder = pGraphics->AttachControl(
+      new IVToggleControl_SVG(b.GetFromTop(13.5).GetMidHPadded(13.5).GetTranslated(165.5, 60.8), kSpectralFilter_Harder, "", ColorFilterStyle_SVG_KnobOver), kSpectralFilter_Harder);
+    // kSpectralFilter ODD
+    mSpectralFilterOdd =
+      pGraphics->AttachControl(new IVToggleControl_SVG(b.GetFromTop(13.5).GetMidHPadded(13.5).GetTranslated(165.5, 105.95), kFilterOddOrder, "", ColorFilterStyle_SVG_KnobOver), kFilterOddOrder);
+    // kSpectralFilterOn
+    mSpectralFilterBypass =
+      pGraphics->AttachControl(new IVToggleControl_SVG(b.GetFromTop(13.5).GetMidHPadded(13.5).GetTranslated(211., 31.1), kSpectralFilterOn, "", ColorFilterStyle_SVG_KnobOver), kSpectralFilterOn);
+    //  ███████╗██╗  ██╗ █████╗ ██████╗ ███████╗██████╗
+    //  ██╔════╝██║  ██║██╔══██╗██╔══██╗██╔════╝██╔══██╗
+    //  ███████╗███████║███████║██████╔╝█████╗  ██████╔╝
+    //  ╚════██║██╔══██║██╔══██║██╔═══╝ ██╔══╝  ██╔══██╗
+    //  ███████║██║  ██║██║  ██║██║     ███████╗██║  ██║
+    //  ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝     ╚══════╝╚═╝  ╚═╝
+    // shaper drive
+    mShaperDrive = pGraphics->AttachControl(
+      new TransluscentKnobWithValueBar(b.GetFromLeft(bigKnobSize).GetFromTop(bigKnobSize).GetTranslated(32.56, 183.4), kShaperDrive, "", ColorFilterStyle_SVG_KnobOver), kShaperDrive);
+    // shaper shape
+    mShaperShape = pGraphics->AttachControl(
+      new TransluscentKnobWithValueBarMED(b.GetFromLeft(medKnobSize).GetFromTop(medKnobSize).GetTranslated(331.2 + -222.95, 40.6 + 135.3), kShaperShape, "", ColorFilterStyle_SVG_KnobOver),
+      kShaperShape);
+    // shaper bias
+    mShaperBias = pGraphics->AttachControl(
+      new TransluscentKnobWithValueBarMED(b.GetFromLeft(medKnobSize).GetFromTop(medKnobSize).GetTranslated(331.2 + -222.95, 85.8 + 135.3), kShaperBias, "", ColorFilterStyle_SVG_KnobOver),
+      kShaperBias);
+    //  ███████╗██████╗ ███████╗ ██████╗    ███████╗██╗  ██╗██████╗ ██████╗
+    //  ██╔════╝██╔══██╗██╔════╝██╔════╝    ██╔════╝██║  ██║██╔══██╗██╔══██╗
+    //  ███████╗██████╔╝█████╗  ██║         ███████╗███████║██████╔╝██████╔╝
+    //  ╚════██║██╔═══╝ ██╔══╝  ██║         ╚════██║██╔══██║██╔═══╝ ██╔══██╗
+    //  ███████║██║     ███████╗╚██████╗    ███████║██║  ██║██║     ██║  ██║
+    //  ╚══════╝╚═╝     ╚══════╝ ╚═════╝    ╚══════╝╚═╝  ╚═╝╚═╝     ╚═╝  ╚═╝
+    // spectral shaper drive
+    mSpectralShaperDrive = pGraphics->AttachControl(
+      new TransluscentKnobWithValueBar(b.GetFromLeft(bigKnobSize).GetFromTop(bigKnobSize).GetTranslated(206.46, 183.4), kSpectralShaperDrive, "", ColorFilterStyle_SVG_KnobOver), kSpectralShaperDrive);
+    // spectral shaper order
+    mSpectralShaperOrder = pGraphics->AttachControl(
+      new TransluscentKnobWithValueBarMED(b.GetFromLeft(medKnobSize).GetFromTop(medKnobSize).GetTranslated(331.22 + -49.2, 40.6 + 135.3), kShaperHilbertOrder, "", ColorFilterStyle_SVG_KnobOver),
+      kShaperHilbertOrder);
+    // spectral shaper selector
+    mSpectralShaperSelector = pGraphics->AttachControl(
+      new TransluscentKnobWithValueBarMED(b.GetFromLeft(medKnobSize).GetFromTop(medKnobSize).GetTranslated(331.22 + -49.2, 85.8 + 135.3), kSpectralShaperSelector, "", ColorFilterStyle_SVG_KnobOver),
+      kSpectralShaperSelector);
+    // spectral shaper ir
+    mSpectralShaperIR = pGraphics->AttachControl(
+      new IVRadioButtonControl_SVG(b.GetFromLeft(24).GetFromTop(90.5).GetTranslated(174.2, 173.3), kSpectralShaper_IR, {}, "", ColorFilterStyle_SVG_KnobOver, EVShape::Ellipse, EDirection::Vertical),
+      kSpectralShaper_IR);
+    // kSpectralShaper ODD
+    mSpectralShaperOdd =
+      pGraphics->AttachControl(new IVToggleControl_SVG(b.GetFromTop(13.5).GetMidHPadded(13.5).GetTranslated(6.9, 257.55), kShaperOddOrder, "", ColorFilterStyle_SVG_KnobOver), kShaperOddOrder);
+    //  ██╗   ██╗████████╗██╗██╗     ██╗████████╗██╗   ██╗
+    //  ██║   ██║╚══██╔══╝██║██║     ██║╚══██╔══╝╚██╗ ██╔╝
+    //  ██║   ██║   ██║   ██║██║     ██║   ██║    ╚████╔╝
+    //  ██║   ██║   ██║   ██║██║     ██║   ██║     ╚██╔╝
+    //  ╚██████╔╝   ██║   ██║███████╗██║   ██║      ██║
+    //   ╚═════╝    ╚═╝   ╚═╝╚══════╝╚═╝   ╚═╝      ╚═╝
+    // utility mix
+    mUtilityMix = pGraphics->AttachControl(
+      new TransluscentKnobWithValueBarMED(b.GetFromLeft(medKnobSize).GetFromTop(medKnobSize).GetTranslated(331.25 + 86.9, 40.6 + 195.56), kDryWet, "", ColorFilterStyle_SVG_KnobOver), kDryWet);
+    // oversampling
+    mUtilityOversampling = pGraphics->AttachControl(
+      new IVRadioButtonControl_SVG(b.GetFromLeft(24).GetFromTop(113.).GetTranslated(348.25, 165.55), kOverSampling, {}, "", ColorFilterStyle_SVG_KnobOver, EVShape::Ellipse, EDirection::Vertical),
+      kOverSampling);
+    // bypass
+    pGraphics->AttachControl(new IVToggleControl_SVG(b.GetFromTop(13.5).GetMidHPadded(13.5).GetTranslated(211., 166.3), kBypass, "", ColorFilterStyle_SVG_KnobOver, "", "", true), kBypass);
+    //  ██████╗ ██╗  ██╗ █████╗ ███████╗███████╗██████╗
+    //  ██╔══██╗██║  ██║██╔══██╗██╔════╝██╔════╝██╔══██╗
+    //  ██████╔╝███████║███████║███████╗█████╗  ██████╔╝
+    //  ██╔═══╝ ██╔══██║██╔══██║╚════██║██╔══╝  ██╔══██╗
+    //  ██║     ██║  ██║██║  ██║███████║███████╗██║  ██║
+    //  ╚═╝     ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝╚══════╝╚═╝  ╚═╝
+    // phaser mix
+    mPhaserMix = pGraphics->AttachControl(
+      new TransluscentKnobWithValueBar(b.GetFromLeft(bigKnobSize).GetFromTop(bigKnobSize).GetTranslated(55.34, 319.), kPhaserMix, "", ColorFilterStyle_SVG_KnobOver), kPhaserMix);
+    // phaser order
+    mPhaserOrder = pGraphics->AttachControl(
+      new TransluscentKnobWithValueBarMED(b.GetFromLeft(medKnobSize).GetFromTop(medKnobSize).GetTranslated(331.25 + -200.4, 40.4 + 271.), kPhaserDepth, "", ColorFilterStyle_SVG_KnobOver),
+      kPhaserDepth);
+    // phaser Freq
+    mPhaserFreq = pGraphics->AttachControl(
+      new TransluscentKnobWithValueBarMED(b.GetFromLeft(medKnobSize).GetFromTop(medKnobSize).GetTranslated(331.25 + -200.4, 85.6 + 271.), kPhaserFreq, "", ColorFilterStyle_SVG_KnobOver), kPhaserFreq);
+    // phaser selector
+    mPhaserSelector = pGraphics->AttachControl(
+      new IVRadioButtonControl_SVG(b.GetFromLeft(24).GetFromTop(90.5).GetTranslated(23, 308.7), kPhaserSelector, {}, "", ColorFilterStyle_SVG_KnobOver, EVShape::Ellipse, EDirection::Vertical),
+      kPhaserSelector);
     //  ██████╗ ███████╗██╗      █████╗ ██╗   ██╗
     //  ██╔══██╗██╔════╝██║     ██╔══██╗╚██╗ ██╔╝
     //  ██║  ██║█████╗  ██║     ███████║ ╚████╔╝
     //  ██║  ██║██╔══╝  ██║     ██╔══██║  ╚██╔╝
     //  ██████╔╝███████╗███████╗██║  ██║   ██║
     //  ╚═════╝ ╚══════╝╚══════╝╚═╝  ╚═╝   ╚═╝
-    IRECT delayMixKnobBounds = m_ShaperPanel.GetGridCell(1, 5, rows, columns_Shaper).GetFromTop(getFromTopShaper).GetMidHPadded(padding);
-    // IRECT delayTimeKnobBounds = delayMixKnobBounds.GetGridCell(2, 1, 2, 2).GetFromTop(25);
-    IRECT delayTimeKnobBounds = m_ShaperPanel.GetGridCell(1, 5, rows, columns_Shaper).GetFromTop(21 * S_FIR_Q_Scale).GetMidHPadded(9.45 * S_FIR_Q_Scale).GetTranslated(-17, 58.5);
-    IRECT delayFeedbackKnobBounds = m_ShaperPanel.GetGridCell(1, 5, rows, columns_Shaper).GetFromTop(21 * S_FIR_Q_Scale).GetMidHPadded(9.45 * S_FIR_Q_Scale).GetTranslated(17, 58.5);
-    IRECT delayDampFilterCutoffBounds = m_ShaperPanel.GetGridCell(1, 5, rows, columns_Shaper).GetFromTop(21 * S_FIR_Q_Scale).GetMidHPadded(9.45 * S_FIR_Q_Scale).GetTranslated(34, 58.5);
-    IVStyle delayMixKnobStyle = ColorFilterStyle_Knob
-                                  .WithGradient(kFG, IPattern::CreateLinearGradient(delayMixKnobBounds.L, delayMixKnobBounds.T, delayMixKnobBounds.L, delayMixKnobBounds.B,
-                                                                                    {{Colors::BW_DARK_KNOB_TOP, 0.55f}, {Colors::BW_DARK_KNOB_BOTTOM, 1.f}}))
-                                  .WithGradient(kPR, IPattern::CreateLinearGradient(delayMixKnobBounds.L, delayMixKnobBounds.T, delayMixKnobBounds.L, delayMixKnobBounds.B,
-                                                                                    {{Colors::BW_DARK_KNOB_TOP_HL, 0.55f}, {Colors::BW_DARK_KNOB_BOTTOM_HL, 1.f}}));
-    IVStyle delayTimeKnobStyle = ColorFilterStyle_Knob
-                                   .WithGradient(kFG, IPattern::CreateLinearGradient(delayTimeKnobBounds.L, delayTimeKnobBounds.T, delayTimeKnobBounds.L, delayTimeKnobBounds.B,
-                                                                                     {{Colors::BW_DARK_KNOB_TOP, 0.55f}, {Colors::BW_DARK_KNOB_BOTTOM, 1.f}}))
-                                   .WithGradient(kPR, IPattern::CreateLinearGradient(delayTimeKnobBounds.L, delayTimeKnobBounds.T, delayTimeKnobBounds.L, delayTimeKnobBounds.B,
-                                                                                     {{Colors::BW_DARK_KNOB_TOP_HL, 0.55f}, {Colors::BW_DARK_KNOB_BOTTOM_HL, 1.f}}))
-                                   .WithLabelText(false);
-    IVStyle delayDampFilterCutoffStyle =
-      ColorFilterStyle_Knob
-        .WithGradient(kFG, IPattern::CreateLinearGradient(delayDampFilterCutoffBounds.L, delayDampFilterCutoffBounds.T, delayDampFilterCutoffBounds.L, delayDampFilterCutoffBounds.B,
-                                                          {{Colors::BW_DARK_KNOB_TOP, 0.55f}, {Colors::BW_DARK_KNOB_BOTTOM, 1.f}}))
-        .WithGradient(kPR, IPattern::CreateLinearGradient(delayDampFilterCutoffBounds.L, delayDampFilterCutoffBounds.T, delayDampFilterCutoffBounds.L, delayDampFilterCutoffBounds.B,
-                                                          {{Colors::BW_DARK_KNOB_TOP_HL, 0.55f}, {Colors::BW_DARK_KNOB_BOTTOM_HL, 1.f}}))
-        .WithLabelText(false);
-
-    IVKnobControl* delayMixKnob = new IVKnobControl(delayMixKnobBounds, kDelayMix, "DelayMix", delayMixKnobStyle);
-    IVKnobControl* delayTimeKnob = new IVKnobControl(delayTimeKnobBounds, kDelayTime, "DelayTime", delayTimeKnobStyle, false, false, -135, 135, -135, EDirection::Vertical, 10, 1.);
-    IVKnobControl* delayFeedbackKnob = new IVKnobControl(delayFeedbackKnobBounds, kDelayFeedback, "DelayFeedback", delayTimeKnobStyle, false, false, -135, 135, 0, EDirection::Vertical, 10, 1.);
-    IVKnobControl* delayDampFilterCutoff =
-      new IVKnobControl(delayDampFilterCutoffBounds, kDelayDampFilterCutoff, "DampFilter", delayDampFilterCutoffStyle, false, false, -135, 135, -135, EDirection::Vertical, 10, 1.);
-    pGraphics->AttachControl(delayMixKnob, kDelayMix);
-    pGraphics->AttachControl(delayTimeKnob, kDelayTime);
-    pGraphics->AttachControl(delayFeedbackKnob, kDelayFeedback);
-    pGraphics->AttachControl(delayDampFilterCutoff, kDelayDampFilterCutoff);
-    delayTimeKnob->SetPointerThickness(1.2);
-    delayFeedbackKnob->SetPointerThickness(1.2);
-    delayDampFilterCutoff->SetPointerThickness(1.2);
-
-
-    IControl* delayIR =
-      pGraphics->AttachControl(new IVToggleControl(m_ShaperPanel.GetGridCell(1, 5, rows, columns).GetFromTop(21 * 0.5).GetMidHPadded(9.45 * 0.5).GetTranslated(0, 59), kDelayIR, "DelayIR",
-                                                   ColorFilterStyle_Knob.WithGradient(kPR, Colors::BW_ORANGE).WithGradient(kFG, Colors::ACCENT_YELLOW).WithRoundness(1).WithLabelText(false), "", ""));
-    //   ██████╗  █████╗ ██╗███╗   ██╗
-    //  ██╔════╝ ██╔══██╗██║████╗  ██║
-    //  ██║  ███╗███████║██║██╔██╗ ██║
-    //  ██║   ██║██╔══██║██║██║╚██╗██║
-    //  ╚██████╔╝██║  ██║██║██║ ╚████║
-    //   ╚═════╝ ╚═╝  ╚═╝╚═╝╚═╝  ╚═══╝
-    double translateGainKnobDown = 45;
-    IRECT postGainKnobBounds = m_ButtonsPanel.GetGridCell(1, 5, rows, columns_Shaper).GetFromTop(50).GetMidHPadded(smallKnobPadding).GetTranslated(70, translateGainKnobDown);
-    IRECT preGainKnobBounds = m_ButtonsPanel.GetGridCell(1, 1, rows, columns_Shaper).GetFromTop(50).GetMidHPadded(smallKnobPadding).GetTranslated(-70, translateGainKnobDown);
-    IVStyle gainKnobStyle = ColorFilterStyle_Knob
-                              .WithGradient(kFG, IPattern::CreateLinearGradient(postGainKnobBounds.L, postGainKnobBounds.T, postGainKnobBounds.L, postGainKnobBounds.B,
-                                                                                {{Colors::BW_DARK_KNOB_TOP, 0.55f}, {Colors::BW_DARK_KNOB_BOTTOM, 1.f}}))
-                              .WithGradient(kPR, IPattern::CreateLinearGradient(postGainKnobBounds.L, postGainKnobBounds.T, postGainKnobBounds.L, postGainKnobBounds.B,
-                                                                                {{Colors::BW_DARK_KNOB_TOP_HL, 0.55f}, {Colors::BW_DARK_KNOB_BOTTOM_HL, 1.f}}))
-                              .WithGradient(kX1, Colors::PLATINUM)
-                              .WithLabelText(labelText12);
-    mPostGain = new IVKnobControl(postGainKnobBounds, kGainOut, "PostGain", gainKnobStyle, false, false, -135., 135., 0, EDirection::Vertical, 8, 1.5);
-    pGraphics->AttachControl(mPostGain, kGainOut);
-    mPostGain->SetPointerThickness(1.8);
-    mPreGain = new IVKnobControl(preGainKnobBounds, kGainIn, "PreGain", gainKnobStyle, false, false, -135, 135, 0, EDirection::Vertical, 8, 1.5);
-    pGraphics->AttachControl(mPreGain, kGainIn);
-    mPreGain->SetPointerThickness(1.8);
-
-    //  ███████╗ ██████╗ ███████╗████████╗     ██████╗██╗     ██╗██████╗
-    //  ██╔════╝██╔═══██╗██╔════╝╚══██╔══╝    ██╔════╝██║     ██║██╔══██╗
-    //  ███████╗██║   ██║█████╗     ██║       ██║     ██║     ██║██████╔╝
-    //  ╚════██║██║   ██║██╔══╝     ██║       ██║     ██║     ██║██╔═══╝
-    //  ███████║╚██████╔╝██║        ██║       ╚██████╗███████╗██║██║
-    //  ╚══════╝ ╚═════╝ ╚═╝        ╚═╝        ╚═════╝╚══════╝╚═╝╚═╝
-
-    IRECT softclipKnobBounds = m_ButtonsPanel.GetGridCell(1, 5, rows, columns_Shaper).GetFromTop(50).GetMidHPadded(smallKnobPadding).GetTranslated(70, 0);
-    IVStyle softClipKnobStyle = ColorFilterStyle_Knob
-                                  .WithGradient(kFG, IPattern::CreateLinearGradient(softclipKnobBounds.L, softclipKnobBounds.T, softclipKnobBounds.L, softclipKnobBounds.B,
-                                                                                    {{Colors::BW_DARK_KNOB_TOP, 0.55f}, {Colors::BW_DARK_KNOB_BOTTOM, 1.f}}))
-                                  .WithGradient(kPR, IPattern::CreateLinearGradient(softclipKnobBounds.L, softclipKnobBounds.T, softclipKnobBounds.L, softclipKnobBounds.B,
-                                                                                    {{Colors::BW_DARK_KNOB_TOP_HL, 0.55f}, {Colors::BW_DARK_KNOB_BOTTOM_HL, 1.f}}))
-                                  .WithGradient(kX1, Colors::PLATINUM)
-                                  .WithLabelText(labelText12);
-    IVKnobControl* softClipKnob = new IVKnobControl(softclipKnobBounds, kSoftClip, "SoftClip", softClipKnobStyle, false, false, -135, 135, -135, EDirection::Vertical, 8, 1.5);
-    pGraphics->AttachControl(softClipKnob, kSoftClip);
-    softClipKnob->SetPointerThickness(1.8);
-
-    // ██████╗ ██╗   ██╗████████╗████████╗ ██████╗ ███╗   ██╗███████╗
-    // ██╔══██╗██║   ██║╚══██╔══╝╚══██╔══╝██╔═══██╗████╗  ██║██╔════╝
-    // ██████╔╝██║   ██║   ██║      ██║   ██║   ██║██╔██╗ ██║███████╗
-    // ██╔══██╗██║   ██║   ██║      ██║   ██║   ██║██║╚██╗██║╚════██║
-    // ██████╔╝╚██████╔╝   ██║      ██║   ╚██████╔╝██║ ╚████║███████║
-    // ╚═════╝  ╚═════╝    ╚═╝      ╚═╝    ╚═════╝ ╚═╝  ╚═══╝╚══════╝
-
-    // ███████    ████████ ██    ██ ██████  ███████
-    // ██            ██     ██  ██  ██   ██ ██
-    // █████         ██      ████   ██████  █████
-    // ██            ██       ██    ██      ██
-    // ██      ██    ██       ██    ██      ███████
-    IRECT mFilter_Type_RB_Bounds = m_ButtonsPanel.GetGridCell(1, 1, rows, columns_BP).GetFromTop(75).GetMidHPadded(buttonsPadding);
-    mFilter_Type_RadioButton = pGraphics->AttachControl(new IVRadioButtonControl(
-      mFilter_Type_RB_Bounds, kFilterType, {"LP", "BP", "BS", "HP"}, "FilterType", ColorFilterStyle_RadioButtons.WithLabelText(false), EVShape::Ellipse, EDirection::Vertical));
-
-    //  █████  ██       ██████   ██████
-    // ██   ██ ██      ██       ██    ██
-    // ███████ ██      ██   ███ ██    ██
-    // ██   ██ ██      ██    ██ ██    ██
-    // ██   ██ ███████  ██████   ██████
-    // normal algo
-    IRECT mFilterAlgo_Bounds = m_ButtonsPanel.GetGridCell(1, 2, rows, columns_BP).GetFromTop(75).GetMidHPadded(buttonsPadding);
-    mFilterAlgoSwitch =
-      GetUI()->AttachControl(new IVRadioButtonControl(mFilterAlgo_Bounds, kFilterAlgo, {"DF1", "DF2", "SVF", "ZDF"}, "FilterAlgo",
-                                                      ColorFilterStyle_RadioButtons.WithColor(kPR, Colors::MONOKAI_TYPE_GREEN).WithLabelText(false), EVShape::Ellipse, EDirection::Vertical));
-
-
-    // ███████ ██      ████████ ██████      ███████ ██       ██████ ████████ ██████
-    // ██      ██         ██    ██   ██     ██      ██      ██         ██    ██   ██
-    // █████   ██         ██    ██████      ███████ ██      ██         ██    ██████
-    // ██      ██         ██    ██   ██          ██ ██      ██         ██    ██   ██
-    // ██      ███████    ██    ██   ██     ███████ ███████  ██████    ██    ██   ██
-
-
-    IRECT mFilterSelector_Bounds = m_ButtonsPanel.GetGridCell(1, 3, rows, columns_BP).GetFromTop(75).GetMidHPadded(buttonsPadding);
-    mFilterSelectorSwitch = pGraphics->AttachControl(new IVRadioButtonControl(mFilterSelector_Bounds, kFilterSelector, FilterSelector::getInitList(m_filterAlgo), "FilterSelector",
-                                                                              ColorFilterStyle_RadioButtons.WithLabelText(false), EVShape::Ellipse, EDirection::Vertical /*, 5.f*/));
-
-
-    //  ██████  ██    ██ ███████ ██████  ███████  █████  ███    ███ ██████  ██
-    // ██    ██ ██    ██ ██      ██   ██ ██      ██   ██ ████  ████ ██   ██ ██
-    // ██    ██ ██    ██ █████   ██████  ███████ ███████ ██ ████ ██ ██████  ██
-    // ██    ██  ██  ██  ██      ██   ██      ██ ██   ██ ██  ██  ██ ██      ██
-    //  ██████    ████   ███████ ██   ██ ███████ ██   ██ ██      ██ ██      ███████
-
-    pGraphics->AttachControl(new IVRadioButtonControl(m_ButtonsPanel.GetGridCell(1, 4, rows, columns_BP).GetFromTop(75).GetMidHPadded(buttonsPadding), kOverSampling, {"None", "2x", "4x", "8x", "16x"},
-                                                      "FilterOversampling", ColorFilterStyle_RadioButtons.WithColor(kPR, Colors::PREPROCESSOR_VIOLET).WithLabelText(false), EVShape::Ellipse,
-                                                      EDirection::Vertical));
-
-    //  ██████  ██   ██  █████  ███████ ███████ ██████
-    //  ██   ██ ██   ██ ██   ██ ██      ██      ██   ██
-    //  ██████  ███████ ███████ ███████ █████   ██████
-    //  ██      ██   ██ ██   ██      ██ ██      ██   ██
-    //  ██      ██   ██ ██   ██ ███████ ███████ ██   ██
-
-    IRECT phaserMixBounds = m_ButtonsPanel.GetGridCell(1, 5, rows, columns_BP).GetFromTop(getFromTopShaper).GetMidHPadded(padding);
-    IRECT phaserFreqBounds = m_ButtonsPanel.GetGridCell(1, 5, rows, columns_Shaper).GetFromTop(21 * S_FIR_Q_Scale).GetMidHPadded(9.45 * S_FIR_Q_Scale).GetTranslated(-17, 58.5);
-    IRECT phaserDepthBounds = m_ButtonsPanel.GetGridCell(1, 5, rows, columns_Shaper).GetFromTop(21 * S_FIR_Q_Scale).GetMidHPadded(9.45 * S_FIR_Q_Scale).GetTranslated(17, 58.5);
-    IRECT phaserSelectorBounds = m_ButtonsPanel.GetGridCell(1, 5, rows, columns_Shaper).GetFromTop(21 * S_FIR_Q_Scale).GetMidHPadded(9.45 * S_FIR_Q_Scale).GetTranslated(0, 58.5);
-    IVStyle phaserFreqKnobStyle = ColorFilterStyle_Knob
-                                    .WithGradient(kFG, IPattern::CreateLinearGradient(phaserFreqBounds.L, phaserFreqBounds.T, phaserFreqBounds.L, phaserFreqBounds.B,
-                                                                                      {{Colors::BW_DARK_KNOB_TOP, 0.55f}, {Colors::BW_DARK_KNOB_BOTTOM, 1.f}}))
-                                    .WithGradient(kPR, IPattern::CreateLinearGradient(phaserFreqBounds.L, phaserFreqBounds.T, phaserFreqBounds.L, phaserFreqBounds.B,
-                                                                                      {{Colors::BW_DARK_KNOB_TOP_HL, 0.55f}, {Colors::BW_DARK_KNOB_BOTTOM_HL, 1.f}}))
-                                    .WithLabelText(false);
-    IVKnobControl* phaserFreqKnob = new IVKnobControl(phaserFreqBounds, kPhaserFreq, "PhaserFreq", phaserFreqKnobStyle, false, false, -135, 135, -135, EDirection::Vertical, 10, 1.);
-    IVKnobControl* phaserDepthKnob = new IVKnobControl(phaserDepthBounds, kPhaserDepth, "PhaserDepth", phaserFreqKnobStyle, false, false, -135, 135, -135, EDirection::Vertical, 10, 1.);
-    IVKnobControl* phaserSelectorKnob = new IVKnobControl(phaserSelectorBounds, kPhaserSelector, "PhaserSelector", phaserFreqKnobStyle, false, false, -135, 135, -135, EDirection::Vertical, 10, 1.);
-    pGraphics->AttachControl(phaserFreqKnob, kPhaserFreq);
-    pGraphics->AttachControl(phaserDepthKnob, kPhaserDepth);
-    pGraphics->AttachControl(phaserSelectorKnob, kPhaserSelector);
-    pGraphics->AttachControl(new IVKnobControl(phaserMixBounds, kPhaserMix, "PhaserMix",
-                                               ColorFilterStyle_Knob
-                                                 .WithGradient(kFG, IPattern::CreateLinearGradient(phaserMixBounds.L, phaserMixBounds.T, phaserMixBounds.L, phaserMixBounds.B,
-                                                                                                   {{Colors::BW_DARK_KNOB_TOP, 0.55f}, {Colors::BW_DARK_KNOB_BOTTOM, 1.f}}))
-                                                 .WithGradient(kPR, IPattern::CreateLinearGradient(phaserMixBounds.L, phaserMixBounds.T, phaserMixBounds.L, phaserMixBounds.B,
-                                                                                                   {{Colors::BW_DARK_KNOB_TOP_HL, 0.55f}, {Colors::BW_DARK_KNOB_BOTTOM_HL, 1.f}}))
-                                                 .WithGradient(kX1, Colors::JET_BRAINS_PINK)),
-                             kPhaserMix);
-    phaserFreqKnob->SetPointerThickness(1.2);
-    phaserDepthKnob->SetPointerThickness(1.2);
-    phaserSelectorKnob->SetPointerThickness(1.2);
-
-
-    //  ██████╗ ██╗   ██╗██████╗  █████╗ ███████╗███████╗
-    //  ██╔══██╗╚██╗ ██╔╝██╔══██╗██╔══██╗██╔════╝██╔════╝
-    //  ██████╔╝ ╚████╔╝ ██████╔╝███████║███████╗███████╗
-    //  ██╔══██╗  ╚██╔╝  ██╔═══╝ ██╔══██║╚════██║╚════██║
-    //  ██████╔╝   ██║   ██║     ██║  ██║███████║███████║
-    //  ╚═════╝    ╚═╝   ╚═╝     ╚═╝  ╚═╝╚══════╝╚══════╝
-    pGraphics->AttachControl(new IVToggleControl(m_FilterPanel.GetGridCell(1, 5, rows, columns_BP).GetFromTop(16).GetMidHPadded(24 * 0.5).GetTranslated(70, -20), kBypass, "Bypass",
-                                                 ColorFilterStyle_Knob.WithGradient(kPR, Colors::PLATINUM).WithGradient(kFG, Colors::BW_DARK_KNOB_BOTTOM_DIM).WithRoundness(1).WithLabelText(false), "",
-                                                 ""));
-    m_filterAlgo = GetParam(kFilterAlgo)->Int();
-
-    //  ██████╗ ██████╗ ██╗   ██╗ ██╗██╗    ██╗███████╗████████╗
-    //  ██╔══██╗██╔══██╗╚██╗ ██╔╝██╔╝██║    ██║██╔════╝╚══██╔══╝
-    //  ██║  ██║██████╔╝ ╚████╔╝██╔╝ ██║ █╗ ██║█████╗     ██║
-    //  ██║  ██║██╔══██╗  ╚██╔╝██╔╝  ██║███╗██║██╔══╝     ██║
-    //  ██████╔╝██║  ██║   ██║██╔╝   ╚███╔███╔╝███████╗   ██║
-    //  ╚═════╝ ╚═╝  ╚═╝   ╚═╝╚═╝     ╚══╝╚══╝ ╚══════╝   ╚═╝
-
-    IVKnobControl* dryWetKnob =
-      (new IVKnobControl(m_FilterPanel.GetGridCell(1, 5, rows, columns_BP).GetFromTop(50).GetMidHPadded(smallKnobPadding).GetTranslated(70, 0), kDryWet, "Dry/Wet",
-                         ColorFilterStyle_Knob
-                           .WithGradient(kFG, IPattern::CreateLinearGradient(shaperShapeKnobBounds.L, shaperShapeKnobBounds.T, shaperShapeKnobBounds.L, shaperShapeKnobBounds.B,
-                                                                             {{Colors::BW_DARK_KNOB_TOP, 0.55f}, {Colors::BW_DARK_KNOB_BOTTOM, 1.f}}))
-                           .WithGradient(kPR, IPattern::CreateLinearGradient(shaperShapeKnobBounds.L, shaperShapeKnobBounds.T, shaperShapeKnobBounds.L, shaperShapeKnobBounds.B,
-                                                                             {{Colors::BW_DARK_KNOB_TOP_HL, 0.55f}, {Colors::BW_DARK_KNOB_BOTTOM_HL, 1.f}}))
-                           .WithGradient(kX1, Colors::PLATINUM)
-                           .WithLabelText(labelText12),
-                         false, false, -135, 135, -135, EDirection::Vertical, 8, 1.5));
-    pGraphics->AttachControl(dryWetKnob, kDryWet);
-    dryWetKnob->SetPointerThickness(1.8);
-
-    // int selector = GetParam(kFilterSelector)->Int();
+    // delay mix
+    mDelayMix = pGraphics->AttachControl(
+      new TransluscentKnobWithValueBar(b.GetFromLeft(bigKnobSize).GetFromTop(bigKnobSize).GetTranslated(226.6, 318.8), kDelayMix, "", ColorFilterStyle_SVG_KnobOver), kDelayMix);
+    // delay time
+    mDelayTime = pGraphics->AttachControl(
+      new TransluscentKnobWithValueBarLIL(b.GetFromLeft(medSmallerKnobSize).GetFromTop(medSmallerKnobSize).GetTranslated(331.25 + -12.06, 40.3 + 259.1), kDelayTime, "", ColorFilterStyle_SVG_KnobOver),
+      kDelayTime);
+    // delay feedback
+    mDelayFeedback = pGraphics->AttachControl(new TransluscentKnobWithValueBarLIL(b.GetFromLeft(medSmallerKnobSize).GetFromTop(medSmallerKnobSize).GetTranslated(331.25 + -12.06, 40.3 + 259.1 + 37.6),
+                                                                                  kDelayFeedback, "", ColorFilterStyle_SVG_KnobOver),
+                                              kDelayFeedback);
+    // delay filter
+    mDelayFilter =
+      pGraphics->AttachControl(new TransluscentKnobWithValueBarLIL(b.GetFromLeft(medSmallerKnobSize).GetFromTop(medSmallerKnobSize).GetTranslated(331.25 + -12.06, 40.3 + 259.1 + 37.6 + 37.6),
+                                                                   kDelayDampFilterCutoff, "", ColorFilterStyle_SVG_KnobOver),
+                               kDelayDampFilterCutoff);
+    // kDelayIR
+    mDelayIR = pGraphics->AttachControl(new IVToggleControl_SVG(b.GetFromTop(13.5).GetMidHPadded(13.5).GetTranslated(26.9, 392.1), kDelayIR, "", ColorFilterStyle_SVG_KnobOver), kDelayIR);
+    //   ██████╗██╗     ██╗██████╗ ██████╗ ███████╗██████╗
+    //  ██╔════╝██║     ██║██╔══██╗██╔══██╗██╔════╝██╔══██╗
+    //  ██║     ██║     ██║██████╔╝██████╔╝█████╗  ██████╔╝
+    //  ██║     ██║     ██║██╔═══╝ ██╔═══╝ ██╔══╝  ██╔══██╗
+    //  ╚██████╗███████╗██║██║     ██║     ███████╗██║  ██║
+    //   ╚═════╝╚══════╝╚═╝╚═╝     ╚═╝     ╚══════╝╚═╝  ╚═╝
+    // clipper flavour
+    mClipperFlavour = pGraphics->AttachControl(
+      new TransluscentKnobWithValueBarMED(b.GetFromLeft(medKnobSize).GetFromTop(medKnobSize).GetTranslated(331.25 + 71.75, 40.1 + 271.2), kClipSelector, "", ColorFilterStyle_SVG_KnobOver),
+      kClipSelector);
+    // clipper mix
+    mClipperMix = pGraphics->AttachControl(
+      new TransluscentKnobWithValueBarMED(b.GetFromLeft(medKnobSize).GetFromTop(medKnobSize).GetTranslated(331.25 + 71.75, 85.3 + 271.2), kClipMix, "", ColorFilterStyle_SVG_KnobOver), kClipMix);
     DecideOnReset();
   };
 #endif
@@ -592,17 +275,19 @@ void ColorFilterPlugin::ProcessBlock(sample** inputs, sample** outputs, int nFra
   m_filterBypass = GetParam(kFilterBypass)->Value();
   m_spectralFilterOn = GetParam(kSpectralFilterOn)->Value();
   m_phaserSelector = GetParam(kPhaserSelector)->Value();
+  g_Bypass = GetParam(kBypass)->Value();
+
 
   if (g_Bypass)
     mOverSampler.ProcessBlock(inputs, outputs, nFrames, nChans, nChans, [&](sample** inputs, sample** outputs, int nFrames) {
       for (int s = 0; s < nFrames; s++)
       {
-        filterFIR_Q = Map01To2_200_Stepped(getFinalParamValue(kFilterFIR_Q), GetParam(kFilterFIR_Q_Plus1)->Value());
-        filterIIR_Q = Map01To1_40_Stepped(getFinalParamValue(kFilterIIR_Q));
-        shaperFIR_Q = Map01To2_200_Stepped(getFinalParamValue(kShaperFIR_Q), GetParam(kShaperFIR_Q_Plus1)->Value());
-        shaperIIR_Q = Map01To1_40_Stepped(getFinalParamValue(kShaperIIR_Q));
+        filterHilbertOrder = getFinalParamValue(kFilterHilbertOrder);
+        bool oddFilterHilbertOrder = GetParam(kFilterOddOrder)->Value();
+        shaperHilbertOrder = getFinalParamValue(kShaperHilbertOrder);
+        bool oddShaperHilbertOrder = GetParam(kShaperOddOrder)->Value();
 
-        double preGain = mapGain(getFinalParamValue(kGainIn));
+        double preGain = dBtoControlParam(getFinalParamValue(kGainIn, -24, 24, false));
         // filter
         const double filterCutoff = getFinalParamValue(kFilterCutoff);
         const double filterResonance = getFinalParamValue(kFilterResonance);
@@ -611,8 +296,9 @@ void ColorFilterPlugin::ProcessBlock(sample** inputs, sample** outputs, int nFra
         //  shaper
         const double shaperDrive = getFinalParamValue(kShaperDrive);
         const double shaperShape = getFinalParamValue(kShaperShape);
-        const double shaperBias = getFinalParamValue(kShaperBias);
+        const double shaperBias = getFinalParamValue(kShaperBias, -1);
         const double spectralShaperDrive = getFinalParamValue(kSpectralShaperDrive);
+        spectralShaperSelector = getFinalParamValue(kSpectralShaperSelector, 1, (int)SpectralShaperTypes::MAX_SHAPER_TYPES, false);
 
 
         const double phaserMix = getFinalParamValue(kPhaserMix);
@@ -622,18 +308,21 @@ void ColorFilterPlugin::ProcessBlock(sample** inputs, sample** outputs, int nFra
 
         const double delayMix = getFinalParamValue(kDelayMix);
         const double delayTime = getFinalParamValue(kDelayTime) * 0.075;
-        const double delayFeedback = getFinalParamValue(kDelayFeedback, true, false) * 0.98;
+        const double delayFeedback = getFinalParamValue(kDelayFeedback, -1., 1, false);
         const double delayDampFilterCutoff = getFinalParamValue(kDelayDampFilterCutoff);
 
-        const double softClip = getFinalParamValue(kSoftClip);
-        double postGain = mapGain(getFinalParamValue(kGainOut));
-        const double dryWet = getFinalParamValue(kDryWet);
+        const double softClip = getFinalParamValue(kClipMix);
+        const double clipSelector = getFinalParamValue(kClipSelector, 1, 3, false);
 
+        double postGain = dBtoControlParam(getFinalParamValue(kGainOut, -24, 24, false));
+        const double dryWet = getFinalParamValue(kDryWet);
         BatchSetModData(kDryWet, kGainIn, kGainOut, kFilterCutoff, kFilterResonance, kFilterBandwidth, kSpectralFilter_Drive, kShaperDrive, kShaperShape, kShaperBias, kSpectralShaperDrive,
-                        kFilterFIR_Q, kShaperFIR_Q, kFilterIIR_Q, kShaperIIR_Q, kPhaserFreq, kPhaserMix, kPhaserDepth, kDelayMix, kDelayTime, kDelayFeedback, kDelayDampFilterCutoff, kSoftClip);
-        fParams.setFilterParameters(m_filterType, m_filterSelector, filterCutoff, filterResonance, filterBandwidth, shaperDrive, shaperShape, shaperBias, spectralFilterDrive, filterFIR_Q, filterIIR_Q,
-                                    spectralFilter_IR, spectralFilter_Harder, spectralShaperDrive, shaperFIR_Q, shaperIIR_Q, spectralShaper_IR, spectralShaperSelector, phaserMix, phaserFreq,
-                                    phaserDepth, m_phaserSelector, delayMix, delayTime, delayFeedback, delayDampFilterCutoff, m_ovrsmpFactor, sampleRate);
+                        kSpectralShaperSelector, kFilterHilbertOrder, kShaperHilbertOrder, kPhaserFreq, kPhaserMix, kPhaserDepth, kDelayMix, kDelayTime, kDelayFeedback, kDelayDampFilterCutoff,
+                        kClipMix, kClipSelector);
+        fParams.setFilterParameters(m_filterAlgo, m_filterType, m_filterSelector, filterCutoff, filterResonance, filterBandwidth, shaperDrive, shaperShape, shaperBias, spectralFilterDrive,
+                                    filterHilbertOrder, oddFilterHilbertOrder, spectralFilter_IR, spectralFilter_Harder, spectralShaperDrive, shaperHilbertOrder, oddShaperHilbertOrder,
+                                    spectralShaper_IR, spectralShaperSelector, phaserMix, phaserFreq, phaserDepth, m_phaserSelector, delayMix, delayTime, delayFeedback, delayDampFilterCutoff,
+                                    m_ovrsmpFactor, sampleRate);
         const double L = inputs[0][s];
         const double R = inputs[1][s];
         double inputL = L * preGain;
@@ -650,9 +339,11 @@ void ColorFilterPlugin::ProcessBlock(sample** inputs, sample** outputs, int nFra
           FilteredL = spectralFilterL.Process(inputL, fParams);
           FilteredR = spectralFilterR.Process(inputR, fParams);
         }
-
-        FilteredL = sigmoidalShaperL.Process(FilteredL, fParams);
-        FilteredR = sigmoidalShaperR.Process(FilteredR, fParams);
+        if (fParams.m_drive)
+        {
+          FilteredL = interpolateLin(FilteredL, sigmoidalShaperL.Process(FilteredL, fParams.m_shape, fParams.m_bias), fParams.m_drive);
+          FilteredR = interpolateLin(FilteredR, sigmoidalShaperR.Process(FilteredR, fParams.m_shape, fParams.m_bias), fParams.m_drive);
+        }
         if (spectralShaperOn)
         {
           mSpectralShaperL.Process(FilteredL, fParams);
@@ -678,10 +369,36 @@ void ColorFilterPlugin::ProcessBlock(sample** inputs, sample** outputs, int nFra
           FilteredL = interpolateLin(FilteredL, delayLineL.Process(FilteredL, fParams), delayMix);
           FilteredR = interpolateLin(FilteredR, delayLineR.Process(FilteredR, fParams), delayMix);
         }
+        // FilteredL *= postGain;
+        // FilteredR *= postGain;
         if (softClip)
         {
-          FilteredL = interpolateLin(FilteredL, filnalTanh(FilteredL, fParams), softClip);
-          FilteredR = interpolateLin(FilteredR, filnalTanh(FilteredR, fParams), softClip);
+          double processedL = FilteredL;
+          double processedR = FilteredR;
+          double a_L{};
+          double a_R{};
+          double b_L{};
+          double b_R{};
+          if (clipSelector < 2)
+          {
+            a_L = filnalTanh(processedL);
+            a_R = filnalTanh(processedR);
+            b_L = softclip(processedL);
+            b_R = softclip(processedR);
+            processedL = interpolateLin(a_L, b_L, clipSelector - 1);
+            processedR = interpolateLin(a_R, b_R, clipSelector - 1);
+          }
+          else if (clipSelector < 3)
+          {
+            a_L = softclip(processedL);
+            a_R = softclip(processedR);
+            b_L = diodeNonlinearity(processedL);
+            b_R = diodeNonlinearity(processedR);
+            processedL = interpolateLin(a_L, b_L, clipSelector - 2);
+            processedR = interpolateLin(a_R, b_R, clipSelector - 2);
+          }
+          FilteredL = interpolateLin(FilteredL, processedL, softClip);
+          FilteredR = interpolateLin(FilteredR, processedR, softClip);
         }
         outputs[0][s] = interpolateLin(inputL, FilteredL, dryWet) * postGain;
         outputs[1][s] = interpolateLin(inputR, FilteredR, dryWet) * postGain;
@@ -745,27 +462,13 @@ void ColorFilterPlugin::OnParamChange(int paramIdx, EParamSource, int sampleOffs
     delayLineL.SetIIR(GetParam(kDelayIR)->Value());
     delayLineR.SetIIR(GetParam(kDelayIR)->Value());
     break;
-    // case kDelayTime: {
-    //   double time = GetParam(kDelayTime)->Value() * 30;
-    //   delayLineL.SetDelayTime(time);
-    //   delayLineR.SetDelayTime(time);
-    // }
-    // break;
-    // case kDelayFeedback: {
-    //   double fb = GetParam(kDelayFeedback)->Value();
-    //   delayLineL.SetFeedback(fb);
-    //   delayLineR.SetFeedback(fb);
-    // }
-    // break;
 
-  // case kShaperDrive:
-  //  DecideControlDisableStatus(GetParam(kShaperDrive)->Value() == 0, mShaperShape, mShaperBias);
-  // break;
-
-  // case kPhaserSelector:
-  // break;
+  case kShaperDrive:
+    DecideControlDisableStatus(GetParam(kShaperDrive)->Value() == 0, mShaperShape, mShaperBias);
+    break;
   case kSpectralShaperDrive:
-    // DecideControlDisableStatus(GetParam(kSpectralShaperDrive)->Value() == 0, /*mShaperFirQ_Odd,*/ mShaperFirQ, mShaperFirQ_Plus1, mShaperIirQ, mSpectralShaper_IR, mSpectralShaperSelector);
+    DecideControlDisableStatus(GetParam(kSpectralShaperDrive)->Value() == 0, mSpectralShaperOrder, mSpectralShaperIR, mSpectralShaperSelector);
+    DecideControlDisableStatus(GetParam(kSpectralShaperDrive)->Value() == 0 || GetParam(kSpectralShaper_IR)->Value() != 0, mSpectralShaperOdd);
     spectralShaperOn = GetParam(kSpectralShaperDrive)->Value();
     break;
   case kFilterSelector:
@@ -778,42 +481,47 @@ void ColorFilterPlugin::OnParamChange(int paramIdx, EParamSource, int sampleOffs
       m_svf1retainer = m_filterSelector;
     else if (m_filterAlgo == (int)FilterAlgo::ZDF1)
       m_zdf1retainer = m_filterSelector;
-    DecideOnReset();
+    DecideControlDisableStatus(GetParam(kFilterSelector)->Value() == 0, mReso);
     break;
   case kFilterAlgo:
-    m_filterAlgo = GetParam(kFilterAlgo)->Int();
-    DecideOnReset();
+    m_filterAlgo = GetParam(kFilterAlgo)->Value();
     mSelectorIsDirty = true;
+    mAlgoChanged = true;
     break;
-  // case kFilterBypass:
   case kFilterType:
     m_filterType = GetParam(kFilterType)->Value();
-    DecideOnReset();
+    DecideControlDisableStatus(GetParam(kFilterType)->Value() == (int)FilterType::LP || GetParam(kFilterType)->Value() == (int)FilterType::HP, mF_BW);
     break;
   case kSpectralFilterOn:
-    DecideOnReset();
+    DecideControlDisableStatus(GetParam(kSpectralFilterOn)->Value() < 0.5, mSpectralFilterOrder, mSpectralFilterDrive, mSpectralFilterOdd, mSpectralFilterHarder, mSpectralFilterIR);
     break;
   case kFilterBypass:
-    DecideOnReset();
+    DecideControlDisableStatus(GetParam(kFilterBypass)->Value() < 0.5, mCutoff, mReso, mF_BW, mFilterType, mFilterAlgo, mFilterSelector, mSpectralFilterBypass);
+    DecideControlDisableStatus(
+      GetParam(kSpectralFilterOn)->Value() < 0.5 || GetParam(kFilterBypass)->Value() < 0.5, mSpectralFilterOrder, mSpectralFilterDrive, mSpectralFilterOdd, mSpectralFilterHarder, mSpectralFilterIR);
     break;
   case kBypass:
-    g_Bypass = GetParam(kBypass)->Value();
+    DecideOnReset();
     break;
   case kSpectralFilter_Harder:
     spectralFilter_Harder = GetParam(kSpectralFilter_Harder)->Value();
     break;
   case kSpectralFilter_IR:
     spectralFilter_IR = GetParam(kSpectralFilter_IR)->Value();
-    DecideOnReset();
-
+    DecideControlDisableStatus(GetParam(kSpectralFilter_IR)->Value() != 0, mSpectralFilterOdd);
     break;
   case kSpectralShaper_IR:
     spectralShaper_IR = GetParam(kSpectralShaper_IR)->Value();
-    DecideOnReset();
-
+    DecideControlDisableStatus(GetParam(kSpectralShaper_IR)->Value() != 0, mSpectralShaperOdd);
     break;
-  case kSpectralShaperSelector:
-    spectralShaperSelector = GetParam(kSpectralShaperSelector)->Value();
+  case kDelayMix:
+    DecideControlDisableStatus(GetParam(kDelayMix)->Value() == 0, mDelayTime, mDelayFeedback, mDelayFilter, mDelayIR);
+    break;
+  case kPhaserMix:
+    DecideControlDisableStatus(GetParam(kPhaserMix)->Value() == 0, mPhaserOrder, mPhaserFreq, mPhaserSelector);
+    break;
+  case kClipMix:
+    DecideControlDisableStatus(GetParam(kClipMix)->Value() == 0, mClipperFlavour);
     break;
   case kOverSampling:
     mOversamplingFactorChanged = true;
@@ -821,55 +529,71 @@ void ColorFilterPlugin::OnParamChange(int paramIdx, EParamSource, int sampleOffs
   }
 }
 
+void ColorFilterPlugin::OnIdle()
+{
+  static double lastSavedZoom = 0; // Stores the last saved value to prevent unnecessary writes
+
+  if (mDrawScaleRetainerNeedsSaving && (mDrawScaleRetainer != lastSavedZoom))
+  {
+    SaveGlobalSettings();
+    lastSavedZoom = mDrawScaleRetainer; // Update the last saved value
+    mDrawScaleRetainerNeedsSaving = false;
+  }
+  if (GetUI()) // Ensure UI exists before sending data
+  {
+    mModValueSender.TransmitData(*this); // Send modulation data to UI controls
+  }
+  if (mSelectorIsDirty)
+  {
+    mSelectorIsDirty = false;
+    DefineSelector();
+    SendParameterValueFromDelegate(kFilterSelector, m_filterSelector, 0);
+  }
+  if (mAlgoChanged)
+    if (GetUI())
+    {
+      mAlgoChanged = false;
+      if (m_filterAlgo == (int)FilterAlgo::DF2)
+      {
+        mFilterSelector->SetButtonDisabled(0, 1);
+        mFilterSelector->SetButtonDisabled(2, 1);
+      }
+      else
+      {
+        mFilterSelector->SetButtonDisabled(0, 0);
+        mFilterSelector->SetButtonDisabled(2, 0);
+      }
+      DecideControlDisableStatus(m_filterSelector == 0, mReso);
+    }
+}
 void ColorFilterPlugin::DecideOnReset()
 {
-  DecideControlDisableStatus((GetParam(kFilterSelector)->Value() == (int)FilterTypes::SVF1_1P) || (GetParam(kFilterSelector)->Value() == (int)FilterTypes::DF1_1P)
-                               || (GetParam(kFilterSelector)->Value() == (int)FilterTypes::ZDF1_1P) || (GetParam(kFilterBypass)->Value() < 0.5),
-                             mReso_Knob);
-
-  DecideControlDisableStatus(GetParam(kFilterBypass)->Value() < 0.5, mCutoff_Knob, mSpectralFilterOnToggle, mSpectralFilter_IR, /*mFilterFirQ_Odd, */ mFilterFirQ, mFilterFirQ_Plus1, mFilterIirQ,
-                             mSpectralFilter_Harder, mFilterAlgoSwitch, mFilter_Type_RadioButton, mFilterSelectorSwitch, mSpectralFilterDrive);
-
   DecideControlDisableStatus(
-    (GetParam(kFilterType)->Value() == (int)FilterType::LP) || (GetParam(kFilterType)->Value() == (int)FilterType::HP) || (GetParam(kFilterBypass)->Value() < 0.5), mF_BW_Knob);
+    GetParam(kBypass)->Value() < 0.5, mShaperDrive, mSpectralShaperDrive, mPhaserMix, mDelayMix, mClipperMix, mUtilityOversampling, mPreGain, mPostGain, mFilterBypass, mUtilityMix);
 
-  // DecideControlDisableStatus(GetParam(kShaperDrive)->Value() == 0, mShaperShape, mShaperBias);
-  // DecideControlDisableStatus(GetParam(kSpectralShaperDrive)->Value() == 0, /*mShaperFirQ_Odd,*/ mShaperFirQ, mShaperFirQ_Plus1, mShaperIirQ, mSpectralShaper_IR, mSpectralShaperSelector);
-
-
-  // DecideControlHideStatus((GetParam(kFilterType)->Value() == (int)FilterType::BS), mFilterSelectorSwitch);
-
-  DecideControlHideStatus((GetParam(kSpectralFilterOn)->Value() < 0.5) || (GetParam(kSpectralFilter_IR)->Value()), mFilterFirQ);
-
-  DecideControlHideStatus((GetParam(kSpectralFilter_IR)->Value()) || (GetParam(kSpectralFilterOn)->Value() < 0.5), mFilterFirQ_Plus1);
-  DecideControlHideStatus(!(GetParam(kSpectralFilter_IR)->Value()) || (GetParam(kSpectralFilterOn)->Value() < 0.5), mFilterIirQ);
-  DecideControlHideStatus((GetParam(kSpectralFilterOn)->Value() < 0.5), mSpectralFilterDrive, mSpectralFilter_Harder, mSpectralFilter_IR);
-
-  DecideControlHideStatus((GetParam(kSpectralShaper_IR)->Value()), mShaperFirQ_Plus1);
-
-  DecideControlHideStatus((GetParam(kSpectralShaper_IR)->Value()), mShaperFirQ);
-
-  DecideControlHideStatus(!(GetParam(kSpectralShaper_IR)->Value()), mShaperIirQ);
-};
+  DecideControlDisableStatus(GetParam(kBypass)->Value() < 0.5 || GetParam(kClipMix)->Value() == 0, mClipperFlavour);
+  DecideControlDisableStatus(GetParam(kBypass)->Value() < 0.5 || GetParam(kSpectralFilterOn)->Value() < 0.5 || GetParam(kFilterBypass)->Value() < 0.5, mSpectralFilterOrder, mSpectralFilterDrive,
+                             mSpectralFilterHarder, mSpectralFilterIR);
+  DecideControlDisableStatus(
+    GetParam(kBypass)->Value() < 0.5 || GetParam(kSpectralFilterOn)->Value() < 0.5 || GetParam(kFilterBypass)->Value() < 0.5 || GetParam(kSpectralFilter_IR)->Value() != 0, mSpectralFilterOdd);
+  DecideControlDisableStatus(GetParam(kBypass)->Value() < 0.5 || GetParam(kFilterBypass)->Value() < 0.5, mCutoff, mFilterType, mFilterAlgo, mFilterSelector, mSpectralFilterBypass);
+  DecideControlDisableStatus(GetParam(kBypass)->Value() < 0.5 || GetParam(kFilterBypass)->Value() < 0.5 || GetParam(kFilterSelector)->Value() == 0, mReso);
+  DecideControlDisableStatus(
+    GetParam(kBypass)->Value() < 0.5 || GetParam(kFilterBypass)->Value() < 0.5 || GetParam(kFilterType)->Value() == (int)FilterType::LP || GetParam(kFilterType)->Value() == (int)FilterType::HP,
+    mF_BW);
+  DecideControlDisableStatus(GetParam(kBypass)->Value() < 0.5 || GetParam(kShaperDrive)->Value() == 0, mShaperShape, mShaperBias);
+  DecideControlDisableStatus(GetParam(kBypass)->Value() < 0.5 || GetParam(kSpectralShaperDrive)->Value() == 0, mSpectralShaperOrder, mSpectralShaperIR, mSpectralShaperSelector);
+  DecideControlDisableStatus(GetParam(kBypass)->Value() < 0.5 || GetParam(kSpectralShaperDrive)->Value() == 0 || GetParam(kSpectralShaper_IR)->Value() != 0, mSpectralShaperOdd);
+  DecideControlDisableStatus(GetParam(kBypass)->Value() < 0.5 || GetParam(kDelayMix)->Value() == 0, mDelayTime, mDelayFeedback, mDelayFilter, mDelayIR);
+  DecideControlDisableStatus(GetParam(kBypass)->Value() < 0.5 || GetParam(kPhaserMix)->Value() == 0, mPhaserOrder, mPhaserFreq, mPhaserSelector);
+}
 void ColorFilterPlugin::CalculateLatency()
 {
   if ((GetParam(kOverSampling)->Value() != 0) && (GetParam(kBypass)->Value() > 0.5))
     m_OS_LatencySamples = 4;
   else
     m_OS_LatencySamples = 0;
-  // #define buffer RingBuffer::getChunkSize()
-  // if (GetParam(kOverSampling)->Value() == 0)
-  //   m_RB_LatencySamples = buffer;
-  // else if (GetParam(kOverSampling)->Value() == 1)
-  //   m_RB_LatencySamples = buffer / 2;
-  // else if (GetParam(kOverSampling)->Value() == 2)
-  //   m_RB_LatencySamples = buffer / 4;
-  // else if (GetParam(kOverSampling)->Value() == 3)
-  //   m_RB_LatencySamples = buffer / 8;
-  // else
-  //   m_RB_LatencySamples = buffer / 16;
 }
-
 template <typename... Args>
 void ColorFilterPlugin::DecideControlDisableStatus(bool disableCondition, Args... controls)
 {
@@ -918,6 +642,137 @@ void ColorFilterPlugin::RemoveControl(int paramIdx)
       }
     }
   }
+}
+bool ColorFilterPlugin::SerializeState(IByteChunk& chunk) const
+{
+  // Call the base class implementation to serialize parameters
+  if (!SerializeParams(chunk))
+    return false;
+  // Add any additional state you want to save here
+  // chunk.Put(&mDrawScaleRetainer);
+  chunk.Put(&m_df1retainer);
+  chunk.Put(&m_df2retainer);
+  chunk.Put(&m_svf1retainer);
+  chunk.Put(&m_zdf1retainer);
+  chunk.Put(&m_filterAlgo);
+  return SerializeParams(chunk);
+}
+// Override UnserializeParams to restore plugin state
+int ColorFilterPlugin::UnserializeState(const IByteChunk& chunk, int startPos)
+{
+  // Call the base class implementation to unserialize parameters
+  startPos = UnserializeParams(chunk, startPos);
+
+  // Add any additional state you want to restore here
+  // startPos = chunk.Get(&mDrawScaleRetainer, startPos);
+  startPos = chunk.Get(&m_df1retainer, startPos);
+  startPos = chunk.Get(&m_df2retainer, startPos);
+  startPos = chunk.Get(&m_svf1retainer, startPos);
+  startPos = chunk.Get(&m_zdf1retainer, startPos);
+  startPos = chunk.Get(&m_filterAlgo, startPos);
+
+  return UnserializeParams(chunk, startPos);
+}
+static std::string GetSettingsFilePath()
+{
+  WDL_String homePath;
+  UserHomePath(homePath); // Get cross-platform user home directory
+  #ifdef OS_WIN
+  homePath.Append("\\ColorFilter\\settings.ini");
+  #elif defined(OS_MAC)
+  homePath.Append("/Library/Application Support/ColorFilter/settings.ini");
+  #else // Linux
+  homePath.Append("/.config/ColorFilter/settings.ini");
+  #endif
+
+  return std::string(homePath.Get());
+}
+void ColorFilterPlugin::SaveGlobalSettings()
+{
+  // std::ofstream file(GetSettingsFilePath());
+
+  std::string filePath = GetSettingsFilePath();
+  std::filesystem::path dirPath = std::filesystem::path(filePath).parent_path();
+  // Ensure the directory exists before writing the file
+  if (!std::filesystem::exists(dirPath))
+  {
+    if (!std::filesystem::create_directories(dirPath))
+    {
+      return;
+    }
+  }
+  std::ofstream file(filePath);
+  if (file.is_open())
+  {
+    file << "ZoomFactor=" << mDrawScaleRetainer << std::endl;
+    file.close();
+  }
+}
+
+void ColorFilterPlugin::LoadGlobalSettings()
+{
+  std::ifstream file(GetSettingsFilePath());
+  if (file.is_open())
+  {
+    std::string line;
+    while (std::getline(file, line))
+    {
+      if (line.find("ZoomFactor=") == 0)
+      {
+        mDrawScaleRetainer = std::stod(line.substr(11)); // Extract value
+        break;
+      }
+    }
+    file.close();
+  }
+}
+void ColorFilterPlugin::OnUIOpen()
+{
+  IEditorDelegate::OnUIOpen();
+  if (GetUI())
+  {
+    GetUI()->SetDrawScale(mDrawScaleRetainer);
+  }
+}
+void ColorFilterPlugin::OnUIClose()
+{
+  mDrawScaleRetainer = GetUI()->GetDrawScale();
+  SaveGlobalSettings();
+}
+void ColorFilterPlugin::SetModData(int knobTag)
+{
+  mModData.ctrlTag = knobTag; // The control tag that should receive this data
+  mModData.nChans = 1;        // We only have 1 value in .vals
+  mModData.chanOffset = 0;
+  float value = GetModulatedParamOffset(knobTag); // Usually 0 unless dealing with multi-channel offsets
+  mModData.vals[0] = value;
+  // Enqueue this data for the knob
+  mModValueSender.PushData(mModData);
+}
+template <typename... Tags>
+void ColorFilterPlugin::BatchSetModData(Tags... knobTag)
+{
+  (SetModData(knobTag), ...);
+}
+
+double ColorFilterPlugin::getFinalParamValue(int paramId, double clampBottom, double clampTop, bool scaleDown)
+{
+  double baseValue = GetParam(paramId)->Value();
+  if (scaleDown)
+    baseValue /= 100.0;
+  double modValue = GetModulatedParamOffset(paramId);
+  return std::clamp(mSmoothers[paramId].Process(baseValue + modValue), clampBottom, clampTop);
+}
+double ColorFilterPlugin::dBtoControlParam(double param)
+{
+  // Clamp param to the range [-24, +24]
+  param = std::max(-24.0, std::min(24.0, param));
+
+  // Convert param (in dB) to linear amplitude
+  double amplitude = std::pow(10.0, param / 20.0);
+
+  // Ensure the amplitude is clamped to [0, 1]
+  return std::max(0.0, std::min(amplitude, 16.));
 }
 
 #endif

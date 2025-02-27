@@ -2218,7 +2218,6 @@ public:
   }
 
   virtual ~ISVGControl() {}
-
   void Draw(IGraphics& g) override
   {
     if (mUseLayer)
@@ -2238,7 +2237,7 @@ public:
 
   void SetSVG(const ISVG& svg) { mSVG = svg; }
 
-private:
+protected:
   bool mUseLayer;
   ILayerPtr mLayer;
   ISVG mSVG;

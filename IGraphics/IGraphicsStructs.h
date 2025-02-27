@@ -685,7 +685,7 @@ struct IStrokeOptions
 
   float mMiterLimit = 10.f;
   bool mPreserve = false;
-  ELineCap mCapOption = ELineCap::Butt;
+  ELineCap mCapOption = ELineCap::Round;
   ELineJoin mJoinOption = ELineJoin::Miter;
   DashOptions mDash;
 };

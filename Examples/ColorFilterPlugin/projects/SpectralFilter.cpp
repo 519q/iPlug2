@@ -6,18 +6,19 @@ double SpectralFilter::Process(double input, FilterParameters& params) // phase 
   double phase{};
   if (params.m_spectralFilter_IR == (int)Spectral_IR::FIR)
   {
-    magnitude = FIR_hilbert.getMagnitude(input, params.m_spectralFilterFIR_Order);
-    phase = FIR_hilbert.getPhase(input, params.m_spectralFilterFIR_Order);
+    auto output = transformer.ProcessFIR(input, params.m_spectralFilterOrder, params.m_spectralFilterOrderODD);
+    magnitude = output.magnitude;
+    phase = output.phase;
   }
   else if (params.m_spectralFilter_IR == (int)Spectral_IR::LATTICE)
   {
-    auto output = Lattice_hilbert.getMagnPhase(input, params.m_spectralFilterIIR_Order);
+    auto output = transformer.ProcessLATTICE(input, params.m_spectralFilterOrder);
     magnitude = output.magnitude;
     phase = output.phase;
   }
   else if (params.m_spectralFilter_IR == (int)Spectral_IR::IIR)
   {
-    auto output = IIR_hilbert.getMagnitude_Phase(input, params.m_spectralFilterIIR_Order);
+    auto output = transformer.ProcessIIR(input, params.m_spectralFilterOrder);
     magnitude = output.magnitude;
     phase = output.phase;
   }

@@ -68,6 +68,7 @@
     <ClCompile Include="AllpassFilters.cpp" />
     <ClCompile Include="Phaser.cpp" />
     <ClCompile Include="HilbertTransformers.cpp" />
+    <ClCompile Include="StateMixer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="../config.h" />
@@ -225,6 +226,7 @@
     <ClInclude Include="AllpassFilters.h" />
     <ClInclude Include="Phaser.h" />
     <ClInclude Include="HilbertTransformers.h" />
+    <ClInclude Include="StateMixer.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="IPlug">

@@ -77,6 +77,27 @@
     <ClCompile Include="..\..\..\IGraphics\Drawing\IGraphicsSkia.cpp">
       <Filter>IGraphics\Drawing</Filter>
     </ClCompile>
+    <ClCompile Include="AllpassFilters.cpp" />
+    <ClCompile Include="BandPassFilters.cpp" />
+    <ClCompile Include="BandStopFilters.cpp" />
+    <ClCompile Include="CustomGui.cpp" />
+    <ClCompile Include="DCBlock.cpp" />
+    <ClCompile Include="DCBlocker_FIR.cpp" />
+    <ClCompile Include="DelayLine.cpp" />
+    <ClCompile Include="FFT_F_I.cpp" />
+    <ClCompile Include="Filters.cpp" />
+    <ClCompile Include="FilterSelector.cpp" />
+    <ClCompile Include="FilterSwitcher.cpp" />
+    <ClCompile Include="HighPassFilters.cpp" />
+    <ClCompile Include="HilbertTransformers.cpp" />
+    <ClCompile Include="Phaser.cpp" />
+    <ClCompile Include="PhaseUnwrapper.cpp" />
+    <ClCompile Include="RingBuffer.cpp" />
+    <ClCompile Include="Shapers.cpp" />
+    <ClCompile Include="ShaperSelector.cpp" />
+    <ClCompile Include="SpectralFilter.cpp" />
+    <ClCompile Include="SpectralShaper.cpp" />
+    <ClCompile Include="StateMixer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\ColorFilterPlugin.h" />
@@ -257,6 +278,30 @@
     <ClInclude Include="..\..\..\IPlug\ISender.h">
       <Filter>IPlug</Filter>
     </ClInclude>
+    <ClInclude Include="AllpassFilters.h" />
+    <ClInclude Include="BandPassFilters.h" />
+    <ClInclude Include="BandStopFilters.h" />
+    <ClInclude Include="CustomGui.h" />
+    <ClInclude Include="DCBlock.h" />
+    <ClInclude Include="DCBlocker_FIR.h" />
+    <ClInclude Include="DebugPrint.h" />
+    <ClInclude Include="DelayLine.h" />
+    <ClInclude Include="FFT_F_I.h" />
+    <ClInclude Include="FilterParameters.h" />
+    <ClInclude Include="Filters.h" />
+    <ClInclude Include="FilterSelector.h" />
+    <ClInclude Include="FilterSwitcher.h" />
+    <ClInclude Include="HighPassFilters.h" />
+    <ClInclude Include="HilbertTransformers.h" />
+    <ClInclude Include="Phaser.h" />
+    <ClInclude Include="PhaseUnwrapper.h" />
+    <ClInclude Include="RingBuffer.h" />
+    <ClInclude Include="Shapers.h" />
+    <ClInclude Include="ShaperSelector.h" />
+    <ClInclude Include="SmoothTools.h" />
+    <ClInclude Include="SpectralFilter.h" />
+    <ClInclude Include="SpectralShaper.h" />
+    <ClInclude Include="StateMixer.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="resources">
@@ -313,5 +358,10 @@
     <Image Include="..\resources\ColorFilterPlugin.ico">
       <Filter>resources</Filter>
     </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Ideas.txt" />
+    <Text Include="plan_to_do.txt" />
+    <Text Include="UIUX.txt" />
   </ItemGroup>
 </Project>

@@ -1,11 +1,23 @@
 #pragma once
 #include "IPlug_include_in_plug_hdr.h"
+#include "projects/DebugPrint.h"
+#include "projects/SmoothTools.h"
+#include "projects/StateMixer.h"
+#include <array>
 #include <vector>
-
-// #include "DelayLine.h"
-// #include "projects/PhaseUnwrapper.h"
-
-// IIR Allpass-based approach
+struct IntPlusInterpParam
+{
+  int stepped;
+  double interpFactor;
+};
+inline IntPlusInterpParam mapParamToOrder(double controlValue, int size, int base, int step, int offset = 0)
+{
+  double overFractional = controlValue * size - base;
+  int overInt = std::floor(overFractional);
+  int steppedOver = overInt - (overInt % step) + offset;
+  double interpFactor = overFractional - overInt;
+  return {std::clamp((base + steppedOver), base, size), interpFactor};
+}
 struct Real_Imag_Output
 {
   double real;
@@ -18,128 +30,96 @@ struct Magn_Phas_Output
   double phase;
 };
 
+static constexpr int IIR_MAX_ORDER = 40;
 class IIR_HilbertTransform
 {
+private:
+  std::array<double, IIR_MAX_ORDER> x1, x2, y1, y2;
+  std::array<std::vector<double>, IIR_MAX_ORDER> IIRPrecomputedCoeffs;
+  std::array<double, IIR_MAX_ORDER> iirDelayLine;
+  std::array<double, IIR_MAX_ORDER> totalDelayArr;
+  size_t delayPos;
+
 public:
   IIR_HilbertTransform();
-
+  void PrecomputeCoefficients();
   Magn_Phas_Output getMagnitude_Phase(double input, int order);
-
   Real_Imag_Output getReal_Imag(double input, int order);
-
   double getImaginary(double input, int order);
-
-  void calculateCoefficients();
-  void initializeStates();
   void initializeDelayLine();
-
-  // double getDelay() const;
-
-private:
-  std::vector<double> allpassCoeffs;
-  std::vector<double> x1, x2, y1, y2;
-  // double x1[6], x2[6], y1[6], y2[6];
-  std::vector<double> iirDelayLine;
-  size_t delayPos;
-  double totalDelay;
-  int m_Order{6};
-  // DelayLine DelayLine{};
+  std::vector<double>& GetCoefficients(int order);
 };
 
-/*
-// Usage:
-//AllpassHilbertTransform hilbert;
-//
-//// In your processing loop:
-//auto output = hilbert.getReal_Imag(inputSample);
-//double real = output.real;
-//double imag = output.imag;
-//
-//or:
-//auto output = hilbert.getMagintude_Phase(inputSample);
-//double magnitude = output.magnitude;
-//double phase = output.phase;
-// */
-
+static constexpr int FIR_MAX_ORDER = 200;
 class FIR_HilbertTransform
 {
-  std::vector<double> firDelayLine;
-  std::vector<double> coefficients;
+  std::array<double, FIR_MAX_ORDER> firDelayLine;
   size_t position = 0;
-  int m_Order{4};
-  // DelayLine delayLine{};
-  // PhaseUnwrapper phaseUnwrapper{};
+  std::array<std::vector<double>, FIR_MAX_ORDER> FIRPrecomputedCoeffs;
 
 public:
   FIR_HilbertTransform();
-
   double getImaginary(double input, int order);
-
-  // a method to query the delay introduced by the filter. This is useful for aligning the original signal with the Hilbert-transformed signal
-  // size_t getDelay() const;
-
+  std::vector<double>& GetCoefficients(int order);
+  void PrecomputeCoefficients();
   double getMagnitude(double input, int order);
-
   double getPhase(double input, int order);
-
+  Magn_Phas_Output getMagnitude_Phase(double input, int order);
   double getReal(double input, int order);
-
-  void resize(int order);
-
-  void calculateCoefficients();
 };
 
+static constexpr int LATTICE_MAX_ORDER = 200;
 class LatticeHilbertTransform
 {
 private:
-  std::vector<double> coeffs;
-  std::vector<double> zReal, zImag; // Delay buffers for two parallel allpass filters
-  int m_Order{4};
+  std::array<double, LATTICE_MAX_ORDER> zReal{}, zImag{}; // Delay buffers for two parallel allpass filters
+  std::array<std::vector<double>, LATTICE_MAX_ORDER> latticePrecomputedCoeffs;
+  int m_size{};
 
 public:
-  void Setup(int order)
+  LatticeHilbertTransform();
+  std::vector<double>& GetCoefficients(int order);
+  Real_Imag_Output getRealImag(double input, int order, std::vector<double>& coeffs);
+  Magn_Phas_Output getMagnitude_Phase(double input, int order);
+  void PrecomputeCoefficients();
+};
+
+template <typename T>
+class HilbertMixer
+{
+private:
+  T ceil{};
+  T floor{};
+  int m_size{};
+
+public:
+  Magn_Phas_Output process(double input, double sizeControl, int size, int base, int step, std::function<Magn_Phas_Output(T&, double, int)> func, int offset = 0)
   {
-    if (m_Order != order)
-    {
-      m_Order = order;
-      coeffs.resize(m_Order);
-      zReal.assign(m_Order, 0.0);
-      zImag.assign(m_Order, 0.0);
+    auto paramStruct = mapParamToOrder(sizeControl, size, base, step, offset);
+    double interpFactor = paramStruct.interpFactor;
+    int floorSize = paramStruct.stepped;
 
-      for (int n = 0; n < m_Order; n++)
-      {
-        double freq = (n + 0.5) / m_Order; // Normalized frequency
-        double omega = iplug::PI * freq;
-        coeffs[n] = (sin(omega) - 1.0) / (sin(omega) + 1.0);
-      }
-    }
+
+    m_size = floorSize;
+    int ceilSize = std::clamp((paramStruct.stepped + step), paramStruct.stepped, size);
+    Magn_Phas_Output floorProcessed = func(floor, input, floorSize);
+    Magn_Phas_Output ceilProcessed = func(ceil, input, ceilSize);
+    Magn_Phas_Output outputStruct{};
+    outputStruct.magnitude = interpolateLin(ceilProcessed.magnitude, floorProcessed.magnitude, interpFactor);
+    outputStruct.phase = interpolateLin(ceilProcessed.phase, floorProcessed.phase, interpFactor);
+    return outputStruct;
   }
+};
 
-  Real_Imag_Output getRealImag(double input, int order)
-  {
-    Setup(order);
-    double vReal = input;
-    double vImag = input;
+class Hilbert_Transformer
+{
+private:
+  HilbertMixer<IIR_HilbertTransform> IIRmixer{};
+  HilbertMixer<FIR_HilbertTransform> FIRmixer{};
+  HilbertMixer<LatticeHilbertTransform> LATTICEmixer{};
 
-    for (int n = 0; n < m_Order; n++)
-    {
-      // First allpass filter for real part (0-degree shift)
-      double tempReal = vReal - coeffs[n] * zReal[n];
-      vReal = coeffs[n] * tempReal + zReal[n];
-      zReal[n] = tempReal;
-
-      // Second allpass filter for imaginary part (90-degree shift)
-      double tempImag = vImag - coeffs[n] * zImag[n];
-      vImag = coeffs[n] * tempImag + zImag[n];
-      zImag[n] = tempImag;
-    }
-    return {vReal, vImag};
-  }
-  Magn_Phas_Output getMagnPhase(double input, int order)
-  {
-    Real_Imag_Output r_i = getRealImag(input, order);
-    double magnitude = std::sqrt(r_i.real * r_i.real + r_i.imag * r_i.imag);
-    double phase = std::atan2(r_i.imag, r_i.real);
-    return {magnitude, phase};
-  }
+public:
+  Magn_Phas_Output ProcessIIR(double input, double controlParam);
+  Magn_Phas_Output ProcessFIR(double input, double controlParam, int offset);
+  Magn_Phas_Output ProcessLATTICE(double input, double controlParam);
 };

@@ -360,6 +360,7 @@
     <ClInclude Include="SmoothTools.h" />
     <ClInclude Include="SpectralFilter.h" />
     <ClInclude Include="SpectralShaper.h" />
+    <ClInclude Include="StateMixer.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\IGraphics\Controls\IControls.cpp" />
@@ -411,6 +412,7 @@
     <ClCompile Include="ShaperSelector.cpp" />
     <ClCompile Include="SpectralFilter.cpp" />
     <ClCompile Include="SpectralShaper.cpp" />
+    <ClCompile Include="StateMixer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\resources\main.rc" />

@@ -105,27 +105,180 @@ private:
     std::make_unique<ZDF_4P_BS>(),
     std::make_unique<ZDF_6P_BS>()};
 
+  int getFilterIndex(FilterAlgo algo, FilterPoles selector)
+  {
+    switch (algo)
+    {
+      case FilterAlgo::DF1:
+      {
+        switch (selector)
+        {
+          case FilterPoles::p1:
+            return 0;
+            case FilterPoles::p2:
+            return 1;
+            case FilterPoles::p3:
+            return 2;
+            case FilterPoles::p4:
+            return 3;
+            case FilterPoles::p6:
+            return 4;
+        }
+      }
+      case FilterAlgo::DF2:
+      {
+        switch (selector)
+        {
+            case FilterPoles::p2:
+            return 5;
+            case FilterPoles::p4:
+            return 6;
+            case FilterPoles::p6:
+            return 7;
+        }
+      }
+      case FilterAlgo::SVF1:
+      {
+        switch (selector)
+        {
+          case FilterPoles::p1:
+            return 8;
+            case FilterPoles::p2:
+            return 9;
+            case FilterPoles::p3:
+            return 10;
+            case FilterPoles::p4:
+            return 11;
+            case FilterPoles::p6:
+            return 12;
+        }
+      }
+      case FilterAlgo::ZDF1:
+      {
+        switch (selector)
+        {
+          case FilterPoles::p1:
+            return 13;
+            case FilterPoles::p2:
+            return 14;
+            case FilterPoles::p3:
+            return 15;
+            case FilterPoles::p4:
+            return 16;
+            case FilterPoles::p6:
+            return 17;
+        }
+      }
+      default: return 0;
+    }
+    //if (algo == FilterAlgo::DF1)
+    //{
+    //  if (selector == FilterPoles::p1)
+    //  {
+    //    return 0;
+    //  }
+    //  else if (selector == FilterPoles::p2)
+    //  {
+    //    return 1;
+    //  }
+    //  else if (selector == FilterPoles::p3)
+    //  {
+    //    return 2;
+    //  }
+    //  else if (selector == FilterPoles::p4)
+    //  {
+    //    return 3;
+    //  }
+    //  else if (selector == FilterPoles::p6)
+    //  {
+    //    return 4;
+    //  }
+    //}
+    //else if (algo == FilterAlgo::DF2)
+    //{
+    //  if (selector == FilterPoles::p2)
+    //  {
+    //    return 5;
+    //  }
+    //  else if (selector == FilterPoles::p4)
+    //  {
+    //    return 6;
+    //  }
+    //  else if (selector == FilterPoles::p6)
+    //  {
+    //    return 7;
+    //  }
+    //  else return 0;
+    //}
+    //else if (algo == FilterAlgo::SVF1)
+    //{
+    //  if (selector == FilterPoles::p1)
+    //  {
+    //    return 8;
+    //  }
+    //  else if (selector == FilterPoles::p2)
+    //  {
+    //    return 9;
+    //  }
+    //  else if (selector == FilterPoles::p3)
+    //  {
+    //    return 10;
+    //  }
+    //  else if (selector == FilterPoles::p4)
+    //  {
+    //    return 11;
+    //  }
+    //  else if (selector == FilterPoles::p6)
+    //  {
+    //    return 12;
+    //  }
+    //}
+    //else if (algo == FilterAlgo::ZDF1)
+    //{
+    //  if (selector == FilterPoles::p1)
+    //  {
+    //    return 13;
+    //  }
+    //  else if (selector == FilterPoles::p2)
+    //  {
+    //    return 14;
+    //  }
+    //  else if (selector == FilterPoles::p3)
+    //  {
+    //    return 15;
+    //  }
+    //  else if (selector == FilterPoles::p4)
+    //  {
+    //    return 16;
+    //  }
+    //  else if (selector == FilterPoles::p6)
+    //  {
+    //    return 17;
+    //  }
+    //}
+    //else return 0;
+  }
 public:
   double Process(double input, FilterParameters& params)
   {
     if (params.m_filterType == (int)FilterType::LP)
     {
-      LP_Array[params.m_filterSelector]->Process(input, params);
+      LP_Array[getFilterIndex((FilterAlgo)params.m_filterAlgo, (FilterPoles)params.m_filterSelector)]->Process(input, params);
     }
 
     if (params.m_filterType == (int)FilterType::BP)
     {
-      BP_Array[params.m_filterSelector]->Process(input, params);
+      BP_Array[getFilterIndex((FilterAlgo)params.m_filterAlgo, (FilterPoles)params.m_filterSelector)]->Process(input, params);
     }
 
     if (params.m_filterType == (int)FilterType::BS)
     {
-      BS_Array[params.m_filterSelector]->Process(input, params);
+      BS_Array[getFilterIndex((FilterAlgo)params.m_filterAlgo, (FilterPoles)params.m_filterSelector)]->Process(input, params);
     }
 
     if (params.m_filterType == (int)FilterType::HP)
     {
-      HP_Array[params.m_filterSelector]->Process(input, params);
+      HP_Array[getFilterIndex((FilterAlgo)params.m_filterAlgo, (FilterPoles)params.m_filterSelector)]->Process(input, params);
     }
     return input;
   }

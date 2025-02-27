@@ -351,6 +351,7 @@ public:
   virtual void DrawHandle(IGraphics& g, const IRECT& bounds);
   virtual void DrawIndicatorTrack(IGraphics& g, float angle, float cx, float cy, float radius);
   virtual void DrawBackgroundTrack(IGraphics& g, float cx, float cy, float radius);
+  virtual void DrawTicks(IGraphics& g, float cx, float cy, float radius);
   virtual void DrawPointer(IGraphics& g, float angle, float cx, float cy, float radius);
 
   void OnMsgFromDelegate(int msgTag, int dataSize, const void* pData) override
@@ -380,7 +381,7 @@ public:
   void SetInnerPointerFrac(float frac) { mInnerPointerFrac = frac; }
   void SetOuterPointerFrac(float frac) { mOuterPointerFrac = frac; }
   void SetPointerThickness(float thickness) { mPointerThickness = thickness; }
-
+  void SetTickCount(int ticks) { mTickCount = ticks; }
   float GetRadius() const;
   IRECT GetTrackBounds() const;
 
@@ -388,6 +389,7 @@ public:
 protected:
   virtual IRECT GetKnobDragBounds() override;
   std::atomic<float> mModValue{};
+  int mTickCount{};
   float mTrackToHandleDistance = 4.f;
   float mInnerPointerFrac = 0.1f;
   float mOuterPointerFrac = 1.f;

@@ -29,7 +29,6 @@ inline double scaleExponential(double controlParam, double scalingFactor)
   double scaled_t = (std::exp(k * controlParam) - 1.0) / (std::exp(k) - 1.0);
   return scaled_t;
 }
-
 inline double mapRange(double value, double min, double max) { return min + (value * (max - min)); }
 
 class SmoothBypass

@@ -3,6 +3,7 @@
 #include "BandStopFilters.h"
 #include "Filters.h"
 #include "HighPassFilters.h"
+#include <array>
 
 class FilterSwitcher
 {

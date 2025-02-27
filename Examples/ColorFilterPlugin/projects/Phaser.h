@@ -5,8 +5,7 @@ class Phaser
 {
 private:
   FirstOrderAllpassFilter firstOrderAllpassMixer{};
-  SecondOrderAllpassFilterV1 secondOrderAllpass1Mixer{};
-  SecondOrderAllpassFilterV2 secondOrderAllpass2Mixer{};
+  SecondOrderAllpassFilter secondOrderAllpassMixer{};
   LatticeAllpass latticeAllpass{};
 
 public:
@@ -22,13 +21,9 @@ public:
       }
       else if (params.m_phaserSelector == 1)
       {
-        secondOrderAllpass1Mixer.Process(processed, params);
+        secondOrderAllpassMixer.Process(processed, params);
       }
       else if (params.m_phaserSelector == 2)
-      {
-        secondOrderAllpass2Mixer.Process(processed, params);
-      }
-      else if (params.m_phaserSelector == 3)
       {
         latticeAllpass.Process(processed, params);
       }

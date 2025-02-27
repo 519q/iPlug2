@@ -32,11 +32,9 @@ private:
 class SpectralShaper
 {
 private:
-  IIR_HilbertTransform IIR_hilbert{};
-  FIR_HilbertTransform FIR_hilbert{};
-  LatticeHilbertTransform Lattice_hilbert{};
+  Hilbert_Transformer transformer{};
   ShaperSelector shaperSelector{};
-  WaveShaper waveShaper;
+  WaveShaper waveShaper{};
 
 public:
   SpectralShaper();

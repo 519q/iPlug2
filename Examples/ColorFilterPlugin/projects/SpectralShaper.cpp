@@ -10,25 +10,26 @@ void SpectralShaper::Process(double& input, FilterParameters& params)
 
   if (params.m_spectralShaper_IR == (int)Spectral_IR::IIR)
   {
-    auto output = IIR_hilbert.getMagnitude_Phase(input, params.m_spectralShaperIIR_Order);
+    auto output = transformer.ProcessIIR(input, params.m_spectralShaperOrder);
     magnitude = output.magnitude;
     phase = output.phase;
   }
   else if (params.m_spectralShaper_IR == (int)Spectral_IR::LATTICE)
   {
-    auto output = Lattice_hilbert.getMagnPhase(input, params.m_spectralShaperIIR_Order);
+    auto output = transformer.ProcessLATTICE(input, params.m_spectralShaperOrder);
     magnitude = output.magnitude;
     phase = output.phase;
   }
   else if (params.m_spectralShaper_IR == (int)Spectral_IR::FIR)
   {
-    magnitude = FIR_hilbert.getMagnitude(input, params.m_spectralShaperFIR_Order);
-    phase = FIR_hilbert.getPhase(input, params.m_spectralShaperFIR_Order);
+    auto output = transformer.ProcessFIR(input, params.m_spectralShaperOrder, params.m_spectralShaperOrderODD);
+    magnitude = output.magnitude;
+    phase = output.phase;
   }
 
   // double real = hilbert.getReal(input);
   // double imag = hilbert.getImag(input);
-  magnitude = shaperSelector.Process(magnitude, params);
+  magnitude = shaperSelector.ProcessSpectralShaperArray(magnitude, params);
   // double shapedMagnitude = magnitude;
   // input = magnitude * cosWave(phase);
   // input = magnitude * triangleWave(phase);

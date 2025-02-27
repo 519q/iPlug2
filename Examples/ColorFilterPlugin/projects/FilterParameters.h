@@ -24,10 +24,10 @@ static constexpr double SVF1_3P_ResoScaling = 1.19;
 static constexpr double SVF1_4P_ResoScaling = 1.4;
 static constexpr double SVF1_6P_ResoScaling = 0.95;
 
-static constexpr double ZDF1_2P_ResoScaling = 2;
-static constexpr double ZDF1_3P_ResoScaling = 1.2;
-static constexpr double ZDF1_4P_ResoScaling = 0.94;
-static constexpr double ZDF1_6P_ResoScaling = 0.76;
+static constexpr double ZDF1_2P_ResoScaling = 2.01;
+static constexpr double ZDF1_3P_ResoScaling = 1.22;
+static constexpr double ZDF1_4P_ResoScaling = 1.52;
+static constexpr double ZDF1_6P_ResoScaling = 0.97;
 
 #pragma endregion
 
@@ -38,6 +38,16 @@ enum class FiltersCounts
   df2 = 3,
   svf = 5,
   zdf = 5
+};
+
+enum class FilterPoles
+{
+  p1,
+  p2,
+  p3,
+  p4,
+  p6,
+  MAX_FILTER_POLES
 };
 
 enum class FilterTypes
@@ -92,6 +102,7 @@ enum class FilterType
 class FilterParameters
 {
 public:
+  int m_filterAlgo{};
   int m_filterType{};
   int m_filterSelector{};
 
@@ -105,15 +116,14 @@ public:
   int m_spectralFilter_IR{};
   bool m_spectralFilter_Harder{};
 
-  int m_spectralFilterFIR_Order{};
-  int m_spectralShaperFIR_Order{};
-
-  int m_spectralFilterIIR_Order{};
-  int m_spectralShaperIIR_Order{};
+  double m_spectralFilterOrder{};
+  bool m_spectralFilterOrderODD{};
+  double m_spectralShaperOrder{};
+  bool m_spectralShaperOrderODD{};
 
   double m_spectralShaperDrive{};
   int m_spectralShaper_IR{};
-  int m_spectralShaperSelector{};
+  double m_spectralShaperSelector{};
 
   double m_phaserMix{};
   double m_phaserFreq{};
@@ -128,7 +138,8 @@ public:
   double m_sampleRate{};
   int m_oversample{};
 
-  void setFilterParameters(int filterType,
+  void setFilterParameters(int filterAlgo,
+                           int filterType,
                            int filterSelector,
 
                            double cutoff,
@@ -140,16 +151,16 @@ public:
                            double bias,
 
                            double spectralFilterDrive,
-                           int spectralFilterFIR_Q,
-                           int spectralFilterIIR_Q,
+                           double spectralFilterOrder,
+                           bool spectralFilterOrderODD,
                            int spectralFilter_IR,
                            bool spectralFilter_harder,
 
                            double spectralShaperDrive,
-                           int spectralShaperFIR_Q,
-                           int spectralShaperIIR_Q,
+                           double spectralShaperOrder,
+                           bool spectralShaperOrderODD,
                            int spectralShaper_IR,
-                           int spectralShaperSelector,
+                           double spectralShaperSelector,
 
                            double phaserMix,
                            double phaserFreq,
@@ -164,6 +175,7 @@ public:
                            int overSampling,
                            double sampleRate)
   {
+    m_filterAlgo = filterAlgo;
     m_filterType = filterType;
     m_filterSelector = filterSelector;
     m_spectralFilterDrive = spectralFilterDrive;
@@ -180,11 +192,10 @@ public:
     m_spectralShaper_IR = spectralShaper_IR;
     m_spectralShaperSelector = spectralShaperSelector;
 
-    m_spectralFilterFIR_Order = spectralFilterFIR_Q;
-    m_spectralShaperFIR_Order = spectralShaperFIR_Q;
-
-    m_spectralFilterIIR_Order = spectralFilterIIR_Q;
-    m_spectralShaperIIR_Order = spectralShaperIIR_Q;
+    m_spectralFilterOrder = spectralFilterOrder;
+    m_spectralFilterOrderODD = spectralFilterOrderODD;
+    m_spectralShaperOrder = spectralShaperOrder;
+    m_spectralShaperOrderODD = spectralShaperOrderODD;
 
     m_phaserMix = phaserMix;
     m_phaserFreq = phaserFreq;
