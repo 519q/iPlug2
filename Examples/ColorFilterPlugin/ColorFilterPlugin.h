@@ -62,6 +62,7 @@ enum EParams
 
   kClipMix,
   kClipSelector,
+  kClipVisualizer,
 
   kOverSampling,
   kDryWet,
@@ -75,22 +76,6 @@ using namespace igraphics;
 class ColorFilterPlugin final : public Plugin
 {
 private:
-  //   ██████  ██    ██ ██      ██████  ██████  ███    ██ ████████ ██████   ██████  ██      ███████
-  //  ██       ██    ██ ██     ██      ██    ██ ████   ██    ██    ██   ██ ██    ██ ██      ██
-  //  ██   ███ ██    ██ ██     ██      ██    ██ ██ ██  ██    ██    ██████  ██    ██ ██      ███████
-  //  ██    ██ ██    ██ ██     ██      ██    ██ ██  ██ ██    ██    ██   ██ ██    ██ ██           ██
-  //   ██████   ██████  ██      ██████  ██████  ██   ████    ██    ██   ██  ██████  ███████ ███████
-  // const int columns = 5;
-  // const int columns_Shaper = 5;
-  // const int columns_BP = 5;
-  // const int rows = 1;
-  // const int padding = 25;
-  // const int smallKnobPadding = 12;
-  // const int buttonsPadding = 35;
-  // const double SmallKnobScale = 0.6;
-  // const double getFromTopFilter = 60;
-  // const double getFromTopShaper = 60;
-  // const double m_Plus1_Scale = 0.3;
 
   double bigKnobSize = 70.08;
   double medKnobSize = 39.79;
@@ -142,6 +127,7 @@ private:
   IControl* mClipperFlavour{};
   IControl* mClipperMix{};
 
+  IControl* mClipVisualiser{};
   bool g_Bypass{};
   bool m_spectralFilterOn{};
   int spectralFilter_IR{};
@@ -184,6 +170,7 @@ public:
 #if IPLUG_DSP // http://bit.ly/2S64BDd
   ISender<1, 64, float> mModValueSender{};
   ISenderData<1, float> mModData{};
+  double clipVisualisationValue{};
 
   FilterParameters fParams{};
   FilterSelector filterSelectorL{};
@@ -210,6 +197,8 @@ public:
 
   SpectralShaper mSpectralShaperL{};
   SpectralShaper mSpectralShaperR{};
+  RMS_PEAK_CALCULATOR peakCalc{1500};
+
   int m_OS_LatencySamples{};
   // int m_RB_LatencySamples{};
 
@@ -229,6 +218,15 @@ public:
   void DecideControlDisableStatus(bool disableCondition, Args... controls);
   void CalculateLatency();
   void DecideOnReset();
+  void SetVisualizationData(int knobTag, double value)
+  {
+    mModData.ctrlTag = knobTag; // The control tag that should receive this data
+    mModData.nChans = 1;        // We only have 1 value in .vals
+    mModData.chanOffset = 0;
+    mModData.vals[0] = value;
+    // Enqueue this data for the knob
+    mModValueSender.PushData(mModData);
+  }
   void SetModData(int knobTag);
   template <typename... Tags>
   void BatchSetModData(Tags... knobTag);

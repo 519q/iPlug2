@@ -2,11 +2,15 @@
 #include "IControls.h"
 #include "SkBitmap.h"
 #include "SkCanvas.h"
+#include "SkColorFilter.h"
+#include "SkData.h"
 #include "SkImage.h"
 #include "SkSVGDOM.h"
 #include "SkStream.h"
 #include "projects/DebugPrint.h"
 #include <vector>
+#include "Smoothers.h"
+
 static double mDrawScaleRetainer{1};
 static bool mDrawScaleRetainerNeedsSaving{};
 
@@ -185,119 +189,59 @@ static IVStyle ColorFilterStyle_SVG_KnobOver{false,
                                              Colors::ColorFilterPatternSpec_FilterPanel,
                                              getStrokeOptions()};
 
-// class BitmapPanel : public IControl
-//{
-// public:
-//   BitmapPanel(const IRECT& bounds, const char* svgPath)
-//     : IControl(bounds)
-//     , fSvgPath(svgPath)
-//     , fWidth(bounds.W())  // Store width from bounds
-//     , fHeight(bounds.H()) // Store height from bounds
-//   {
-//     // Initialize the bitmap size with the specified bounds
-//     if (!RenderSVGToBitmap(fSvgPath, fBitmap))
-//     {
-//       // Handle the error (e.g., log or set a default image)
-//     }
-//
-//     // Create IBitmap from the SkBitmap
-//     CreateIBitmapFromSkia();
-//   }
-//
-//   ~BitmapPanel() {}
-//
-//   void Draw(IGraphics& g) override
-//   {
-//     if (fBitmapNeedsUpdate || fBitmapIBitmap == nullptr)
-//     {
-//       // Render the SVG to the bitmap with the current dimensions
-//       if (!RenderSVGToBitmap(fSvgPath, fBitmap))
-//       {
-//         // Handle the error (e.g., log or set a default image)
-//       }
-//
-//       // Create or update the IBitmap from the SkBitmap
-//       CreateIBitmapFromSkia();
-//       fBitmapNeedsUpdate = false; // Only reset after a successful update
-//     }
-//
-//     // Draw the IBitmap to the UI
-//     g.DrawBitmap(*fBitmapIBitmap, g.GetBounds(), 0, 0, EBlend::Default);
-//   }
-//
-// private:
-//   bool RenderSVGToBitmap(const char* svgPath, SkBitmap& bitmap)
-//   {
-//     SkFILEStream svgStream(svgPath);
-//     sk_sp<SkSVGDOM> svgDom = SkSVGDOM::MakeFromStream(svgStream);
-//     if (!svgDom)
-//     {
-//       // Handle error (you might want to log or display an error message)
-//       return false;
-//     }
-//
-//     // Allocate pixels with the panel's current width and height
-//     SkImageInfo info = SkImageInfo::MakeN32Premul(fWidth, fHeight);
-//     bitmap.allocPixels(info);
-//
-//     SkCanvas canvas(bitmap);
-//     svgDom->setContainerSize(SkSize::Make(fWidth, fHeight));
-//     svgDom->render(&canvas);
-//
-//     return true;
-//   }
-//
-//   void CreateIBitmapFromSkia()
-//   {
-//     // Convert SkBitmap to IBitmap
-//     // Assuming you've got an appropriate constructor or method to create an IBitmap from pixel data
-//     fBitmapIBitmap = new IBitmap(fBitmap.width(), fBitmap.height(), false); // Use the appropriate constructor
-//     // Copy the pixel data from SkBitmap to IBitmap
-//     // Note: You'll need to ensure the pixel format is compatible
-//     memcpy(fBitmapIBitmap->GetPixels(), fBitmap.getPixels(), fBitmap.byteSize());
-//   }
-//
-//   const char* fSvgPath{};
-//   SkBitmap fBitmap{};
-//   IBitmap* fBitmapIBitmap = nullptr; // Pointer to the IBitmap representation
-//   int fWidth;                        // Store the width of the bounds
-//   int fHeight;                       // Store the height of the bounds
-//   bool fBitmapNeedsUpdate = true;    // Flag to indicate when to update
-// };
-// const char* fSvgPath;
-// int fWidth;
-// int fHeight;
-// SkBitmap fBitmap;
-// void RenderSVGToBitmap(const char* svgPath, SkBitmap& bitmap, int width, int height)
-//{
-//   // Load the SVG file
-//   SkFILEStream svgStream(svgPath);
-//   sk_sp<SkSVGDOM> svgDom = SkSVGDOM::MakeFromStream(svgStream);
-//   if (!svgDom)
-//   {
-//     // Handle error
-//     return;
-//   }
-//
-//   // Create bitmap info
-//   SkImageInfo info = SkImageInfo::MakeN32Premul(width, height);
-//   // Allocate pixels for the bitmap
-//   bitmap.allocPixels(info);
-//
-//   // Create a canvas to draw onto
-//   SkCanvas canvas(bitmap);
-//
-//   // Set up the SVG's viewBox which enables scaling
-//   svgDom->setContainerSize(SkSize::Make(width, height));
-//
-//   // Draw the SVG to the canvas
-//   svgDom->render(&canvas);
-// }
+class ClipperLightButton : public IVToggleControl
+{
+  IVStyle style{};
+  std::atomic<float> mModValue{};
+
+public:
+  ClipperLightButton(
+    const IRECT& bounds, int paramIdx = kNoParameter, const char* label = "", const IVStyle& style = DEFAULT_STYLE, const char* offText = "", const char* onText = "", bool green = false)
+    : IVToggleControl(bounds, paramIdx, label, style, offText, onText)
+  {
+    style.WithColor(kX2, IColor(0xff,0xff,0xff,0xff));
+  }
+  void OnMsgFromDelegate(int msgTag, int dataSize, const void* pData) override
+  {
+    auto data = static_cast<const ISenderData<1, float>*>(pData);
+    float value = data->vals[0];
+    mModValue.store(value);
+    SetDirty(false);
+    IControl::OnMsgFromDelegate(msgTag, dataSize, pData); // base call if needed
+  }
+  void DrawLight(IGraphics& g, const IRECT& bounds)
+  {
+    const float alpha = mModValue.load() * 1;
+    const float centerX = bounds.MW(); // Middle width
+    const float centerY = bounds.MH(); // Middle height
+    const float radius = std::min(bounds.W(), bounds.H()) * 0.5f;
+
+    // Create a radial pattern
+    IPattern pattern = IPattern::CreateRadialGradient(centerX, centerY, 7,
+                                                      {
+                                                        {IColor(255, 0xf0, 0x1e, 0x00), 0.0}, // White opaque at center (255 alpha)
+                                                        {IColor(0, 0xf0, 0x1e, 0x00), 1.0}       // White transparent at edges (0 alpha)
+                                                      });
+    IBlend blend(EBlend::Default, alpha);
+    g.PathClear();
+    g.PathEllipse(bounds);
+    g.PathFill(pattern, IFillOptions(), &blend);
+  }
+  void DrawWidget(IGraphics& g)
+  {
+    DrawLight(g, mWidgetBounds);
+  }
+};
 
 class IVToggleControl_SVG : public IVToggleControl
 {
 private:
   bool mGreen{};
+  std::unique_ptr<ISVG> mSvg_SmallButtonDisabled{};
+  std::unique_ptr<ISVG> mSvg_SmallButton{};
+  std::unique_ptr<ISVG> mSvg_SmallButtonActiveDisabled{};
+  std::unique_ptr<ISVG> mSvg_SmallButtonActive{};
+  std::unique_ptr<ISVG> mSvg_GreenButton{};
 
 public:
   IVToggleControl_SVG(
@@ -306,29 +250,37 @@ public:
     , mGreen(green)
   {
   }
+  void OnAttached() override
+  {
+    IVToggleControl::OnAttached();
+    if (GetUI())
+    {
+      mSvg_SmallButtonDisabled = std::make_unique<ISVG>(GetUI()->LoadSVG("C:/Users/salva/Documents/GitHub/iPlug2/Examples/ColorFilterPlugin/resources/Skins/Small Button Disabled.svg"));
+      mSvg_SmallButton = std::make_unique<ISVG>(GetUI()->LoadSVG("C:/Users/salva/Documents/GitHub/iPlug2/Examples/ColorFilterPlugin/resources/Skins/Small Button.svg"));
+      mSvg_SmallButtonActiveDisabled = std::make_unique<ISVG>(GetUI()->LoadSVG("C:/Users/salva/Documents/GitHub/iPlug2/Examples/ColorFilterPlugin/resources/Skins/SmllButtonActive Disabled.svg"));
+      mSvg_SmallButtonActive = std::make_unique<ISVG>(GetUI()->LoadSVG("C:/Users/salva/Documents/GitHub/iPlug2/Examples/ColorFilterPlugin/resources/Skins/SmllButtonActive.svg"));
+      mSvg_GreenButton = std::make_unique<ISVG>(GetUI()->LoadSVG("C:/Users/salva/Documents/GitHub/iPlug2/Examples/ColorFilterPlugin/resources/Skins/BypassOnButton.svg"));
+    }
+  }
   void DrawWidget(IGraphics& g)
   {
     // DrawPressableShape(g, mShape, mWidgetBounds, GetValue() > 0.5, mMouseIsOver, IsDisabled());
     if (GetValue() > 0.5)
       if (IsDisabled())
-        g.DrawSVG(GetUI()->LoadSVG("C:/Users/salva/Documents/GitHub/iPlug2/Examples/ColorFilterPlugin/resources/Skins/SmllButtonActive Disabled.svg"),
-                  mWidgetBounds.GetFromLeft(18.2).GetFromTop(18.2).GetTranslated(-3.624, -3.086));
+        g.DrawSVG(*mSvg_SmallButtonActiveDisabled, mWidgetBounds.GetFromLeft(18.2).GetFromTop(18.2).GetTranslated(-3.624, -3.086));
       else
       {
         if (!mGreen)
-          g.DrawSVG(GetUI()->LoadSVG("C:/Users/salva/Documents/GitHub/iPlug2/Examples/ColorFilterPlugin/resources/Skins/SmllButtonActive.svg"),
-                    mWidgetBounds.GetFromLeft(18.2).GetFromTop(18.2).GetTranslated(-3.624, -3.086));
+          g.DrawSVG(*mSvg_SmallButtonActive, mWidgetBounds.GetFromLeft(18.2).GetFromTop(18.2).GetTranslated(-3.624, -3.086));
         else
-          g.DrawSVG(GetUI()->LoadSVG("C:/Users/salva/Documents/GitHub/iPlug2/Examples/ColorFilterPlugin/resources/Skins/BypassOnButton.svg"),
-                    mWidgetBounds.GetFromLeft(18.2).GetFromTop(18.2).GetTranslated(-3.624, -2.373));
+          g.DrawSVG(*mSvg_GreenButton, mWidgetBounds.GetFromLeft(18.2).GetFromTop(18.2).GetTranslated(-3.624, -2.373));
       }
     else
     {
       if (IsDisabled())
-        g.DrawSVG(
-          GetUI()->LoadSVG("C:/Users/salva/Documents/GitHub/iPlug2/Examples/ColorFilterPlugin/resources/Skins/Small Button Disabled.svg"), mWidgetBounds.GetPadded(-.4).GetTranslated(-.64, .12));
+        g.DrawSVG(*mSvg_SmallButtonDisabled, mWidgetBounds.GetPadded(-.4).GetTranslated(-.64, .12));
       else
-        g.DrawSVG(GetUI()->LoadSVG("C:/Users/salva/Documents/GitHub/iPlug2/Examples/ColorFilterPlugin/resources/Skins/Small Button.svg"), mWidgetBounds);
+        g.DrawSVG(*mSvg_SmallButton, mWidgetBounds);
     }
   }
 };
@@ -338,6 +290,10 @@ class IVRadioButtonControl_SVG : public IVRadioButtonControl
 {
 private:
   std::vector<bool> mDisabledStates{};
+  std::unique_ptr<ISVG> mSvg_SmallButtonDisabled{};
+  std::unique_ptr<ISVG> mSvg_SmallButton{};
+  std::unique_ptr<ISVG> mSvg_SmallButtonActiveDisabled{};
+  std::unique_ptr<ISVG> mSvg_SmallButtonActive{};
 
 public:
   IVRadioButtonControl_SVG(const IRECT& bounds,
@@ -351,6 +307,17 @@ public:
     : IVRadioButtonControl(bounds, paramIdx, options, label, style, shape, direction, buttonSize)
   {
     mDisabledStates.resize(mNumStates);
+  }
+  void OnAttached() override
+  {
+    IVRadioButtonControl::OnAttached();
+    if (GetUI())
+    {
+      mSvg_SmallButtonDisabled = std::make_unique<ISVG>(GetUI()->LoadSVG("C:/Users/salva/Documents/GitHub/iPlug2/Examples/ColorFilterPlugin/resources/Skins/Small Button Disabled.svg"));
+      mSvg_SmallButton = std::make_unique<ISVG>(GetUI()->LoadSVG("C:/Users/salva/Documents/GitHub/iPlug2/Examples/ColorFilterPlugin/resources/Skins/Small Button.svg"));
+      mSvg_SmallButtonActiveDisabled = std::make_unique<ISVG>(GetUI()->LoadSVG("C:/Users/salva/Documents/GitHub/iPlug2/Examples/ColorFilterPlugin/resources/Skins/SmllButtonActive Disabled.svg"));
+      mSvg_SmallButtonActive = std::make_unique<ISVG>(GetUI()->LoadSVG("C:/Users/salva/Documents/GitHub/iPlug2/Examples/ColorFilterPlugin/resources/Skins/SmllButtonActive.svg"));
+    }
   }
   void SetButtonDisabled(int buttonIdx, bool disabled)
   {
@@ -387,20 +354,16 @@ public:
       if (i == hit)
       {
         if (IsDisabled() || IsButtonDisabled(i))
-          g.DrawSVG(GetUI()->LoadSVG("C:/Users/salva/Documents/GitHub/iPlug2/Examples/ColorFilterPlugin/resources/Skins/SmllButtonActive Disabled.svg"),
-                    r.GetFromLeft(mButtonAreaWidth * 1).GetCentredInside(mButtonSize * 1.73).GetTranslated(-.77, -.38));
+          g.DrawSVG(*mSvg_SmallButtonActiveDisabled, r.GetFromLeft(mButtonAreaWidth * 1).GetCentredInside(mButtonSize * 1.73).GetTranslated(-.77, -.38));
         else
-          g.DrawSVG(GetUI()->LoadSVG("C:/Users/salva/Documents/GitHub/iPlug2/Examples/ColorFilterPlugin/resources/Skins/SmllButtonActive.svg"),
-                    r.GetFromLeft(mButtonAreaWidth * .945).GetCentredInside(mButtonSize * 1.73).GetTranslated(-.15, -.48));
+          g.DrawSVG(*mSvg_SmallButtonActive, r.GetFromLeft(mButtonAreaWidth * .945).GetCentredInside(mButtonSize * 1.73).GetTranslated(-.15, -.48));
       }
       else
       {
         if (IsDisabled() || IsButtonDisabled(i))
-          g.DrawSVG(GetUI()->LoadSVG("C:/Users/salva/Documents/GitHub/iPlug2/Examples/ColorFilterPlugin/resources/Skins/Small Button Disabled.svg"),
-                    r.GetFromLeft(mButtonAreaWidth).GetCentredInside(mButtonSize * 1.13).GetTranslated(-.6, -.03));
+          g.DrawSVG(*mSvg_SmallButtonDisabled, r.GetFromLeft(mButtonAreaWidth).GetCentredInside(mButtonSize * 1.13).GetTranslated(-.6, -.03));
         else
-          g.DrawSVG(GetUI()->LoadSVG("C:/Users/salva/Documents/GitHub/iPlug2/Examples/ColorFilterPlugin/resources/Skins/Small Button.svg"),
-                    r.GetFromLeft(mButtonAreaWidth).GetCentredInside(mButtonSize * 1.22).GetTranslated(.05, -.15));
+          g.DrawSVG(*mSvg_SmallButton, r.GetFromLeft(mButtonAreaWidth).GetCentredInside(mButtonSize * 1.22).GetTranslated(.05, -.15));
       }
 
 
@@ -413,27 +376,38 @@ public:
   }
 };
 
-class TransluscentKnobWithValueBar : public IVKnobControl
+class SVGKnobWithValueBar : public IVKnobControl
 {
 protected:
   double inicatorTrackOffset = 0.92;
   double knobPadding = 7.5;
+  std::unique_ptr<ISVG> mSvg_Knob{};
+  std::unique_ptr<ISVG> mSvg_KnobDisabled{};
 
 public:
-  TransluscentKnobWithValueBar(const IRECT& bounds,
-                               int paramIdx,
-                               const char* label = "",
-                               const IVStyle& style = DEFAULT_STYLE,
-                               bool valueIsEditable = false,
-                               bool valueInWidget = false,
-                               float a1 = -135.f,
-                               float a2 = 135.f,
-                               float aAnchor = -135.f,
-                               EDirection direction = EDirection::Vertical,
-                               double gearing = DEFAULT_GEARING,
-                               float trackSize = 2.f)
+  SVGKnobWithValueBar(const IRECT& bounds,
+                      int paramIdx,
+                      const char* label = "",
+                      const IVStyle& style = DEFAULT_STYLE,
+                      bool valueIsEditable = false,
+                      bool valueInWidget = false,
+                      float a1 = -135.f,
+                      float a2 = 135.f,
+                      float aAnchor = -135.f,
+                      EDirection direction = EDirection::Vertical,
+                      double gearing = DEFAULT_GEARING,
+                      float trackSize = 2.f)
     : IVKnobControl(bounds, paramIdx, label, style, valueIsEditable, valueInWidget, a1, a2, aAnchor, direction, gearing, trackSize)
   {
+  }
+  void OnAttached() override
+  {
+    IVKnobControl::OnAttached();
+    if (GetUI())
+    {
+      mSvg_KnobDisabled = std::make_unique<ISVG>(GetUI()->LoadSVG("C:/Users/salva/Documents/GitHub/iPlug2/Examples/ColorFilterPlugin/resources/Skins/BigKnobDisabled.svg"));
+      mSvg_Knob = std::make_unique<ISVG>(GetUI()->LoadSVG("C:/Users/salva/Documents/GitHub/iPlug2/Examples/ColorFilterPlugin/resources/Skins/BigKnob.svg"));
+    }
   }
   void DrawWidget(IGraphics& g)
   {
@@ -444,9 +418,9 @@ public:
     if (mStyle.addBackgroundTrack)
       DrawBackgroundTrack(g, cx, cy, widgetRadius);
     if (!IsDisabled())
-      g.DrawSVG(GetUI()->LoadSVG("C:/Users/salva/Documents/GitHub/iPlug2/Examples/ColorFilterPlugin/resources/Skins/BigKnob.svg"), knobHandleBounds.GetPadded(knobPadding));
+      g.DrawSVG(*mSvg_Knob, knobHandleBounds.GetPadded(knobPadding));
     else
-      g.DrawSVG(GetUI()->LoadSVG("C:/Users/salva/Documents/GitHub/iPlug2/Examples/ColorFilterPlugin/resources/Skins/BigKnobDisabled.svg"), knobHandleBounds.GetPadded(knobPadding));
+      g.DrawSVG(*mSvg_KnobDisabled, knobHandleBounds.GetPadded(knobPadding));
     DrawIndicatorTrack(g, angle, cx, cy, widgetRadius * inicatorTrackOffset);
     if (mTickCount > 0)
       DrawTicks(g, cx, cy, widgetRadius);
@@ -454,46 +428,55 @@ public:
     DrawPointer(g, angle, cx, cy, knobHandleBounds.W() / 2.f);
   }
 };
-class TransluscentKnobWithValueBarMED : public TransluscentKnobWithValueBar
+class SVGKnobWithValueBarMED : public SVGKnobWithValueBar
 {
 
 public:
-  TransluscentKnobWithValueBarMED(const IRECT& bounds,
-                                  int paramIdx,
-                                  const char* label = "",
-                                  const IVStyle& style = DEFAULT_STYLE,
-                                  bool valueIsEditable = false,
-                                  bool valueInWidget = false,
-                                  float a1 = -135.f,
-                                  float a2 = 135.f,
-                                  float aAnchor = -135.f,
-                                  EDirection direction = EDirection::Vertical,
-                                  double gearing = DEFAULT_GEARING,
-                                  float trackSize = 2.f)
-    : TransluscentKnobWithValueBar(bounds, paramIdx, label, style, valueIsEditable, valueInWidget, a1, a2, aAnchor, direction, gearing, trackSize)
+  SVGKnobWithValueBarMED(const IRECT& bounds,
+                         int paramIdx,
+                         const char* label = "",
+                         const IVStyle& style = DEFAULT_STYLE,
+                         bool valueIsEditable = false,
+                         bool valueInWidget = false,
+                         float a1 = -135.f,
+                         float a2 = 135.f,
+                         float aAnchor = -135.f,
+                         EDirection direction = EDirection::Vertical,
+                         double gearing = DEFAULT_GEARING,
+                         float trackSize = 2.f)
+    : SVGKnobWithValueBar(bounds, paramIdx, label, style, valueIsEditable, valueInWidget, a1, a2, aAnchor, direction, gearing, trackSize)
   {
     inicatorTrackOffset = 0.84;
     knobPadding = 3.7;
   }
+  void OnAttached() override
+  {
+    IVKnobControl::OnAttached();
+    if (GetUI())
+    {
+      mSvg_KnobDisabled = std::make_unique<ISVG>(GetUI()->LoadSVG("C:/Users/salva/Documents/GitHub/iPlug2/Examples/ColorFilterPlugin/resources/Skins/MedKnobDisabled.svg"));
+      mSvg_Knob = std::make_unique<ISVG>(GetUI()->LoadSVG("C:/Users/salva/Documents/GitHub/iPlug2/Examples/ColorFilterPlugin/resources/Skins/MedKnob.svg"));
+    }
+  }
 };
 
-class TransluscentKnobWithValueBarLIL : public TransluscentKnobWithValueBar
+class SVGKnobWithValueBarLIL : public SVGKnobWithValueBarMED
 {
 
 public:
-  TransluscentKnobWithValueBarLIL(const IRECT& bounds,
-                                  int paramIdx,
-                                  const char* label = "",
-                                  const IVStyle& style = DEFAULT_STYLE,
-                                  bool valueIsEditable = false,
-                                  bool valueInWidget = false,
-                                  float a1 = -135.f,
-                                  float a2 = 135.f,
-                                  float aAnchor = -135.f,
-                                  EDirection direction = EDirection::Vertical,
-                                  double gearing = DEFAULT_GEARING,
-                                  float trackSize = 2.f)
-    : TransluscentKnobWithValueBar(bounds, paramIdx, label, style, valueIsEditable, valueInWidget, a1, a2, aAnchor, direction, gearing, trackSize)
+  SVGKnobWithValueBarLIL(const IRECT& bounds,
+                         int paramIdx,
+                         const char* label = "",
+                         const IVStyle& style = DEFAULT_STYLE,
+                         bool valueIsEditable = false,
+                         bool valueInWidget = false,
+                         float a1 = -135.f,
+                         float a2 = 135.f,
+                         float aAnchor = -135.f,
+                         EDirection direction = EDirection::Vertical,
+                         double gearing = DEFAULT_GEARING,
+                         float trackSize = 2.f)
+    : SVGKnobWithValueBarMED(bounds, paramIdx, label, style, valueIsEditable, valueInWidget, a1, a2, aAnchor, direction, gearing, trackSize)
   {
     inicatorTrackOffset = 0.77;
     knobPadding = 2.4;

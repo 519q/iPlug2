@@ -31,6 +31,77 @@ inline double scaleExponential(double controlParam, double scalingFactor)
 }
 inline double mapRange(double value, double min, double max) { return min + (value * (max - min)); }
 
+class RMS_PEAK_CALCULATOR
+{
+private:
+  std::vector<double> mBuffer;      // Circular buffer to hold input samples
+  int mBufferSize;      // Size of the buffer in frames
+  int mBufferIndex = 0; // Current position in circular buffer
+  float mRMSWeight = 0.5;
+  float valueAmplifier = 3.5;
+  float mCurrentRMS = 0.0f;   // Current RMS value
+  float mCurrentPeak = 0.0f;  // Current peak value
+  float mBlendedValue = 0.0f; // Current blended value
+  bool mBufferFilled = false; // Flag to indicate if buffer is filled
+
+public:
+  RMS_PEAK_CALCULATOR(int bufferSize)
+    : mBufferSize(bufferSize)
+  {
+    mBuffer.resize(mBufferSize);
+  }
+
+  ~RMS_PEAK_CALCULATOR() { }
+
+  // Process a single sample (for one channel)
+  void processSample(double sample)
+  {
+    // Add new sample to buffer
+    mBuffer[mBufferIndex] = sample;
+
+    // Update buffer index
+    mBufferIndex = (mBufferIndex + 1) % mBufferSize;
+
+    // Check if buffer is filled
+    if (mBufferIndex == 0)
+    {
+      mBufferFilled = true;
+    }
+
+    // Calculate values if we have enough samples
+    if (mBufferFilled)
+    {
+      mBufferFilled = false;
+      calculateValues();
+    }
+  }
+
+  // Calculate RMS, peak and blended values from current buffer
+  void calculateValues()
+  {
+    float sumSquares = 0.0f;
+    float peak = 0.0f;
+
+    for (int i = 0; i < mBufferSize; i++)
+    {
+      float sample = std::abs(static_cast<float>(mBuffer[i]));
+      sumSquares += sample * sample;
+      peak = std::max(peak, sample);
+    }
+
+    // Calculate RMS
+    mCurrentRMS = std::sqrt(sumSquares / (mBufferSize));
+    mCurrentPeak = peak;
+    // Blend RMS and peak
+    mBlendedValue = mRMSWeight * mCurrentRMS + (1.0f - mRMSWeight) * mCurrentPeak;
+  }
+
+  // Getters for current values
+  double getRoundedValueForUI() const { return mBlendedValue * valueAmplifier; }
+  float getCurrentRMS() const { return mCurrentRMS; }
+  float getCurrentPeak() const { return mCurrentPeak; }
+};
+
 class SmoothBypass
 {
 private:
