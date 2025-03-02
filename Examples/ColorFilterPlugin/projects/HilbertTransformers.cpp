@@ -6,15 +6,15 @@ IIR_HilbertTransform::IIR_HilbertTransform()
   PrecomputeCoefficients();
   initializeDelayLine();
 };
-std::vector<double>& IIR_HilbertTransform::GetCoefficients(int order) { return IIRPrecomputedCoeffs[order - 1]; }
+std::vector<double>& IIR_HilbertTransform::GetCoefficients(int order) { return IIRPrecomputedCoeffs[std::max(order - 1, 0)]; }
 void IIR_HilbertTransform::PrecomputeCoefficients()
 {
-  for (int order = 1; order <= IIR_MAX_ORDER; order++)
+  for (int order = 1; order < IIR_MAX_ORDER; order++)
   {
-    IIRPrecomputedCoeffs[order - 1].resize(order);
+    IIRPrecomputedCoeffs[std::max(order - 1, 0)].resize(order);
     for (int i = 0; i < order; ++i)
     {
-      IIRPrecomputedCoeffs[order - 1][i] = 0.9 + 0.1 * (i / static_cast<double>(order));
+      IIRPrecomputedCoeffs[std::max(order - 1, 0)][i] = 0.9 + 0.1 * (i / static_cast<double>(order));
     }
   }
 }
@@ -33,7 +33,7 @@ void IIR_HilbertTransform::initializeDelayLine()
 
 Magn_Phas_Output IIR_HilbertTransform::getMagnitude_Phase(double input, int order)
 {
-  //int order = mapParamToOrder(orderControl, IIR_MAX_ORDER, 1, 1);
+  // int order = mapParamToOrder(orderControl, IIR_MAX_ORDER, 1, 1);
   auto r_i_out = getReal_Imag(input, order);
   double magnitude = std::sqrt(r_i_out.real * r_i_out.real + r_i_out.imag * r_i_out.imag);
   double phase = std::atan2(r_i_out.imag, r_i_out.real);
@@ -54,7 +54,7 @@ double IIR_HilbertTransform::getImaginary(double input, int order)
   double output = input;
   for (int i = 0; i < order; ++i)
   {
-    double a = IIRPrecomputedCoeffs[order - 1][i];
+    double a = IIRPrecomputedCoeffs[std::max(order - 1, 0)][i];
     double w = output - a * a * x2[i] + a * y1[i];
     double y = a * w + y1[i];
 
@@ -72,22 +72,22 @@ double IIR_HilbertTransform::getImaginary(double input, int order)
 }
 
 FIR_HilbertTransform::FIR_HilbertTransform() { PrecomputeCoefficients(); }
-std::vector<double>& FIR_HilbertTransform::GetCoefficients(int order) { return FIRPrecomputedCoeffs[order - 1]; }
+std::vector<double>& FIR_HilbertTransform::GetCoefficients(int order) { return FIRPrecomputedCoeffs[std::max(order - 1, 0)]; }
 void FIR_HilbertTransform::PrecomputeCoefficients()
 {
-  for (int order = 1; order <= FIR_MAX_ORDER; order++)
+  for (int order = 1; order < FIR_MAX_ORDER; order++)
   {
-    FIRPrecomputedCoeffs[order - 1].resize(order);
+    FIRPrecomputedCoeffs[std::max(order - 1, 0)].resize(order);
     for (int i = 0; i < order; i++)
     {
       if (i == order / 2)
       {
-        FIRPrecomputedCoeffs[order - 1][i] = 0.0f;
+        FIRPrecomputedCoeffs[std::max(order - 1, 0)][i] = 0.0f;
       }
       else
       {
         double n = i - order / 2.;
-        FIRPrecomputedCoeffs[order - 1][i] = 2.0 / (iplug::PI * n) * (1.0 - std::cos(iplug::PI * n)); // Window function
+        FIRPrecomputedCoeffs[std::max(order - 1, 0)][i] = 2.0 / (iplug::PI * n) * (1.0 - std::cos(iplug::PI * n)); // Window function
       }
     }
   }
@@ -101,7 +101,7 @@ double FIR_HilbertTransform::getImaginary(double input, int order)
   for (size_t i = 0; i < GetCoefficients(order).size(); i++)
   {
     output += firDelayLine[index] * GetCoefficients(order)[i];
-    index = (index - 1 + firDelayLine.size()) % firDelayLine.size();
+    index = (std::max(index - 1, 0) + firDelayLine.size()) % firDelayLine.size();
   }
 
   position = (position + 1) % firDelayLine.size();
@@ -133,26 +133,23 @@ double FIR_HilbertTransform::getPhase(double input, int order)
 
 double FIR_HilbertTransform::getReal(double input, int order) { return getMagnitude(input, order) * std::cos(getPhase(input, order)); }
 
-LatticeHilbertTransform::LatticeHilbertTransform()
-{
-  PrecomputeCoefficients();
-}
+LatticeHilbertTransform::LatticeHilbertTransform() { PrecomputeCoefficients(); }
 
 void LatticeHilbertTransform::PrecomputeCoefficients()
 {
-  for (int order = 1; order <= LATTICE_MAX_ORDER; order++)
+  for (int order = 1; order < LATTICE_MAX_ORDER; order++)
   {
-    latticePrecomputedCoeffs[order - 1].resize(order);
+    latticePrecomputedCoeffs[std::max(order - 1, 0)].resize(order);
     for (int n = 0; n < order; n++)
     {
       double freq = (n + 0.5) / order;
       double omega = iplug::PI * freq;
-      latticePrecomputedCoeffs[order - 1][n] = (sin(omega) - 1.0) / (sin(omega) + 1.0);
+      latticePrecomputedCoeffs[std::max(order - 1, 0)][n] = (sin(omega) - 1.0) / (sin(omega) + 1.0);
     }
   }
 }
 
-std::vector<double>& LatticeHilbertTransform::GetCoefficients(int order) { return latticePrecomputedCoeffs[order - 1]; }
+std::vector<double>& LatticeHilbertTransform::GetCoefficients(int order) { return latticePrecomputedCoeffs[std::max(order - 1, 0)]; }
 
 Real_Imag_Output LatticeHilbertTransform::getRealImag(double input, int order, std::vector<double>& coeffs)
 {
@@ -176,25 +173,25 @@ Real_Imag_Output LatticeHilbertTransform::getRealImag(double input, int order, s
 
 Magn_Phas_Output LatticeHilbertTransform::getMagnitude_Phase(double input, int order)
 {
-  //int order = mapParamToOrder(orderControl, LATTICE_MAX_ORDER, 1, 1);
+  // int order = mapParamToOrder(orderControl, LATTICE_MAX_ORDER, 1, 1);
   Real_Imag_Output r_i = getRealImag(input, order, GetCoefficients(order));
   double magnitude = std::sqrt(r_i.real * r_i.real + r_i.imag * r_i.imag);
   double phase = std::atan2(r_i.imag, r_i.real);
   return {magnitude, phase};
 }
 
- Magn_Phas_Output Hilbert_Transformer::ProcessIIR(double input, double controlParam)
+Magn_Phas_Output Hilbert_Transformer::ProcessIIR(double input, double controlParam)
 {
   return IIRmixer.process(
-    input, controlParam, IIR_MAX_ORDER, 1, 1, [this](IIR_HilbertTransform& filter, double sample, int size) -> Magn_Phas_Output { return filter.getMagnitude_Phase(sample, size); });
+    input, controlParam, IIR_MAX_ORDER - 1, 1, 1, [this](IIR_HilbertTransform& filter, double sample, int size) -> Magn_Phas_Output { return filter.getMagnitude_Phase(sample, size); });
 }
 Magn_Phas_Output Hilbert_Transformer::ProcessFIR(double input, double controlParam, int offset)
 {
   return FIRmixer.process(
-    input, controlParam, FIR_MAX_ORDER, 1, 2, [this](FIR_HilbertTransform& filter, double sample, int size) -> Magn_Phas_Output { return filter.getMagnitude_Phase(sample, size); }, offset);
+    input, controlParam, FIR_MAX_ORDER - 1, 1, 2, [this](FIR_HilbertTransform& filter, double sample, int size) -> Magn_Phas_Output { return filter.getMagnitude_Phase(sample, size); }, offset);
 }
 Magn_Phas_Output Hilbert_Transformer::ProcessLATTICE(double input, double controlParam)
 {
   return LATTICEmixer.process(
-    input, controlParam, LATTICE_MAX_ORDER, 1, 1, [this](LatticeHilbertTransform& filter, double sample, int size) -> Magn_Phas_Output { return filter.getMagnitude_Phase(sample, size); });
+    input, controlParam, LATTICE_MAX_ORDER - 1, 1, 1, [this](LatticeHilbertTransform& filter, double sample, int size) -> Magn_Phas_Output { return filter.getMagnitude_Phase(sample, size); });
 }

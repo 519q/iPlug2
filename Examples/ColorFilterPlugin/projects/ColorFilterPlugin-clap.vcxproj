@@ -188,7 +188,7 @@
       <Optimization>MaxSpeed</Optimization>
       <PreprocessorDefinitions>$(CLAP_DEFS);$(DEBUG_DEFS);$(EXTRA_DEBUG_DEFS);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <AdditionalIncludeDirectories>$(CLAP_INC_PATHS);C:\Users\salva\Documents\GitHub\iPlug2\Dependencies\IPlug\pffft;C:\Users\salva\Documents\GitHub\iPlug2\Dependencies\IPlug\kissfft;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(CLAP_INC_PATHS);C:\Users\salva\Documents\GitHub\iPlug2\Dependencies\IPlug\pffft;C:\Users\salva\Documents\GitHub\iPlug2\Dependencies\IPlug\kissfft;C:\Program Files (x86)\Visual Leak Detector\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <LanguageStandard_C>stdclatest</LanguageStandard_C>
       <IntrinsicFunctions>true</IntrinsicFunctions>
@@ -235,7 +235,7 @@
       <PreprocessorDefinitions>$(CLAP_DEFS);$(RELEASE_DEFS);$(EXTRA_RELEASE_DEFS);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
-      <AdditionalIncludeDirectories>$(CLAP_INC_PATHS);C:\Users\salva\Documents\GitHub\iPlug2\Dependencies\IPlug\kissfft;C:\Users\salva\Documents\GitHub\vcpkg\packages\xsimd_x64-windows\include\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(CLAP_INC_PATHS);C:\Users\salva\Documents\GitHub\iPlug2\Dependencies\IPlug\kissfft;C:\Users\salva\Documents\GitHub\vcpkg\packages\xsimd_x64-windows\include\;C:\Program Files (x86)\Visual Leak Detector\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <LanguageStandard_C>stdclatest</LanguageStandard_C>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
@@ -357,7 +357,7 @@
     <ClInclude Include="RingBuffer.h" />
     <ClInclude Include="Shapers.h" />
     <ClInclude Include="ShaperSelector.h" />
-    <ClInclude Include="SmoothTools.h" />
+    <ClInclude Include="MiscTools.h" />
     <ClInclude Include="SpectralFilter.h" />
     <ClInclude Include="SpectralShaper.h" />
     <ClInclude Include="StateMixer.h" />
@@ -422,6 +422,9 @@
     <None Include="..\config\ColorFilterPlugin-web.mk" />
     <None Include="..\config\ColorFilterPlugin-win.props" />
     <None Include="..\config\ColorFilterPlugin-mac.xcconfig" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="..\resources\Skins\Frame 3.png" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

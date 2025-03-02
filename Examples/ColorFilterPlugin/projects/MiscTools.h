@@ -1,6 +1,8 @@
 #pragma once
-
+#include <chrono>
 #include <functional>
+#include <memory>
+#include <thread>
 
 static const double smoothThreshold{0.001};
 
@@ -31,12 +33,53 @@ inline double scaleExponential(double controlParam, double scalingFactor)
 }
 inline double mapRange(double value, double min, double max) { return min + (value * (max - min)); }
 
+class TimerCounter
+{
+private:
+  std::unique_ptr<std::thread> mDecisionThread;
+  bool mDecisionMade = false;
+  std::chrono::steady_clock::time_point mStartTime;
+  const std::chrono::milliseconds kDelay = std::chrono::milliseconds(1);
+
+public:
+  // Function to start the timer and return true when it ends
+  void startTimer()
+  {
+    if (mDecisionThread)
+    {
+      // If a thread is already running, join it first
+      mDecisionThread->join();
+    }
+
+    // Reset decision status
+    mDecisionMade = false;
+
+    // Start new thread for the timer
+    mDecisionThread = std::make_unique<std::thread>([this]() {
+      mStartTime = std::chrono::steady_clock::now();
+      std::this_thread::sleep_for(kDelay);
+      if (!mDecisionMade && (std::chrono::steady_clock::now() - mStartTime) >= kDelay)
+      {
+        mDecisionMade = true;
+      }
+    });
+  }
+  bool countEnded()
+  {
+    if (mDecisionMade)
+    {
+      mDecisionMade = false;
+      return true;
+    }
+    return false;
+  }
+};
 class RMS_PEAK_CALCULATOR
 {
 private:
-  std::vector<double> mBuffer;      // Circular buffer to hold input samples
-  int mBufferSize;      // Size of the buffer in frames
-  int mBufferIndex = 0; // Current position in circular buffer
+  std::vector<double> mBuffer; // Circular buffer to hold input samples
+  int mBufferSize;             // Size of the buffer in frames
+  int mBufferIndex = 0;        // Current position in circular buffer
   float mRMSWeight = 0.5;
   float valueAmplifier = 3.5;
   float mCurrentRMS = 0.0f;   // Current RMS value
@@ -51,7 +94,7 @@ public:
     mBuffer.resize(mBufferSize);
   }
 
-  ~RMS_PEAK_CALCULATOR() { }
+  ~RMS_PEAK_CALCULATOR() {}
 
   // Process a single sample (for one channel)
   void processSample(double sample)

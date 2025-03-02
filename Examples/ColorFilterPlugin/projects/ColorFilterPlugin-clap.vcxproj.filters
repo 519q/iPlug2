@@ -220,7 +220,7 @@
     <ClInclude Include="RingBuffer.h" />
     <ClInclude Include="Shapers.h" />
     <ClInclude Include="ShaperSelector.h" />
-    <ClInclude Include="SmoothTools.h" />
+    <ClInclude Include="MiscTools.h" />
     <ClInclude Include="SpectralFilter.h" />
     <ClInclude Include="SpectralShaper.h" />
     <ClInclude Include="AllpassFilters.h" />
@@ -272,5 +272,8 @@
     <None Include="..\config\ColorFilterPlugin-ios.xcconfig">
       <Filter>config</Filter>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="..\resources\Skins\Frame 3.png" />
   </ItemGroup>
 </Project>

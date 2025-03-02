@@ -40,7 +40,7 @@ public:
       if (mBuffer.empty())
         return input;
       double fb = params.m_delayFeedback;
-      fb = std::clamp(fb, -.99, .99);
+      //fb = std::clamp(fb, -1.2, 1.2);
       SetDelayTime(params.m_delayTime, params);
       if (!mIIR)
       {
@@ -53,12 +53,12 @@ public:
       if (readIndex < 0)
         readIndex += mMaxDelaySamples;
 
-      int indexInt = (int)readIndex;
+      size_t indexInt = (size_t)readIndex;
       double frac = readIndex - indexInt;
 
       // All-pass interpolation for high-quality fractional delay
       double delayedSample = mBuffer[indexInt];
-      double nextSample = mBuffer[(indexInt + 1) % mMaxDelaySamples];
+      double nextSample = mBuffer[std::min((indexInt + 1), mMaxDelaySamples) % mMaxDelaySamples];
 
       double interpolatedSample = delayedSample + frac * (nextSample - delayedSample);
       dampFilter.Process(interpolatedSample, params);

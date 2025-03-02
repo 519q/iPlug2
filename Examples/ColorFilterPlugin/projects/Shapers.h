@@ -2,7 +2,7 @@
 #include "FilterParameters.h"
 #include "IPlugConstants.h"
 #include "projects/DebugPrint.h"
-#include "projects/SmoothTools.h"
+#include "projects/MiscTools.h"
 
 static double m_Vintage_scale{1 << VINTAGE_BIT_RATE};
 constexpr double processingFloor = 0.0001;
@@ -306,3 +306,26 @@ inline double diodeNonlinearity(double x)
     return -(1.0 - exp(x * 0.5)); // 0.5 scaling factor introduces asymmetry.
   }
 }
+class ClipperMixer
+{
+public:
+  double Process(double input, double selector)
+  {
+    double processed = input;
+    double a_{};
+    double b_{};
+    if (selector < 2)
+    {
+      a_ = filnalTanh(processed);
+      b_ = softclip(processed);
+      processed = interpolateLin(a_, b_, selector - 1);
+    }
+    else if (selector < 3)
+    {
+      a_ = softclip(processed);
+      b_ = diodeNonlinearity(processed);
+      processed = interpolateLin(a_, b_, selector - 2);
+    }
+    return processed;
+  }
+};

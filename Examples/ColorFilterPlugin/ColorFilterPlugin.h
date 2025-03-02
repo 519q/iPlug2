@@ -1,4 +1,5 @@
 #pragma once
+
 #include "IControls.h"
 #include "IPlugPaths.h"
 #include "IPlug_include_in_plug_hdr.h"
@@ -10,20 +11,25 @@
 #include "projects/Filters.h"
 #include "projects/Phaser.h"
 #include "projects/Shapers.h"
-#include "projects/SmoothTools.h"
+#include "projects/MiscTools.h"
 #include "projects/SpectralFilter.h"
 #include "projects/SpectralShaper.h"
 // #include "projects/aligned_memory.cpp"
 #include "projects/CustomGUI.h"
 #include "projects/DebugPrint.h"
-
-
+//#include <vld.h>
+//class LeakReporter
+//{
+//public:
+//  ~LeakReporter() { VLDReportLeaks(); }
+//};
 const int kNumPresets = 1;
 
 enum EParams
 {
   kGainIn,
   kGainOut,
+  kInOutBypass,
   kFilterCutoff,
   kFilterResonance,
   kFilterBandwidth,
@@ -34,40 +40,51 @@ enum EParams
   kSpectralFilter_IR,
   kSpectralFilter_Drive,
   kSpectralFilter_Harder,
-  kFilterHilbertOrder,
-  kFilterOddOrder,
+  kSpectralFilterOrder,
+  kSpectralFilterOdd,
   kFilterBypass,
 
   kShaperDrive,
   kShaperShape,
   kShaperBias,
+  kShaperBypass,
 
   kSpectralShaperDrive,
   kSpectralShaper_IR,
   kSpectralShaperSelector,
-
-  kShaperHilbertOrder,
-  kShaperOddOrder,
+  kSpectralShaperOrder,
+  kSpectralShaperOdd,
+  kSpectralShaperBypass,
 
   kPhaserFreq,
   kPhaserDepth,
   kPhaserSelector,
   kPhaserMix,
+  kPhaserBypass,
 
   kDelayMix,
   kDelayTime,
   kDelayFeedback,
   kDelayIR,
   kDelayDampFilterCutoff,
+  kDelayBypass,
 
   kClipMix,
   kClipSelector,
-  kClipVisualizer,
+  kClipBypass,
 
   kOverSampling,
   kDryWet,
   kBypass,
   kNumParams
+};
+
+enum NonControlParams
+{
+  kShaperVisualizer = 100,
+  kSpectralShaperVisualizer,
+  kClipVisualizer,
+  kShowValues
 };
 
 using namespace iplug;
@@ -81,51 +98,57 @@ private:
   double medKnobSize = 39.79;
   double medSmallerKnobSize = 33.5;
   IRECT b{};
-  IControl* mPreGain{};
-  IControl* mPostGain{};
+  BitmapKnobWithValueBar* mPreGain{};
+  BitmapKnobWithValueBar* mPostGain{};
+  IControl* mInOutBypass{};
 
-  IControl* mCutoff{};
-  IControl* mReso{};
-  IControl* mF_BW{};
+  BitmapKnobWithValueBar* mCutoff{};
+  BitmapKnobWithValueBar* mReso{};
+  BitmapKnobWithValueBar* mF_BW{};
   IControl* mFilterType{};
   IControl* mFilterAlgo{};
-  IVRadioButtonControl_SVG* mFilterSelector{};
+  IVRadioButtonControl_Bitmap* mFilterSelector{};
   IControl* mFilterBypass{};
 
-  IControl* mSpectralFilterOrder{};
+  BitmapKnobWithValueBar* mSpectralFilterOrder{};
   IControl* mSpectralFilterOdd{};
-  IControl* mSpectralFilterDrive{};
+  BitmapKnobWithValueBar* mSpectralFilterDrive{};
   IControl* mSpectralFilterIR{};
   IControl* mSpectralFilterHarder{};
   IControl* mSpectralFilterBypass{};
 
 
-  IControl* mShaperDrive{};
-  IControl* mShaperShape{};
-  IControl* mShaperBias{};
+  BitmapKnobWithValueBar* mShaperDrive{};
+  BitmapKnobWithValueBar* mShaperShape{};
+  BitmapKnobWithValueBar* mShaperBias{};
+  IControl* mShaperBypass{};
 
-  IControl* mSpectralShaperDrive{};
-  IControl* mSpectralShaperOrder{};
+  BitmapKnobWithValueBar* mSpectralShaperDrive{};
+  BitmapKnobWithValueBar* mSpectralShaperOrder{};
+  BitmapKnobWithValueBar* mSpectralShaperSelector{};
   IControl* mSpectralShaperOdd{};
-  IControl* mSpectralShaperSelector{};
   IControl* mSpectralShaperIR{};
+  IControl* mSpectralShaperBypass{};
 
-  IControl* mDelayTime{};
-  IControl* mDelayFeedback{};
-  IControl* mDelayFilter{};
+  BitmapKnobWithValueBar* mDelayMix{};
+  BitmapKnobWithValueBar* mDelayTime{};
+  BitmapKnobWithValueBar* mDelayFeedback{};
+  BitmapKnobWithValueBar* mDelayFilter{};
   IControl* mDelayIR{};
-  IControl* mDelayMix{};
+  IControl* mDelayBypass{};
 
-  IControl* mPhaserMix{};
-  IControl* mPhaserOrder{};
-  IControl* mPhaserFreq{};
+  BitmapKnobWithValueBar* mPhaserMix{};
+  BitmapKnobWithValueBar* mPhaserOrder{};
+  BitmapKnobWithValueBar* mPhaserFreq{};
   IControl* mPhaserSelector{};
+  IControl* mPhaserBypass{};
 
-  IControl* mUtilityMix{};
+  BitmapKnobWithValueBar* mUtilityMix{};
   IControl* mUtilityOversampling{};
 
-  IControl* mClipperFlavour{};
-  IControl* mClipperMix{};
+  BitmapKnobWithValueBar* mClipperFlavour{};
+  BitmapKnobWithValueBar* mClipperMix{};
+  IControl* mClipperBypass{};
 
   IControl* mClipVisualiser{};
   bool g_Bypass{};
@@ -142,6 +165,7 @@ private:
   double shaperHilbertOrder{};
   int m_phaserSelector{};
   int m_ovrsmpFactor{};
+  bool mControlValuesViewState{};
 
   bool mAlgoChanged{};
   bool needsDecideOnReset{};
@@ -160,17 +184,20 @@ private:
 
 public:
   ColorFilterPlugin(const InstanceInfo& info);
+  ~ColorFilterPlugin()
+  {
+  }
+
   bool SerializeState(IByteChunk& chunk) const override;
   int UnserializeState(const IByteChunk& chunk, int startPos) override;
   void OnUIOpen() override;
   void OnUIClose() override;
-  static void SaveGlobalSettings();
+  void SaveGlobalSettings();
   void LoadGlobalSettings();
   // void legacyInitializer(IRECT b);
 #if IPLUG_DSP // http://bit.ly/2S64BDd
   ISender<1, 64, float> mModValueSender{};
   ISenderData<1, float> mModData{};
-  double clipVisualisationValue{};
 
   FilterParameters fParams{};
   FilterSelector filterSelectorL{};
@@ -190,6 +217,8 @@ public:
   Phaser phaserL{};
   Phaser phaserR{};
 
+  ClipperMixer clipL{};
+  ClipperMixer clipR{};
   // RingBuffer mRingBufferL{};
   // RingBuffer mRingBufferR{};
   // FFT_F_I fftL{};
@@ -197,8 +226,9 @@ public:
 
   SpectralShaper mSpectralShaperL{};
   SpectralShaper mSpectralShaperR{};
-  RMS_PEAK_CALCULATOR peakCalc{1500};
-
+  RMS_PEAK_CALCULATOR ClipPeakCalc{1500};
+  RMS_PEAK_CALCULATOR ShaperPeakCalc{1500};
+  RMS_PEAK_CALCULATOR SpectralShaperPeakCalc{1500};
   int m_OS_LatencySamples{};
   // int m_RB_LatencySamples{};
 
@@ -218,20 +248,15 @@ public:
   void DecideControlDisableStatus(bool disableCondition, Args... controls);
   void CalculateLatency();
   void DecideOnReset();
-  void SetVisualizationData(int knobTag, double value)
-  {
-    mModData.ctrlTag = knobTag; // The control tag that should receive this data
-    mModData.nChans = 1;        // We only have 1 value in .vals
-    mModData.chanOffset = 0;
-    mModData.vals[0] = value;
-    // Enqueue this data for the knob
-    mModValueSender.PushData(mModData);
-  }
+  void SetVisualizationData(int knobTag, double value);
   void SetModData(int knobTag);
   template <typename... Tags>
   void BatchSetModData(Tags... knobTag);
+  template <typename... Tags>
+  void BatchSetShowValues(bool value, Tags... knobTag);
   double getFinalParamValue(int paramId, double clampBottom = 0, double clampTop = 1, bool scaleDown = true);
   double dBtoControlParam(double param);
-
+  void setAllShowValues();
+  
 #endif
 };

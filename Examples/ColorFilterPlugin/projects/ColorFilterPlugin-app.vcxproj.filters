@@ -353,11 +353,13 @@
     <None Include="..\config\ColorFilterPlugin-win.props">
       <Filter>config</Filter>
     </None>
+    <None Include="Skins\Frame 3.svg" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="..\resources\ColorFilterPlugin.ico">
       <Filter>resources</Filter>
     </Image>
+    <Image Include="..\resources\Skins\Frame 3.png" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="Ideas.txt" />

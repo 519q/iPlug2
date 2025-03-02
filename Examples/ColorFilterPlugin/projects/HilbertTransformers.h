@@ -1,7 +1,7 @@
 #pragma once
 #include "IPlug_include_in_plug_hdr.h"
 #include "projects/DebugPrint.h"
-#include "projects/SmoothTools.h"
+#include "projects/MiscTools.h"
 #include "projects/StateMixer.h"
 #include <array>
 #include <vector>
@@ -91,6 +91,7 @@ private:
   T ceil{};
   T floor{};
   int m_size{};
+  DebugPrintObj dbgObj{};
 
 public:
   Magn_Phas_Output process(double input, double sizeControl, int size, int base, int step, std::function<Magn_Phas_Output(T&, double, int)> func, int offset = 0)
@@ -99,15 +100,17 @@ public:
     double interpFactor = paramStruct.interpFactor;
     int floorSize = paramStruct.stepped;
 
-
-    m_size = floorSize;
-    int ceilSize = std::clamp((paramStruct.stepped + step), paramStruct.stepped, size);
+    //m_size = floorSize;
+    //int ceilSize = std::clamp((paramStruct.stepped + step), paramStruct.stepped, size);
+    //dbgObj.DebugPrintDSP("floorSize", floorSize);
+    //dbgObj.DebugPrintDSP("ceilSize", ceilSize);
+    //dbgObj.DebugPrintDSP("interpFactor", interpFactor);
     Magn_Phas_Output floorProcessed = func(floor, input, floorSize);
-    Magn_Phas_Output ceilProcessed = func(ceil, input, ceilSize);
-    Magn_Phas_Output outputStruct{};
-    outputStruct.magnitude = interpolateLin(ceilProcessed.magnitude, floorProcessed.magnitude, interpFactor);
-    outputStruct.phase = interpolateLin(ceilProcessed.phase, floorProcessed.phase, interpFactor);
-    return outputStruct;
+    //Magn_Phas_Output ceilProcessed = func(ceil, input, ceilSize);
+    //Magn_Phas_Output outputStruct{};
+    //outputStruct.magnitude = interpolateLin(ceilProcessed.magnitude, floorProcessed.magnitude, interpFactor);
+    //outputStruct.phase = interpolateLin(ceilProcessed.phase, floorProcessed.phase, interpFactor);
+    return floorProcessed;
   }
 };
 

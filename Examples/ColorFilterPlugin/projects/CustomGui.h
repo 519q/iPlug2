@@ -7,12 +7,14 @@
 #include "SkImage.h"
 #include "SkSVGDOM.h"
 #include "SkStream.h"
+#include "Smoothers.h"
 #include "projects/DebugPrint.h"
 #include <vector>
-#include "Smoothers.h"
 
 static double mDrawScaleRetainer{1};
 static bool mDrawScaleRetainerNeedsSaving{};
+// static bool mInitialized{false};
+static bool g_ShowValuesToggle{};
 
 BEGIN_IPLUG_NAMESPACE
 BEGIN_IGRAPHICS_NAMESPACE
@@ -188,318 +190,30 @@ static IVStyle ColorFilterStyle_SVG_KnobOver{false,
                                              false, // add background track
                                              Colors::ColorFilterPatternSpec_FilterPanel,
                                              getStrokeOptions()};
-
-class ClipperLightButton : public IVToggleControl
+class BitmapPanel : public IPanelControl
 {
-  IVStyle style{};
-  std::atomic<float> mModValue{};
+  std::unique_ptr<IBitmap> mBitmap;
 
 public:
-  ClipperLightButton(
-    const IRECT& bounds, int paramIdx = kNoParameter, const char* label = "", const IVStyle& style = DEFAULT_STYLE, const char* offText = "", const char* onText = "", bool green = false)
-    : IVToggleControl(bounds, paramIdx, label, style, offText, onText)
+  BitmapPanel(const IRECT& bounds)
+    : IPanelControl(bounds, IColor(255, 0xff, 0xff, 0xff))
   {
-    style.WithColor(kX2, IColor(0xff,0xff,0xff,0xff));
-  }
-  void OnMsgFromDelegate(int msgTag, int dataSize, const void* pData) override
-  {
-    auto data = static_cast<const ISenderData<1, float>*>(pData);
-    float value = data->vals[0];
-    mModValue.store(value);
-    SetDirty(false);
-    IControl::OnMsgFromDelegate(msgTag, dataSize, pData); // base call if needed
-  }
-  void DrawLight(IGraphics& g, const IRECT& bounds)
-  {
-    const float alpha = mModValue.load() * 1;
-    const float centerX = bounds.MW(); // Middle width
-    const float centerY = bounds.MH(); // Middle height
-    const float radius = std::min(bounds.W(), bounds.H()) * 0.5f;
-
-    // Create a radial pattern
-    IPattern pattern = IPattern::CreateRadialGradient(centerX, centerY, 7,
-                                                      {
-                                                        {IColor(255, 0xf0, 0x1e, 0x00), 0.0}, // White opaque at center (255 alpha)
-                                                        {IColor(0, 0xf0, 0x1e, 0x00), 1.0}       // White transparent at edges (0 alpha)
-                                                      });
-    IBlend blend(EBlend::Default, alpha);
-    g.PathClear();
-    g.PathEllipse(bounds);
-    g.PathFill(pattern, IFillOptions(), &blend);
-  }
-  void DrawWidget(IGraphics& g)
-  {
-    DrawLight(g, mWidgetBounds);
-  }
-};
-
-class IVToggleControl_SVG : public IVToggleControl
-{
-private:
-  bool mGreen{};
-  std::unique_ptr<ISVG> mSvg_SmallButtonDisabled{};
-  std::unique_ptr<ISVG> mSvg_SmallButton{};
-  std::unique_ptr<ISVG> mSvg_SmallButtonActiveDisabled{};
-  std::unique_ptr<ISVG> mSvg_SmallButtonActive{};
-  std::unique_ptr<ISVG> mSvg_GreenButton{};
-
-public:
-  IVToggleControl_SVG(
-    const IRECT& bounds, int paramIdx = kNoParameter, const char* label = "", const IVStyle& style = DEFAULT_STYLE, const char* offText = "", const char* onText = "", bool green = false)
-    : IVToggleControl(bounds, paramIdx, label, style, offText, onText)
-    , mGreen(green)
-  {
+    mIgnoreMouse = false;
   }
   void OnAttached() override
   {
-    IVToggleControl::OnAttached();
+    IPanelControl::OnAttached();
     if (GetUI())
     {
-      mSvg_SmallButtonDisabled = std::make_unique<ISVG>(GetUI()->LoadSVG("C:/Users/salva/Documents/GitHub/iPlug2/Examples/ColorFilterPlugin/resources/Skins/Small Button Disabled.svg"));
-      mSvg_SmallButton = std::make_unique<ISVG>(GetUI()->LoadSVG("C:/Users/salva/Documents/GitHub/iPlug2/Examples/ColorFilterPlugin/resources/Skins/Small Button.svg"));
-      mSvg_SmallButtonActiveDisabled = std::make_unique<ISVG>(GetUI()->LoadSVG("C:/Users/salva/Documents/GitHub/iPlug2/Examples/ColorFilterPlugin/resources/Skins/SmllButtonActive Disabled.svg"));
-      mSvg_SmallButtonActive = std::make_unique<ISVG>(GetUI()->LoadSVG("C:/Users/salva/Documents/GitHub/iPlug2/Examples/ColorFilterPlugin/resources/Skins/SmllButtonActive.svg"));
-      mSvg_GreenButton = std::make_unique<ISVG>(GetUI()->LoadSVG("C:/Users/salva/Documents/GitHub/iPlug2/Examples/ColorFilterPlugin/resources/Skins/BypassOnButton.svg"));
+      mBitmap = std::make_unique<IBitmap>(GetUI()->LoadBitmap("C:/Users/salva/Documents/GitHub/iPlug2/Examples/ColorFilterPlugin/resources/Skins/BWSkin.png"));
     }
   }
-  void DrawWidget(IGraphics& g)
-  {
-    // DrawPressableShape(g, mShape, mWidgetBounds, GetValue() > 0.5, mMouseIsOver, IsDisabled());
-    if (GetValue() > 0.5)
-      if (IsDisabled())
-        g.DrawSVG(*mSvg_SmallButtonActiveDisabled, mWidgetBounds.GetFromLeft(18.2).GetFromTop(18.2).GetTranslated(-3.624, -3.086));
-      else
-      {
-        if (!mGreen)
-          g.DrawSVG(*mSvg_SmallButtonActive, mWidgetBounds.GetFromLeft(18.2).GetFromTop(18.2).GetTranslated(-3.624, -3.086));
-        else
-          g.DrawSVG(*mSvg_GreenButton, mWidgetBounds.GetFromLeft(18.2).GetFromTop(18.2).GetTranslated(-3.624, -2.373));
-      }
-    else
-    {
-      if (IsDisabled())
-        g.DrawSVG(*mSvg_SmallButtonDisabled, mWidgetBounds.GetPadded(-.4).GetTranslated(-.64, .12));
-      else
-        g.DrawSVG(*mSvg_SmallButton, mWidgetBounds);
-    }
-  }
-};
-
-
-class IVRadioButtonControl_SVG : public IVRadioButtonControl
-{
-private:
-  std::vector<bool> mDisabledStates{};
-  std::unique_ptr<ISVG> mSvg_SmallButtonDisabled{};
-  std::unique_ptr<ISVG> mSvg_SmallButton{};
-  std::unique_ptr<ISVG> mSvg_SmallButtonActiveDisabled{};
-  std::unique_ptr<ISVG> mSvg_SmallButtonActive{};
-
-public:
-  IVRadioButtonControl_SVG(const IRECT& bounds,
-                           int paramIdx = kNoParameter,
-                           const std::initializer_list<const char*>& options = {},
-                           const char* label = "",
-                           const IVStyle& style = DEFAULT_STYLE,
-                           EVShape shape = EVShape::Ellipse,
-                           EDirection direction = EDirection::Vertical,
-                           float buttonSize = 10.f)
-    : IVRadioButtonControl(bounds, paramIdx, options, label, style, shape, direction, buttonSize)
-  {
-    mDisabledStates.resize(mNumStates);
-  }
-  void OnAttached() override
-  {
-    IVRadioButtonControl::OnAttached();
-    if (GetUI())
-    {
-      mSvg_SmallButtonDisabled = std::make_unique<ISVG>(GetUI()->LoadSVG("C:/Users/salva/Documents/GitHub/iPlug2/Examples/ColorFilterPlugin/resources/Skins/Small Button Disabled.svg"));
-      mSvg_SmallButton = std::make_unique<ISVG>(GetUI()->LoadSVG("C:/Users/salva/Documents/GitHub/iPlug2/Examples/ColorFilterPlugin/resources/Skins/Small Button.svg"));
-      mSvg_SmallButtonActiveDisabled = std::make_unique<ISVG>(GetUI()->LoadSVG("C:/Users/salva/Documents/GitHub/iPlug2/Examples/ColorFilterPlugin/resources/Skins/SmllButtonActive Disabled.svg"));
-      mSvg_SmallButtonActive = std::make_unique<ISVG>(GetUI()->LoadSVG("C:/Users/salva/Documents/GitHub/iPlug2/Examples/ColorFilterPlugin/resources/Skins/SmllButtonActive.svg"));
-    }
-  }
-  void SetButtonDisabled(int buttonIdx, bool disabled)
-  {
-    if (buttonIdx >= 0 && buttonIdx < mNumStates && buttonIdx < mDisabledStates.size())
-    {
-      mDisabledStates[buttonIdx] = disabled;
-      SetDirty(false);
-    }
-  }
-
-  bool IsButtonDisabled(int buttonIdx) const
-  {
-    if (buttonIdx >= 0 && buttonIdx < mNumStates && buttonIdx < mDisabledStates.size())
-      return mDisabledStates[buttonIdx];
-
-    return false;
-  }
-  void OnMouseDown(float x, float y, const IMouseMod& mod)
-  {
-    int index = GetButtonForPoint(x, y);
-    if (index > -1 && !IsButtonDisabled(index))
-      SetValue(((double)index * (1. / (double)(mNumStates - 1))));
-
-    SetDirty(true);
-  }
-  void DrawWidget(IGraphics& g)
-  {
-    int hit = GetSelectedIdx();
-
-    for (int i = 0; i < mNumStates; i++)
-    {
-      IRECT r = mButtons.Get()[i];
-      // DrawButton(g, r.GetFromLeft(mButtonAreaWidth).GetCentredInside(mButtonSize), i == hit, mMouseOverButton == i, ETabSegment::Mid, IsDisabled() || GetStateDisabled(i));
-      if (i == hit)
-      {
-        if (IsDisabled() || IsButtonDisabled(i))
-          g.DrawSVG(*mSvg_SmallButtonActiveDisabled, r.GetFromLeft(mButtonAreaWidth * 1).GetCentredInside(mButtonSize * 1.73).GetTranslated(-.77, -.38));
-        else
-          g.DrawSVG(*mSvg_SmallButtonActive, r.GetFromLeft(mButtonAreaWidth * .945).GetCentredInside(mButtonSize * 1.73).GetTranslated(-.15, -.48));
-      }
-      else
-      {
-        if (IsDisabled() || IsButtonDisabled(i))
-          g.DrawSVG(*mSvg_SmallButtonDisabled, r.GetFromLeft(mButtonAreaWidth).GetCentredInside(mButtonSize * 1.13).GetTranslated(-.6, -.03));
-        else
-          g.DrawSVG(*mSvg_SmallButton, r.GetFromLeft(mButtonAreaWidth).GetCentredInside(mButtonSize * 1.22).GetTranslated(.05, -.15));
-      }
-
-
-      if (mTabLabels.Get(i))
-      {
-        r = r.GetFromRight(r.W() - mButtonAreaWidth);
-        g.DrawText(mStyle.valueText.WithFGColor(i == hit ? GetColor(kON) : GetColor(kX1)), mTabLabels.Get(i)->Get(), r, &mBlend);
-      }
-    }
-  }
-};
-
-class SVGKnobWithValueBar : public IVKnobControl
-{
-protected:
-  double inicatorTrackOffset = 0.92;
-  double knobPadding = 7.5;
-  std::unique_ptr<ISVG> mSvg_Knob{};
-  std::unique_ptr<ISVG> mSvg_KnobDisabled{};
-
-public:
-  SVGKnobWithValueBar(const IRECT& bounds,
-                      int paramIdx,
-                      const char* label = "",
-                      const IVStyle& style = DEFAULT_STYLE,
-                      bool valueIsEditable = false,
-                      bool valueInWidget = false,
-                      float a1 = -135.f,
-                      float a2 = 135.f,
-                      float aAnchor = -135.f,
-                      EDirection direction = EDirection::Vertical,
-                      double gearing = DEFAULT_GEARING,
-                      float trackSize = 2.f)
-    : IVKnobControl(bounds, paramIdx, label, style, valueIsEditable, valueInWidget, a1, a2, aAnchor, direction, gearing, trackSize)
-  {
-  }
-  void OnAttached() override
-  {
-    IVKnobControl::OnAttached();
-    if (GetUI())
-    {
-      mSvg_KnobDisabled = std::make_unique<ISVG>(GetUI()->LoadSVG("C:/Users/salva/Documents/GitHub/iPlug2/Examples/ColorFilterPlugin/resources/Skins/BigKnobDisabled.svg"));
-      mSvg_Knob = std::make_unique<ISVG>(GetUI()->LoadSVG("C:/Users/salva/Documents/GitHub/iPlug2/Examples/ColorFilterPlugin/resources/Skins/BigKnob.svg"));
-    }
-  }
-  void DrawWidget(IGraphics& g)
-  {
-    float widgetRadius = GetRadius(); // The radius out to the indicator track arc
-    const float cx = mWidgetBounds.MW(), cy = mWidgetBounds.MH();
-    IRECT knobHandleBounds = mWidgetBounds.GetCentredInside((widgetRadius - mTrackToHandleDistance) * 2.f);
-    const float angle = mAngle1 + (static_cast<float>(GetValue()) * (mAngle2 - mAngle1));
-    if (mStyle.addBackgroundTrack)
-      DrawBackgroundTrack(g, cx, cy, widgetRadius);
-    if (!IsDisabled())
-      g.DrawSVG(*mSvg_Knob, knobHandleBounds.GetPadded(knobPadding));
-    else
-      g.DrawSVG(*mSvg_KnobDisabled, knobHandleBounds.GetPadded(knobPadding));
-    DrawIndicatorTrack(g, angle, cx, cy, widgetRadius * inicatorTrackOffset);
-    if (mTickCount > 0)
-      DrawTicks(g, cx, cy, widgetRadius);
-    // DrawHandle(g, knobHandleBounds);
-    DrawPointer(g, angle, cx, cy, knobHandleBounds.W() / 2.f);
-  }
-};
-class SVGKnobWithValueBarMED : public SVGKnobWithValueBar
-{
-
-public:
-  SVGKnobWithValueBarMED(const IRECT& bounds,
-                         int paramIdx,
-                         const char* label = "",
-                         const IVStyle& style = DEFAULT_STYLE,
-                         bool valueIsEditable = false,
-                         bool valueInWidget = false,
-                         float a1 = -135.f,
-                         float a2 = 135.f,
-                         float aAnchor = -135.f,
-                         EDirection direction = EDirection::Vertical,
-                         double gearing = DEFAULT_GEARING,
-                         float trackSize = 2.f)
-    : SVGKnobWithValueBar(bounds, paramIdx, label, style, valueIsEditable, valueInWidget, a1, a2, aAnchor, direction, gearing, trackSize)
-  {
-    inicatorTrackOffset = 0.84;
-    knobPadding = 3.7;
-  }
-  void OnAttached() override
-  {
-    IVKnobControl::OnAttached();
-    if (GetUI())
-    {
-      mSvg_KnobDisabled = std::make_unique<ISVG>(GetUI()->LoadSVG("C:/Users/salva/Documents/GitHub/iPlug2/Examples/ColorFilterPlugin/resources/Skins/MedKnobDisabled.svg"));
-      mSvg_Knob = std::make_unique<ISVG>(GetUI()->LoadSVG("C:/Users/salva/Documents/GitHub/iPlug2/Examples/ColorFilterPlugin/resources/Skins/MedKnob.svg"));
-    }
-  }
-};
-
-class SVGKnobWithValueBarLIL : public SVGKnobWithValueBarMED
-{
-
-public:
-  SVGKnobWithValueBarLIL(const IRECT& bounds,
-                         int paramIdx,
-                         const char* label = "",
-                         const IVStyle& style = DEFAULT_STYLE,
-                         bool valueIsEditable = false,
-                         bool valueInWidget = false,
-                         float a1 = -135.f,
-                         float a2 = 135.f,
-                         float aAnchor = -135.f,
-                         EDirection direction = EDirection::Vertical,
-                         double gearing = DEFAULT_GEARING,
-                         float trackSize = 2.f)
-    : SVGKnobWithValueBarMED(bounds, paramIdx, label, style, valueIsEditable, valueInWidget, a1, a2, aAnchor, direction, gearing, trackSize)
-  {
-    inicatorTrackOffset = 0.77;
-    knobPadding = 2.4;
-  }
-};
-
-class RoundedPanelControl : public IControl
-{
-public:
-  RoundedPanelControl(const IRECT& bounds, const IColor& color, float cornerRadius = 5)
-    : IControl(bounds)
-    , mColor(color)
-    , mCornerRadius(cornerRadius)
-  {
-  }
-
-
+  void SetBitmap(IBitmap& bitmap) { mBitmap = std::make_unique<IBitmap>(bitmap); }
   void Draw(IGraphics& g) override
   {
-    // Draw a rounded rectangle with the specified color and corner radius
-    g.FillRoundRect(mColor, mRECT, mCornerRadius);
+    if (mBitmap)
+      g.DrawFittedBitmap(*mBitmap, mRECT.GetFromLeft(484).GetFromTop(438));
   }
-
   void OnMouseDown(float x, float y, const IMouseMod& mod) override
   {
     if (mod.R) // Right click
@@ -509,11 +223,13 @@ public:
       menu.AddItem("UI Scale: 100%", 1);
       menu.AddItem("UI Scale: 150%", 2);
       menu.AddSeparator(3);
+      menu.AddItem("Show/Hide Values", 4);
+
 
       GetUI()->CreatePopupMenu(*this, menu, x, y);
     }
   }
-
+  void toggleControlValuesViewState() { g_ShowValuesToggle = true; }
   // Handle the menu selection
   void OnPopupMenuSelection(IPopupMenu* pSelectedMenu, int valIdx) override
   {
@@ -539,23 +255,421 @@ public:
           GetUI()->Resize(GetUI()->Width(), GetUI()->Height(), 1.5);
         }
         break;
+      case 4: // show/hide values
+        toggleControlValuesViewState();
+        break;
       }
     }
   }
-  bool mInitialized{false};
-  void OnResize() override
+  // void OnResize() override
+  //{
+  //     IControl::OnResize();
+  //   if (mInitialized)
+  //   {
+  //     mDrawScaleRetainerNeedsSaving = true;
+  //     mDrawScaleRetainer = GetUI()->GetDrawScale();
+  //   }
+  //   else
+  //   {
+  //     mInitialized = true;
+  //   }
+  // }
+};
+class InvisibleToggleControl : public IVToggleControl
+{
+private:
+public:
+  InvisibleToggleControl(const IRECT& bounds, int paramIdx = kNoParameter, const char* label = "", const IVStyle& style = DEFAULT_STYLE, const char* offText = "", const char* onText = "")
+    : IVToggleControl(bounds, paramIdx, label, style, offText, onText)
   {
-    if (mInitialized)
+  }
+  void DrawWidget(IGraphics& g) { /*DrawPressableShape(g, mShape, mWidgetBounds, GetValue() > 0.5, mMouseIsOver, IsDisabled());*/ }
+
+  void DrawValue(IGraphics& g, bool mouseOver)
+  {
+    // if (mouseOver)
+    //   g.FillRect(GetColor(kHL), mValueBounds, &mBlend);
+
+    // if (GetValue() > 0.5)
+    //   g.DrawText(mStyle.valueText, mOnText.Get(), mValueBounds, &mBlend);
+    // else
+    //   g.DrawText(mStyle.valueText, mOffText.Get(), mValueBounds, &mBlend);
+  }
+};
+
+class ClipperLightButton : public IVToggleControl
+{
+  IVStyle style{};
+  std::atomic<float> mModValue{};
+
+public:
+  ClipperLightButton(
+    const IRECT& bounds, int paramIdx = kNoParameter, const char* label = "", const IVStyle& style = DEFAULT_STYLE, const char* offText = "", const char* onText = "", bool green = false)
+    : IVToggleControl(bounds, paramIdx, label, style, offText, onText)
+  {
+    style.WithColor(kX2, IColor(0xff, 0xff, 0xff, 0xff));
+  }
+  void OnMsgFromDelegate(int msgTag, int dataSize, const void* pData) override
+  {
+    auto data = static_cast<const ISenderData<1, float>*>(pData);
+    float value = data->vals[0];
+    mModValue.store(value);
+    SetDirty(false);
+    IControl::OnMsgFromDelegate(msgTag, dataSize, pData); // base call if needed
+  }
+  void DrawLight(IGraphics& g, const IRECT& bounds)
+  {
+    const float alpha = mModValue.load();
+    const float centerX = bounds.MW(); // Middle width
+    const float centerY = bounds.MH(); // Middle height
+    const float radius = std::min(bounds.W(), bounds.H()) * 0.5f;
+
+    // Create a radial pattern
+    IPattern pattern = IPattern::CreateRadialGradient(centerX, centerY, 4.31,
+                                                      {
+                                                        /*{IColor(55, 0x8b, 0x30, 0x30), 0}, */   // white dot
+                                                        {IColor(255, 0xcc, 0x38, 0x38), 0.15},  // red light
+                                                        {IColor(250, 0x6b, 0x1c, 0x1c), 0.7}, // glow (255 alpha)
+                                                        {IColor(0, 0x38, 0x1c, 0x1c), 1.0}     // White transparent
+                                                      });
+    IBlend blend(EBlend::Default, alpha);
+    g.PathClear();
+    g.PathEllipse(bounds);
+    g.PathFill(pattern, IFillOptions(), &blend);
+  }
+  void DrawWidget(IGraphics& g) { DrawLight(g, mWidgetBounds); }
+};
+
+class IVToggleControl_Bitmap : public IVToggleControl
+{
+private:
+  bool mGreen{};
+  std::unique_ptr<IBitmap> SmallButtonDisabled{};
+  std::unique_ptr<IBitmap> SmallButton{};
+  std::unique_ptr<IBitmap> SmallButtonActiveDisabled{};
+  std::unique_ptr<IBitmap> SmallButtonActive{};
+  std::unique_ptr<IBitmap> GreenButton{};
+
+public:
+  IVToggleControl_Bitmap(
+    const IRECT& bounds, int paramIdx = kNoParameter, const char* label = "", const IVStyle& style = DEFAULT_STYLE, const char* offText = "", const char* onText = "", bool green = false)
+    : IVToggleControl(bounds, paramIdx, label, style, offText, onText)
+    , mGreen(green)
+  {
+  }
+  void OnAttached() override
+  {
+    IVToggleControl::OnAttached();
+    if (GetUI())
     {
-      mDrawScaleRetainerNeedsSaving = true;
-      IControl::OnResize();
-      mDrawScaleRetainer = GetUI()->GetDrawScale();
-    }
-    else
-    {
-      mInitialized = true;
+      SmallButtonDisabled = std::make_unique<IBitmap>(GetUI()->LoadBitmap("C:/Users/salva/Documents/GitHub/iPlug2/Examples/ColorFilterPlugin/resources/Skins/Small Button Disabled.png"));
+      SmallButton = std::make_unique<IBitmap>(GetUI()->LoadBitmap("C:/Users/salva/Documents/GitHub/iPlug2/Examples/ColorFilterPlugin/resources/Skins/Small Button.png"));
+      SmallButtonActiveDisabled = std::make_unique<IBitmap>(GetUI()->LoadBitmap("C:/Users/salva/Documents/GitHub/iPlug2/Examples/ColorFilterPlugin/resources/Skins/SmllButtonActive Disabled.png"));
+      SmallButtonActive = std::make_unique<IBitmap>(GetUI()->LoadBitmap("C:/Users/salva/Documents/GitHub/iPlug2/Examples/ColorFilterPlugin/resources/Skins/SmllButtonActive.png"));
+      GreenButton = std::make_unique<IBitmap>(GetUI()->LoadBitmap("C:/Users/salva/Documents/GitHub/iPlug2/Examples/ColorFilterPlugin/resources/Skins/BypassOnButton.png"));
     }
   }
+
+  void DrawWidget(IGraphics& g)
+  {
+    // DrawPressableShape(g, mShape, mWidgetBounds, GetValue() > 0.5, mMouseIsOver, IsDisabled());
+    if (GetValue() > 0.5)
+      if (IsDisabled())
+      {
+        if (SmallButtonActiveDisabled)
+          g.DrawFittedBitmap(*SmallButtonActiveDisabled, mWidgetBounds.GetFromLeft(18.2).GetFromTop(18.2).GetTranslated(-4.44, -3.086));
+      }
+      else
+      {
+        if (!mGreen)
+        {
+          if (SmallButtonActive)
+            g.DrawFittedBitmap(*SmallButtonActive, mWidgetBounds.GetFromLeft(18.2).GetFromTop(18.2).GetTranslated(-3.624, -3.086));
+        }
+        else if (GreenButton)
+        {
+          g.DrawFittedBitmap(*GreenButton, mWidgetBounds.GetFromLeft(18.28).GetFromTop(18.28).GetTranslated(-4.3, -3.1));
+        }
+      }
+    else
+    {
+      if (IsDisabled())
+      {
+        if (SmallButtonDisabled)
+          g.DrawFittedBitmap(*SmallButtonDisabled, mWidgetBounds.GetFromLeft(14.17).GetFromTop(14.17).GetTranslated(-2.14, -1.015));
+      }
+      else
+      {
+        if (SmallButton)
+          g.DrawFittedBitmap(*SmallButton, mWidgetBounds.GetFromLeft(14.04).GetFromTop(14.04).GetTranslated(-2.165, -0.989));
+      }
+    }
+  }
+};
+
+
+class IVRadioButtonControl_Bitmap : public IVRadioButtonControl
+{
+private:
+  std::vector<bool> mDisabledStates{};
+  std::unique_ptr<IBitmap> SmallButtonDisabled{};
+  std::unique_ptr<IBitmap> SmallButton{};
+  std::unique_ptr<IBitmap> SmallButtonActiveDisabled{};
+  std::unique_ptr<IBitmap> SmallButtonActive{};
+
+public:
+  IVRadioButtonControl_Bitmap(const IRECT& bounds,
+                              int paramIdx = kNoParameter,
+                              const std::initializer_list<const char*>& options = {},
+                              const char* label = "",
+                              const IVStyle& style = DEFAULT_STYLE,
+                              EVShape shape = EVShape::Ellipse,
+                              EDirection direction = EDirection::Vertical,
+                              float buttonSize = 10.3f)
+    : IVRadioButtonControl(bounds, paramIdx, options, label, style, shape, direction, buttonSize)
+  {
+    mDisabledStates.resize(mNumStates);
+  }
+  void OnAttached() override
+  {
+    IVRadioButtonControl::OnAttached();
+    if (GetUI())
+    {
+      SmallButtonDisabled = std::make_unique<IBitmap>(GetUI()->LoadBitmap("C:/Users/salva/Documents/GitHub/iPlug2/Examples/ColorFilterPlugin/resources/Skins/Small Button Disabled.png"));
+      SmallButton = std::make_unique<IBitmap>(GetUI()->LoadBitmap("C:/Users/salva/Documents/GitHub/iPlug2/Examples/ColorFilterPlugin/resources/Skins/Small Button.png"));
+      SmallButtonActiveDisabled = std::make_unique<IBitmap>(GetUI()->LoadBitmap("C:/Users/salva/Documents/GitHub/iPlug2/Examples/ColorFilterPlugin/resources/Skins/SmllButtonActive Disabled.png"));
+      SmallButtonActive = std::make_unique<IBitmap>(GetUI()->LoadBitmap("C:/Users/salva/Documents/GitHub/iPlug2/Examples/ColorFilterPlugin/resources/Skins/SmllButtonActive.png"));
+    }
+  }
+  void SetButtonDisabled(int buttonIdx, bool disabled)
+  {
+    if (GetUI())
+      if (buttonIdx >= 0 && buttonIdx < mNumStates && buttonIdx < mDisabledStates.size())
+      {
+        mDisabledStates[buttonIdx] = disabled;
+        SetDirty(false);
+      }
+  }
+
+  bool IsButtonDisabled(int buttonIdx) const
+  {
+    if (buttonIdx >= 0 && buttonIdx < mNumStates && buttonIdx < mDisabledStates.size())
+      return mDisabledStates[buttonIdx];
+
+    return false;
+  }
+  void OnMouseDown(float x, float y, const IMouseMod& mod)
+  {
+    int index = GetButtonForPoint(x, y);
+    if (index > -1 && !IsButtonDisabled(index))
+      SetValue(((double)index * (1. / (double)(mNumStates - 1))));
+
+    SetDirty(true);
+  }
+  void DrawWidget(IGraphics& g)
+  {
+    int hit = GetSelectedIdx();
+
+    for (int i = 0; i < mNumStates; i++)
+    {
+      IRECT r = mButtons.Get()[i];
+      // DrawButton(g, r.GetFromLeft(mButtonAreaWidth).GetCentredInside(mButtonSize), i == hit, mMouseOverButton == i, ETabSegment::Mid, IsDisabled() || GetStateDisabled(i));
+      double moveX = 0.4;
+      if (i == hit)
+      {
+        if (IsDisabled() || IsButtonDisabled(i))
+          g.DrawFittedBitmap(*SmallButtonActiveDisabled, r.GetFromLeft(mButtonAreaWidth * 1).GetCentredInside(mButtonSize * 1.665).GetTranslated(-2.4 + moveX, 0));
+        else
+          g.DrawFittedBitmap(*SmallButtonActive, r.GetFromLeft(mButtonAreaWidth * .945).GetCentredInside(mButtonSize * 1.665).GetTranslated(-.15 - .5 + moveX, 0));
+      }
+      else
+      {
+        if (IsDisabled() || IsButtonDisabled(i))
+          g.DrawFittedBitmap(*SmallButtonDisabled, r.GetFromLeft(mButtonAreaWidth).GetCentredInside(mButtonSize * 1.28).GetTranslated(-2 + moveX, 0.02));
+        else
+          g.DrawFittedBitmap(*SmallButton, r.GetFromLeft(mButtonAreaWidth).GetCentredInside(mButtonSize * 1.28).GetTranslated(-2 + moveX, 0.02));
+      }
+
+
+      // if (mTabLabels.Get(i))
+      //{
+      //   r = r.GetFromRight(r.W() - mButtonAreaWidth);
+      //   g.DrawText(mStyle.valueText.WithFGColor(IColor(255, 0xda, 0xda, 0xda)), mTabLabels.Get(i)->Get(), r, &mBlend);
+      // }
+    }
+  }
+};
+
+class BitmapKnobWithValueBar : public IVKnobControl
+{
+protected:
+  double inicatorTrackOffset = 0.92;
+  double knobPaddingActive = 7.5;
+  double knobPaddingDisabled = 7.5;
+  double vPadding = -9;
+  double hPadding = 0;
+  std::unique_ptr<IBitmap> mSvg_Knob{};
+  std::unique_ptr<IBitmap> mSvg_KnobDisabled{};
+  double translateX{};
+  double translateY{};
+  double fontSize{};
+  double textScalingFactor{3};
+  bool mShowValue{true};
+
+public:
+  BitmapKnobWithValueBar(const IRECT& bounds,
+                         int paramIdx,
+                         const char* label = "",
+                         const IVStyle& style = DEFAULT_STYLE,
+                         bool valueIsEditable = false,
+                         bool valueInWidget = false,
+                         float a1 = -135.f,
+                         float a2 = 135.f,
+                         float aAnchor = -135.f,
+                         EDirection direction = EDirection::Vertical,
+                         double gearing = 6,
+                         float trackSize = 2.f)
+    : IVKnobControl(bounds, paramIdx, label, style, valueIsEditable, valueInWidget, a1, a2, aAnchor, direction, gearing, trackSize)
+  {
+    fontSize = 12;
+  }
+  virtual void OnMouseDown(float x, float y, const IMouseMod& mod) 
+  {
+    IVKnobControl::OnMouseDown(x, y, mod);
+    if (mod.L && mod.A) // Right click
+    {
+      if (GetUI())
+      {
+        float widgetRadius = GetRadius();
+        IRECT knobHandleBounds = mWidgetBounds.GetCentredInside(widgetRadius).GetVPadded(vPadding).GetHPadded(hPadding);
+        GetUI()->PromptUserInput(*this, knobHandleBounds);
+        SetDirty(false);
+      }
+    }
+  }
+  void setShowValue(bool showValue) { mShowValue = showValue; }
+  void OnAttached() override
+  {
+    IVKnobControl::OnAttached();
+    if (GetUI())
+    {
+      mSvg_KnobDisabled = std::make_unique<IBitmap>(GetUI()->LoadBitmap("C:/Users/salva/Documents/GitHub/iPlug2/Examples/ColorFilterPlugin/resources/Skins/BigKnobDisabled.png"));
+      mSvg_Knob = std::make_unique<IBitmap>(GetUI()->LoadBitmap("C:/Users/salva/Documents/GitHub/iPlug2/Examples/ColorFilterPlugin/resources/Skins/BigKnob.png"));
+    }
+  }
+  void DrawWidget(IGraphics& g)
+  {
+    float widgetRadius = GetRadius(); // The radius out to the indicator track arc
+    const float cx = mWidgetBounds.MW(), cy = mWidgetBounds.MH();
+    IRECT knobHandleBounds = mWidgetBounds.GetCentredInside((widgetRadius - mTrackToHandleDistance) * 2.f);
+    const float angle = mAngle1 + (static_cast<float>(GetValue()) * (mAngle2 - mAngle1));
+    if (mStyle.addBackgroundTrack)
+      DrawBackgroundTrack(g, cx, cy, widgetRadius);
+    if (!IsDisabled())
+      g.DrawFittedBitmap(*mSvg_Knob, knobHandleBounds.GetPadded(knobPaddingActive).GetTranslated(translateX, translateY));
+    else
+      g.DrawFittedBitmap(*mSvg_KnobDisabled, knobHandleBounds.GetPadded(knobPaddingDisabled).GetTranslated(translateX, translateY));
+    DrawIndicatorTrack(g, angle, cx, cy, widgetRadius * inicatorTrackOffset);
+    if (mTickCount > 0)
+      DrawTicks(g, cx, cy, widgetRadius);
+    // DrawHandle(g, knobHandleBounds);
+    DrawPointer(g, angle, cx, cy, knobHandleBounds.W() / 2.f);
+  }
+  void DrawValue(IGraphics& g, bool mouseOver) override
+  {
+    float blendValue = 0.85;
+    if (IsDisabled())
+      blendValue = 0.4;
+    if (mShowValue)
+    {
+      float widgetRadius = GetRadius();
+      IRECT knobHandleBounds = mWidgetBounds.GetCentredInside(widgetRadius);
+      IBlend blend = IBlend(EBlend::Default, blendValue);
+      g.DrawText(mStyle.valueText.WithSize(fontSize).WithFGColor(IColor(255, 0xf8, 0xf8, 0xfa)), mValueStr.Get(), knobHandleBounds.GetTranslated(0, -knobHandleBounds.H() / textScalingFactor), &blend);
+    }
+  }
+};
+class BitmapKnobWithValueBarMED : public BitmapKnobWithValueBar
+{
+
+public:
+  BitmapKnobWithValueBarMED(const IRECT& bounds,
+                            int paramIdx,
+                            const char* label = "",
+                            const IVStyle& style = DEFAULT_STYLE,
+                            bool valueIsEditable = false,
+                            bool valueInWidget = false,
+                            float a1 = -135.f,
+                            float a2 = 135.f,
+                            float aAnchor = -135.f,
+                            EDirection direction = EDirection::Vertical,
+                            double gearing = 6,
+                            float trackSize = 2.f)
+    : BitmapKnobWithValueBar(bounds, paramIdx, label, style, valueIsEditable, valueInWidget, a1, a2, aAnchor, direction, gearing, trackSize)
+  {
+    inicatorTrackOffset = 0.84;
+    knobPaddingActive = 4.5;
+    knobPaddingDisabled = 4.5;
+    translateX = -.3;
+    fontSize = 8;
+    textScalingFactor = 3.3;
+    vPadding = -1;
+    hPadding = 3;
+  }
+  void OnAttached() override
+  {
+    IVKnobControl::OnAttached();
+    if (GetUI())
+    {
+      mSvg_KnobDisabled = std::make_unique<IBitmap>(GetUI()->LoadBitmap("C:/Users/salva/Documents/GitHub/iPlug2/Examples/ColorFilterPlugin/resources/Skins/MedKnobDisabled.png"));
+      mSvg_Knob = std::make_unique<IBitmap>(GetUI()->LoadBitmap("C:/Users/salva/Documents/GitHub/iPlug2/Examples/ColorFilterPlugin/resources/Skins/MedKnob.png"));
+    }
+  }
+};
+
+class BitmapKnobWithValueBarLIL : public BitmapKnobWithValueBarMED
+{
+
+public:
+  BitmapKnobWithValueBarLIL(const IRECT& bounds,
+                            int paramIdx,
+                            const char* label = "",
+                            const IVStyle& style = DEFAULT_STYLE,
+                            bool valueIsEditable = false,
+                            bool valueInWidget = false,
+                            float a1 = -135.f,
+                            float a2 = 135.f,
+                            float aAnchor = -135.f,
+                            EDirection direction = EDirection::Vertical,
+                            double gearing = 10,
+                            float trackSize = 2.f)
+    : BitmapKnobWithValueBarMED(bounds, paramIdx, label, style, valueIsEditable, valueInWidget, a1, a2, aAnchor, direction, gearing, trackSize)
+  {
+    inicatorTrackOffset = 0.77;
+    knobPaddingActive = 3;
+    knobPaddingDisabled = 3;
+    fontSize = 7;
+    textScalingFactor = 3.45;
+  }
+};
+
+class RoundedPanelControl : public IControl
+{
+public:
+  RoundedPanelControl(const IRECT& bounds, const IColor& color, float cornerRadius = 5)
+    : IControl(bounds)
+    , mColor(color)
+    , mCornerRadius(cornerRadius)
+  {
+  }
+
+
+  void Draw(IGraphics& g) override
+  {
+    // Draw a rounded rectangle with the specified color and corner radius
+    g.FillRoundRect(mColor, mRECT, mCornerRadius);
+  }
+
 
 private:
   IColor mColor;
